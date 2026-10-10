@@ -1,0 +1,66 @@
+{
+  "pages": {
+    "page_6abc4b5e3dd88191a1d99ee9d2d4255f": "docs/overview.md",
+    "page_1cee9c7aae188191be3608cbf94fb889": "docs/JKRD.md",
+    "page_f0054dda6f3c81918b9985ba46e2f092": "docs/projects/ModelShow.md",
+    "page_51b815ec35f4819187173841fe6679fd": "docs/projects/JK_NET.md",
+    "page_50b62c37737c8191b27998f3c7128760": "docs/logic-units.md",
+    "page_e5e9e0d2df6481919ab152dec8208cde": "docs/latch-dynamic-waiting.md",
+    "page_6d1b00ae5d888191b820fcb7a40bb11d": "docs/counters-events.md",
+    "page_49e5ba0ff7e88191b27dee5f9778d2dc": "docs/static-prototypes.md"
+  },
+  "authority_replacements": [
+    [
+      "JK 空间统一维护",
+      "JK 项目统一维护"
+    ],
+    [
+      "以本空间现行规则",
+      "以本项目现行规则"
+    ],
+    [
+      "都以本空间为",
+      "都以本项目为"
+    ],
+    [
+      "按空间现行规则",
+      "按 JK 项目现行规则"
+    ],
+    [
+      "本页是 JK 空间的",
+      "本文件是 JK 项目的"
+    ],
+    [
+      "均以 JK 空间为",
+      "均以 JK 项目为"
+    ],
+    [
+      "并引用本页，不重复",
+      "并引用本文件，不重复"
+    ],
+    [
+      "按 JK 空间现行规则修正",
+      "按 JK 项目现行规则修正"
+    ],
+    [
+      "JK 空间是",
+      "JK 项目是"
+    ],
+    [
+      "如与空间不一致",
+      "如与 JK 项目不一致"
+    ],
+    [
+      "JK 空间中的这项目标",
+      "JK 项目中的这项目标"
+    ],
+    [
+      "后续规则与设计以 JK 空间维护的现行页面为主",
+      "后续规则与设计以 JK 项目维护的现行文档为主"
+    ],
+    [
+      "后续规则与设计以 JK 空间现行页面为主",
+      "后续规则与设计以 JK 项目现行文档为主"
+    ]
+  ]
+}

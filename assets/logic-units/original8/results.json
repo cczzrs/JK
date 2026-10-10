@@ -1,0 +1,287 @@
+{
+  "status": "PASS",
+  "basis": "JK规则与设计 current_sequence 87; initial_q-based state classification; native FIFO; latest actual state q",
+  "counts": {
+    "expression_truth_cases": 56,
+    "valid_gate_declarations": 24,
+    "isolated_first_sends": 416,
+    "same_value_repeat_sends": 416,
+    "native_not_cascade_sends": 416,
+    "latest_q_with_barrier_sends": 32,
+    "explicit_sync_example_sends": 256,
+    "accumulator_classification_sends": 2,
+    "invalid_structures_rejected": 10,
+    "fifo_sends_total": 1538
+  },
+  "truth_tables": {
+    "BUF": [
+      {
+        "inputs": [
+          0
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          1
+        ],
+        "output": 1
+      }
+    ],
+    "NOT": [
+      {
+        "inputs": [
+          0
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          1
+        ],
+        "output": 0
+      }
+    ],
+    "AND2": [
+      {
+        "inputs": [
+          0,
+          0
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          0,
+          1
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          1,
+          0
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          1,
+          1
+        ],
+        "output": 1
+      }
+    ],
+    "OR2": [
+      {
+        "inputs": [
+          0,
+          0
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          0,
+          1
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          1,
+          0
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          1,
+          1
+        ],
+        "output": 1
+      }
+    ],
+    "NAND2": [
+      {
+        "inputs": [
+          0,
+          0
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          0,
+          1
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          1,
+          0
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          1,
+          1
+        ],
+        "output": 0
+      }
+    ],
+    "NOR2": [
+      {
+        "inputs": [
+          0,
+          0
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          0,
+          1
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          1,
+          0
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          1,
+          1
+        ],
+        "output": 0
+      }
+    ],
+    "XOR2": [
+      {
+        "inputs": [
+          0,
+          0
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          0,
+          1
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          1,
+          0
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          1,
+          1
+        ],
+        "output": 0
+      }
+    ],
+    "XNOR2": [
+      {
+        "inputs": [
+          0,
+          0
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          0,
+          1
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          1,
+          0
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          1,
+          1
+        ],
+        "output": 1
+      }
+    ]
+  },
+  "directed_examples": {
+    "xor_into_accumulator_stateless": [
+      [
+        "X0",
+        1
+      ],
+      [
+        "X1",
+        1
+      ],
+      [
+        "Q0",
+        1
+      ],
+      [
+        "Q0",
+        0
+      ],
+      [
+        "Q1",
+        1
+      ],
+      [
+        "Q1",
+        1
+      ]
+    ],
+    "xor_into_accumulator_stateful": [
+      [
+        "X0",
+        1
+      ],
+      [
+        "X1",
+        1
+      ],
+      [
+        "Q0",
+        1
+      ],
+      [
+        "Q0",
+        0
+      ],
+      [
+        "Q1",
+        0
+      ],
+      [
+        "Q1",
+        0
+      ]
+    ]
+  },
+  "limits": [
+    "Independent specification checker, not JK_NET or ModelShow integration tests",
+    "No claim of global minimization or arbitrary-network equivalence",
+    "Minimal structures omit standard export metadata and hashes",
+    "FIFO tests start with empty arrival caches; do not prove arbitrary residual-cache behavior"
+  ],
+  "script_sha256": "3cf07a1879485bd78f14dae8b7664c014622e3a6a25418af1a655d7f3dea6c93"
+}

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JK_NET 模型配置与初始化</title>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="/static/jk_net.css">
+</head>
+<body>
+<main>
+  <header>
+    <div style="display: flex;">
+      <div style="margin: 0 20px 20px 0;display: flex;flex-direction: column;align-items: center;">
+        <img src="favicon.svg" width="64px" height="64px">
+        <p class="eyebrow"  style="display: none;">JK_NET</p>
+      </div>
+      <div>
+        <strong style="font-size: x-large;">模型配置与初始化</strong>
+        <p style="font-size: 13px;">配置模型、生成初始结构、选择模型池。JK_NET 项目的规则与设计以 JK 空间为主。</p>
+      </div>
+    </div>
+  </header>
+  <section class="preview-grid" aria-label="两个 3D 渲染图">
+    <section class="service-3d-panel" id="serviceModelPanel" aria-label="概念层级 3D 图">
+      <canvas id="serviceModelCanvas" aria-label="概念层级 3D 画布"></canvas>
+      <div class="service-3d-tools"><button id="serviceModelResetView">重置视角</button><button id="serviceModelFullscreen">全屏</button></div>
+      <div class="service-3d-overlay" id="serviceModelOverlay"><strong id="conceptTitle">概念层级图</strong><p id="conceptSummary">等待模型配置</p><span id="conceptSelected"></span></div>
+    </section>
+    <section class="service-3d-panel" id="serviceSnapshotPanel" aria-label="真实结构快照 3D 图">
+      <canvas id="serviceSnapshotCanvas" aria-label="真实结构快照 3D 画布"></canvas>
+      <div class="service-3d-tools">
+        <select id="serviceSnapshotSelect" aria-label="选择结构快照"></select>
+        <button id="serviceSnapshotKeep" disabled>入池</button><button id="serviceSnapshotRename" disabled>重命名</button>
+        <button id="serviceSnapshotDelete" disabled>删除</button><button id="serviceSnapshotCopyData">复制数据</button>
+        <button id="serviceSnapshotResetView">重置视角</button><button id="serviceSnapshotFullscreen">全屏</button>
+      </div>
+      <div class="service-3d-overlay" id="serviceSnapshotOverlay"><strong id="snapshotTitle">真实结构快照</strong><p id="snapshotSummary">等待模型初始化</p><span id="snapshotSelected"></span></div>
+      <div class="node-picker"><label for="serviceSnapshotNodeSelect">编辑节点</label><select id="serviceSnapshotNodeSelect" aria-label="选择编辑节点"></select></div>
+      <section class="node-editor" id="serviceNodeEditor" hidden aria-label="JK 节点编辑器">
+        <label>节点 id<input id="serviceNodeId" type="text" spellcheck="false"></label>
+        <label class="checkbox">有状态<input id="serviceNodeStateful" type="checkbox"></label>
+        <label class="expression">EX<textarea id="serviceNodeEx" rows="2" spellcheck="false"></textarea></label>
+        <label>初始 q<select id="serviceNodeInitialQ" aria-label="节点初始 q"><option value="0">0</option><option value="1">1</option></select></label>
+        <label>传播条件<select id="serviceNodePublication" aria-label="节点传播条件"><option value="q=0/1">q=0/1 每次传播</option><option value="q=0">q=0</option><option value="q=1">q=1</option><option value="q=" id="serviceNodePublicationNever">q= 永不传播</option></select></label>
+        <button id="serviceNodeEditorApply">保存节点</button>
+      </section>
+      <section class="node-editor" id="serviceOutputEditor" hidden aria-label="输出节点编辑器">
+        <label>输出 id<input id="serviceOutputNodeId" type="text" spellcheck="false"></label>
+        <label>引用 Q 节点<input id="serviceOutputReferenceId" type="text" spellcheck="false"></label>
+        <button id="serviceOutputEditorApply">保存输出</button>
+      </section>
+    </section>
+  </section>
+  <p class="hint">拖动旋转，滚轮缩放；选择真实结构中的节点可编辑。连线动画表示结构关系。</p>
+  <p id="serviceStatus" role="status">正在连接模型服务…</p>
+  <section class="service-cards" aria-label="三个模型接口">
+    <article><p class="eyebrow">01 · 配置</p><h2>model.configure</h2><p>确定输入、节点上限、输出、布局、种子和模型池引用。</p>
+      <label for="configureInput">模型配置 JSON</label><textarea id="configureInput" rows="12" spellcheck="false"></textarea>
+      <button id="configureRun" disabled>执行配置</button><details><summary>配置结果</summary><pre id="configureResult">尚未执行</pre></details>
+    </article>
+    <article><p class="eyebrow">02 · 初始结构</p><h2>model.initial</h2><p>根据配置生成可复现的初始结构，并保存为临时快照。</p>
+      <label for="initialInput">初始化 JSON</label><textarea id="initialInput" rows="12" spellcheck="false"></textarea>
+      <button id="initialRun" disabled>生成初始模型</button><details><summary>初始化结果</summary><pre id="initialResult">尚未执行</pre></details>
+    </article>
+    <article><p class="eyebrow">03 · 模型池</p><h2>initialization.plan</h2><p>按给定顺序解析永久快照引用，保留重复引用的独立实例位置。</p>
+      <label for="planInput">模型池计划 JSON</label><textarea id="planInput" rows="12" spellcheck="false"></textarea>
+      <button id="planRun" disabled>生成模型池计划</button><details><summary>模型池结果</summary><pre id="planResult">尚未执行</pre></details>
+    </article>
+  </section>
+</main>
+<template id="snapshotOptionTemplate"><option></option></template>
+<script type="module" src="/static/jk_net.js"></script>
+</body>
+</html>

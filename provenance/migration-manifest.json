@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "migration_date": "2026-10-03",
+  "source_space_id": "page_space_0e84e8758a20819191e8d62eddfc4d1b",
+  "content_status": "8 pages and 9 of 10 referenced attachments exported",
+  "pages": [
+    {
+      "source_page_id": "page_6abc4b5e3dd88191a1d99ee9d2d4255f",
+      "title": "JK",
+      "parent_page_id": null,
+      "source_sequence": 23,
+      "source_url": "https://chatgpt.com/space/page_6abc4b5e3dd88191a1d99ee9d2d4255f",
+      "path": "docs/overview.md",
+      "original_path": "provenance/original-pages/page_6abc4b5e3dd88191a1d99ee9d2d4255f.md",
+      "source_sha256": "87c6ca6c6a0e92e1756622b43aaf213f05b414b63ad58c05e3e545151faf803c",
+      "migration_sha256": "9c9b3280328f1f70bf740a0c703918fa7af38059298dc8c16c51f5e5de62c358",
+      "block_count": 15
+    },
+    {
+      "source_page_id": "page_1cee9c7aae188191be3608cbf94fb889",
+      "title": "JKRD（JK规则与设计）",
+      "parent_page_id": "page_6abc4b5e3dd88191a1d99ee9d2d4255f",
+      "source_sequence": 1011,
+      "source_url": "https://chatgpt.com/space/page_1cee9c7aae188191be3608cbf94fb889",
+      "path": "docs/JKRD.md",
+      "original_path": "provenance/original-pages/page_1cee9c7aae188191be3608cbf94fb889.md",
+      "source_sha256": "58aff9ff87bd7285428021baf6729e332a27512f95b95f49d38bd0fad0cb870d",
+      "migration_sha256": "c1a6ab31a7e9e36cc1e390d28505d805ca674671ea7a09ae253c826011034a8f",
+      "block_count": 110
+    },
+    {
+      "source_page_id": "page_f0054dda6f3c81918b9985ba46e2f092",
+      "title": "ModelShow设计文档",
+      "parent_page_id": "page_6abc4b5e3dd88191a1d99ee9d2d4255f",
+      "source_sequence": 4,
+      "source_url": "https://chatgpt.com/space/page_f0054dda6f3c81918b9985ba46e2f092",
+      "path": "docs/projects/ModelShow.md",
+      "original_path": "provenance/original-pages/page_f0054dda6f3c81918b9985ba46e2f092.md",
+      "source_sha256": "c4d8860333c0253877795c83169c5270eac91945593fe50a843dca9e3aed0193",
+      "migration_sha256": "d0617a3cd586130f5ba9a6a750541e6b963bd2640bb7e95180285cc24ff1fd83",
+      "block_count": 73
+    },
+    {
+      "source_page_id": "page_51b815ec35f4819187173841fe6679fd",
+      "title": "JK_NET代码实现整体架构与训练设计",
+      "parent_page_id": "page_6abc4b5e3dd88191a1d99ee9d2d4255f",
+      "source_sequence": 3,
+      "source_url": "https://chatgpt.com/space/page_51b815ec35f4819187173841fe6679fd",
+      "path": "docs/projects/JK_NET.md",
+      "original_path": "provenance/original-pages/page_51b815ec35f4819187173841fe6679fd.md",
+      "source_sha256": "ceb5aed20e7150624a2c119655efa98cd9532128523d49f3a53ec58a9a26b0df",
+      "migration_sha256": "65800300d8cae7936f06af27f705883be2cbb830fa692168e3a262dbf977c0c4",
+      "block_count": 38
+    },
+    {
+      "source_page_id": "page_50b62c37737c8191b27998f3c7128760",
+      "title": "JK逻辑单元库",
+      "parent_page_id": "page_6abc4b5e3dd88191a1d99ee9d2d4255f",
+      "source_sequence": 3,
+      "source_url": "https://chatgpt.com/space/page_50b62c37737c8191b27998f3c7128760",
+      "path": "docs/logic-units.md",
+      "original_path": "provenance/original-pages/page_50b62c37737c8191b27998f3c7128760.md",
+      "source_sha256": "6e48152983b632e399f5eb9d02609e2e661ae538bf662847bac197da23e6fd81",
+      "migration_sha256": "be724087ad430d7dbdc99d678274e7d63e494eb317400bb70975599de600fbdd",
+      "block_count": 75
+    },
+    {
+      "source_page_id": "page_e5e9e0d2df6481919ab152dec8208cde",
+      "title": "JK锁存与动态等待区",
+      "parent_page_id": "page_6abc4b5e3dd88191a1d99ee9d2d4255f",
+      "source_sequence": 1,
+      "source_url": "https://chatgpt.com/space/page_e5e9e0d2df6481919ab152dec8208cde",
+      "path": "docs/latch-dynamic-waiting.md",
+      "original_path": "provenance/original-pages/page_e5e9e0d2df6481919ab152dec8208cde.md",
+      "source_sha256": "597d36e956653db23cedc1d9ab61a607dc3638d4c3b5be7f81b8c73ec7cddd51",
+      "migration_sha256": "aa805b435271bc29dc0a556a86f5ee5196e981e211ff31637f5d9941af15b470",
+      "block_count": 34
+    },
+    {
+      "source_page_id": "page_6d1b00ae5d888191b820fcb7a40bb11d",
+      "title": "JK计数器与事件组合",
+      "parent_page_id": "page_50b62c37737c8191b27998f3c7128760",
+      "source_sequence": 1,
+      "source_url": "https://chatgpt.com/space/page_6d1b00ae5d888191b820fcb7a40bb11d",
+      "path": "docs/counters-events.md",
+      "original_path": "provenance/original-pages/page_6d1b00ae5d888191b820fcb7a40bb11d.md",
+      "source_sha256": "4ef91cd2061e7e9b53f2a4b0d72486357615149e415a8eab464011ad6b5295ba",
+      "migration_sha256": "c93c4eb728492022921e9a2ad6e5c3a0dccf35cfae6c8523e52cbc2be6a34931",
+      "block_count": 54
+    },
+    {
+      "source_page_id": "page_49e5ba0ff7e88191b27dee5f9778d2dc",
+      "title": "JK异步结构静态原型",
+      "parent_page_id": "page_e5e9e0d2df6481919ab152dec8208cde",
+      "source_sequence": 1,
+      "source_url": "https://chatgpt.com/space/page_49e5ba0ff7e88191b27dee5f9778d2dc",
+      "path": "docs/static-prototypes.md",
+      "original_path": "provenance/original-pages/page_49e5ba0ff7e88191b27dee5f9778d2dc.md",
+      "source_sha256": "89a176b597fea9c6993a0852b3764a5a351429932a193641d44b22ded6201371",
+      "migration_sha256": "62147f9129aadc2739e9a39d79ce2eb397767608a5d48c02f501899f6d532c19",
+      "block_count": 48
+    }
+  ],
+  "attachments": [
+    {
+      "page_id": "page_50b62c37737c8191b27998f3c7128760",
+      "label": "8种基础门最小结构",
+      "reference": "library-file:fde1_bGliZmlsZV8tTjhCdVRQalVSUEdadEIyT0Z1WkV3_FileDrive_1d7d2924500c819192b4499fb86a5a7e",
+      "path": "assets/logic-units/original8/minimal_gate_structures.json",
+      "status": "exported",
+      "sha256": "9d575270c77c116561536336601000a8d934d25a8d38d9a90d4ce617075f806e",
+      "bytes": 2970
+    },
+    {
+      "page_id": "page_50b62c37737c8191b27998f3c7128760",
+      "label": "原8门独立校验脚本",
+      "reference": "library-file:fde1_bGliZmlsZV9kY2tWUkRhX0JmZkh1NDhVNmp6Sk5R_FileDrive_1d7d2924500c819192b4499fb86a5a7e",
+      "path": "assets/logic-units/original8/verify.py",
+      "status": "exported",
+      "sha256": "3cf07a1879485bd78f14dae8b7664c014622e3a6a25418af1a655d7f3dea6c93",
+      "bytes": 11390
+    },
+    {
+      "page_id": "page_50b62c37737c8191b27998f3c7128760",
+      "label": "原8门验证结果",
+      "reference": "library-file:fde1_bGliZmlsZV84TFZ3QUF3RU5ZM0ZUcEhxblhjUGhB_FileDrive_1d7d2924500c819192b4499fb86a5a7e",
+      "path": "assets/logic-units/original8/results.json",
+      "status": "exported",
+      "sha256": "6b636fb29e0494c28544be0250678c0791f6e7cdd990b633a9de2ac1adc89c3f",
+      "bytes": 4306
+    },
+    {
+      "page_id": "page_50b62c37737c8191b27998f3c7128760",
+      "label": "补充后11个可执行布尔结构",
+      "reference": "library-file:fde1_bGliZmlsZV9IS1F3YXNiT1pSa3NUWlByUzV6RTR3_FileDrive_1d7d2924500c819192b4499fb86a5a7e",
+      "path": "assets/logic-units/complete11/minimal_boolean_structures11.json",
+      "status": "exported",
+      "sha256": "e0a1a7d2802d28124ba94ac1d7383e9a3605a4cb5cf98ffcf4c8a95cf913e634",
+      "bytes": 4101
+    },
+    {
+      "page_id": "page_50b62c37737c8191b27998f3c7128760",
+      "label": "补充后完整独立校验脚本",
+      "reference": "library-file:fde1_bGliZmlsZV95X21iRjRUaHYzQXpqQXgtOW9vVTlB_FileDrive_1d7d2924500c819192b4499fb86a5a7e",
+      "path": "assets/logic-units/complete11/verify.py",
+      "status": "exported",
+      "sha256": "e6360bd457d4038ebeb28241d7afcadebb7a36d9d71abae430e8cfd7d22e05ff",
+      "bytes": 12862
+    },
+    {
+      "page_id": "page_50b62c37737c8191b27998f3c7128760",
+      "label": "补充后完整验证结果",
+      "reference": "library-file:fde1_bGliZmlsZV9EQjFjNVp1WV9lSm1CYURUM1RmeFJR_FileDrive_1d7d2924500c819192b4499fb86a5a7e",
+      "path": "assets/logic-units/complete11/results_stage1_complete.json",
+      "status": "exported",
+      "sha256": "7f8557e2b1d6ea5d4cfe03acefa6de77fd0e33a64864e563fe307fbfdb2856c1",
+      "bytes": 6914
+    },
+    {
+      "page_id": "page_6d1b00ae5d888191b820fcb7a40bb11d",
+      "label": "进位传播计数器与前后值判定模型",
+      "reference": "library-file:fde1_bGliZmlsZV9EZVg5cnd5YnhraTlPY2hJNEdSbTB3_FileDrive_1d7d2924500c819192b4499fb86a5a7e",
+      "path": "assets/counters/counter-and-transition-models.json",
+      "status": "exported",
+      "sha256": "622eb12d35b45a5dcce3766502bd377389bffbed1e464c61eb39bae14e2d801d",
+      "bytes": 2710
+    },
+    {
+      "page_id": "page_6d1b00ae5d888191b820fcb7a40bb11d",
+      "label": "计数器与事件判定定向验证报告",
+      "reference": "library-file:fde1_bGliZmlsZV9ONUI3Z0paRjU0ZGZzZlExcFRtRm13_FileDrive_1d7d2924500c819192b4499fb86a5a7e",
+      "path": "assets/counters/verification-report.json",
+      "status": "exported",
+      "sha256": "028ed3143445915be9b135ade5cb513892eab88d3bfeebd3f140a91877d78824",
+      "bytes": 4049
+    },
+    {
+      "page_id": "page_6d1b00ae5d888191b820fcb7a40bb11d",
+      "label": "JK设计与验证材料 2026-10-01",
+      "reference": "library-file:fde1_bGliZmlsZV9fR0hNdGFCelRjYVNtRzMwUU03d3RB_FileDrive_1d7d2924500c819192b4499fb86a5a7e",
+      "path": "provenance/missing-design-evidence-2026-10-01.md",
+      "status": "unavailable",
+      "error": "The Page or Space is unavailable to the authenticated account."
+    },
+    {
+      "page_id": "page_49e5ba0ff7e88191b27dee5f9778d2dc",
+      "label": "43节点独立请求确认模型 Q39 Q41",
+      "reference": "library-file:fde1_bGliZmlsZV9Pcm9oNU1mTmcwWGdIVlV1LVVmY3Fn_FileDrive_1d7d2924500c819192b4499fb86a5a7e",
+      "path": "assets/static-prototypes/async-buffer-43-q39-q41.json",
+      "status": "exported",
+      "sha256": "95e0de1fc539954c1810a3bef4722e6eb813240486e6ba42e4c695d9c3c20904",
+      "bytes": 7149
+    }
+  ]
+}

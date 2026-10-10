@@ -1,0 +1,112 @@
+[
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/ModelShow/JK_SOURCE.json",
+    "before_sha256": null,
+    "after_sha256": "cc379ebc6359cc6dfe859496c62d11911ce394537d68d4f4b5de7d97c7e997b9"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/ModelShow/AGENTS.md",
+    "before_sha256": null,
+    "after_sha256": "8027c90ae9a9ba213cb229f8d62b84d6b43354dd77e299f36e755e0fa9a0bfd8"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/ModelShow/README.md",
+    "before_sha256": "35e68defdc2413d402bb23a32a117afc0d248de4d3cecf4c74eddf1f409c10bf",
+    "after_sha256": "a761cc32334809e294f165cf80f416c5500c9079e779b5347f895e87799a6fb8"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/ModelShow/docs/model-format.md",
+    "before_sha256": "16a8b7c43ecbbb682e70b3810b095829de7a35cb05dc275842dba64d2fc9fba1",
+    "after_sha256": "763280bfd1e55218315ab13dccf9e83e0a369371e69c4e3227be0f1d1928dc29"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/JK_NET/JK_SOURCE.json",
+    "before_sha256": null,
+    "after_sha256": "ad62c7df41f6f48b323875dd03271b908c5fe7682762e7869fd31b23d31d588f"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/JK_NET/AGENTS.md",
+    "before_sha256": null,
+    "after_sha256": "ad47e004756ced08ec59e645c37e8858b291c772c5f6efa0c99fdc3b9ad96ed2"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/JK_NET/README.md",
+    "before_sha256": "d529a4d6f47ae887a64737eefbaea7e0cd0f02216b593d402f827707c3cac401",
+    "after_sha256": "5660f608b7d5dbb628603f09451e08ce851e314e8eec009e12aa2b0c2a9fc9d4"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/JK_NET/html/jk_net.html",
+    "before_sha256": "2552b009e0584f59cfe436ae17e3222a6f20f157436c2c73f70461d58694f680",
+    "after_sha256": "4ae7e9b84496111e819e5e4dcd9480b1e3f4763f5e0c6ff94b19a5648fc5e68a"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/JK_LOGIC/JK_SOURCE.json",
+    "before_sha256": null,
+    "after_sha256": "b449159989b67f85049dd598a7d0d0fd899b3346dcd23b833309333c5bfededd"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/JK_LOGIC/AGENTS.md",
+    "before_sha256": null,
+    "after_sha256": "6e22dc729a6cc300f0aca77e3a84396a2dfd80a671aad573e0a5144198aa2b37"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/JK_LOGIC/README.md",
+    "before_sha256": "e4dae75d3fcfeff3d9109e34d2a4a59b576e5a96bb655893afd19fa1ef9cdb5f",
+    "after_sha256": "8dea38890e5d36cee9aace096ba8f250558f794c88d6e090beb3c4fc868a39a4"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/JK_LOGIC/skills/jk-network-generator/SKILL.md",
+    "before_sha256": "e3b0b8481fb4973dbce832831d3bd617a1383e103fed7f2bc3104898204fe01f",
+    "after_sha256": "40ea2791e99891b40a64827ebf2ca64b36b63cc95a431084f15e9b841b2577dd"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/JK_LOGIC/skills/jk-network-generator/references/contract.md",
+    "before_sha256": "8ea1be1666728309308898887b2f78fa1dbdac157e73054c19702d901438ff42",
+    "after_sha256": "403159165ed76392fbf8cfea96201c5757c20530ab872958c2f1718d9ae44d97"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/JK_BASE/JK_SOURCE.json",
+    "before_sha256": null,
+    "after_sha256": "b449159989b67f85049dd598a7d0d0fd899b3346dcd23b833309333c5bfededd"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/JK_BASE/AGENTS.md",
+    "before_sha256": null,
+    "after_sha256": "fb1bcb87b19e40d7d328c2428109b18b9173a6f9fe2e57b4196b8c90eed1ff4d"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/JK_BASE/README.md",
+    "before_sha256": "4decdbd02d574544b6a65dc23b99b10dd603e799f3267a83184e21ab00372aa4",
+    "after_sha256": "6f32aab701d34bd174fa5561b3485df859d56e08ead2ee6dec1533f0a15175bc"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/JK_SZSB/JK_SOURCE.json",
+    "before_sha256": null,
+    "after_sha256": "b449159989b67f85049dd598a7d0d0fd899b3346dcd23b833309333c5bfededd"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/JK_SZSB/AGENTS.md",
+    "before_sha256": null,
+    "after_sha256": "4c5ced0e72952371e8cb40b4cf1400b067481130c210745377473b873ce8378f"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/JK_SZSB/README.md",
+    "before_sha256": "5ec6e8a936b57d3255336ab285e73114bb2a238ec1f2ec0f6203ccc51ee2102c",
+    "after_sha256": "f775fbb5fb593d8fa84cd08152525a0fc417cb656799ffad033af1547f4044b8"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/jk-3d-network/JK_SOURCE.json",
+    "before_sha256": null,
+    "after_sha256": "b449159989b67f85049dd598a7d0d0fd899b3346dcd23b833309333c5bfededd"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/jk-3d-network/AGENTS.md",
+    "before_sha256": null,
+    "after_sha256": "4537a907ac8c589032d24944ce33aca5f0abd1076d8185eb352414e5cf6ec834"
+  },
+  {
+    "path": "/Users/cong/Desktop/VSCode/CODEX/jk-3d-network/README.md",
+    "before_sha256": null,
+    "after_sha256": "078b7796cbf818bd899845c5400385312ea2bf415db4e49fca926c5e88b69f62"
+  }
+]

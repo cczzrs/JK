@@ -1,0 +1,336 @@
+{
+  "name": "async-buffer-1bit-wait2-separate-entries",
+  "spec": {
+    "rules": {
+      "page": "https://chatgpt.com/space/page_1cee9c7aae188191be3608cbf94fb889",
+      "sequence": 88
+    },
+    "data_bits": 1,
+    "active_capacity": 1,
+    "waiting_capacity": 2,
+    "total_capacity": 3,
+    "protocol": "Initialize X0. For request send X0 then X1; for ACK/pop send X2. Do not submit both entry ports in one transaction. Drain each command before submitting another. Consumer ACK may be delayed.",
+    "full_policy": "Reject the request, publish reject=1, and preserve all accepted items.",
+    "queue_storage": "Six state bits B,H,V0,V1,D0,D1; no host data queue or host dequeue/dispatch.",
+    "validation": "See the identity-bound verification report for the current model.",
+    "encoding": "publication is a local reference-design field, not an approved native snapshot extension",
+    "optimization": {
+      "final_nodes": 43,
+      "global_minimum_proven": false,
+      "changes": [
+        "Inline six mux delta helpers",
+        "Inline five single-use Boolean helpers",
+        "Use zero-accumulator snapshots and constant-one all-source barrier"
+      ],
+      "core_baseline_nodes": 51,
+      "core_final_nodes": 40,
+      "entry_adapter_net_added_nodes": 3
+    },
+    "outputs": {
+      "Y0": "delivered data",
+      "Y1": "valid consumer acknowledgement processed"
+    },
+    "ports": {
+      "X0": "data; initialize before first command",
+      "X1": "request/push event; either value",
+      "X2": "ACK/pop event; either value"
+    }
+  },
+  "nodes": [
+    {
+      "id": "Q0",
+      "ex": "K1K(X1)K(X1)",
+      "label": "request_phase"
+    },
+    {
+      "id": "Q1",
+      "ex": "J0J(X2)",
+      "label": "ack_wakeup"
+    },
+    {
+      "id": "Q2",
+      "ex": "J0J(Q3)K(Q0)",
+      "label": "previous_request_phase"
+    },
+    {
+      "id": "Q3",
+      "ex": "J0J(Q1)K1K(Q0)K(Q2)",
+      "label": "cmd"
+    },
+    {
+      "id": "Q4",
+      "ex": "J0J(Q3)K(Q31)",
+      "label": "old B"
+    },
+    {
+      "id": "Q5",
+      "ex": "J0J(Q3)K(Q32)",
+      "label": "old H"
+    },
+    {
+      "id": "Q6",
+      "ex": "J0J(Q3)K(Q33)",
+      "label": "old V0"
+    },
+    {
+      "id": "Q7",
+      "ex": "J0J(Q3)K(Q34)",
+      "label": "old V1"
+    },
+    {
+      "id": "Q8",
+      "ex": "J0J(Q3)K(Q35)",
+      "label": "old D0"
+    },
+    {
+      "id": "Q9",
+      "ex": "J0J(Q3)K(Q36)",
+      "label": "old D1"
+    },
+    {
+      "id": "Q10",
+      "ex": "J0J(Q3)K(X0)",
+      "label": "request data"
+    },
+    {
+      "id": "Q11",
+      "ex": "J0K1K(Q3)",
+      "label": "not operation"
+    },
+    {
+      "id": "Q12",
+      "ex": "J0K1K(Q4)J(Q11)",
+      "label": "N: direct idle request"
+    },
+    {
+      "id": "Q13",
+      "ex": "J0K(Q3)J(Q4)J(Q6)",
+      "label": "T: ACK with waiting head"
+    },
+    {
+      "id": "Q14",
+      "ex": "J0K1K(Q7)J(Q11)J(Q4)",
+      "label": "W: accepted waiting enqueue"
+    },
+    {
+      "id": "Q15",
+      "ex": "J0K(Q11)J(Q4)J(Q7)",
+      "label": "request rejected: full"
+    },
+    {
+      "id": "Q16",
+      "ex": "J0K(Q3)J(Q4)",
+      "label": "valid ACK"
+    },
+    {
+      "id": "Q17",
+      "ex": "J0K(Q12)K(Q13)",
+      "label": "delivery flag"
+    },
+    {
+      "id": "Q18",
+      "ex": "J0K(Q12)K(Q14)",
+      "label": "request accepted flag"
+    },
+    {
+      "id": "Q19",
+      "ex": "J0K(Q4)J(Q6)K1J(Q3)K1",
+      "label": "next B"
+    },
+    {
+      "id": "Q20",
+      "ex": "J0K1K(Q6)J(Q14)",
+      "label": "E0: enqueue at first waiting slot"
+    },
+    {
+      "id": "Q21",
+      "ex": "J0K(Q14)J(Q6)",
+      "label": "E1: enqueue at second waiting slot"
+    },
+    {
+      "id": "Q22",
+      "ex": "J0K(Q6)K(Q7)J(Q13)K(Q6)",
+      "label": "V0 after pop"
+    },
+    {
+      "id": "Q23",
+      "ex": "J0K1K(Q22)J(Q14)K(Q22)",
+      "label": "next V0"
+    },
+    {
+      "id": "Q24",
+      "ex": "J0K1K(Q7)J(Q21)K(Q7)",
+      "label": "V1 before pop-clear"
+    },
+    {
+      "id": "Q25",
+      "ex": "J0K1K(Q13)J(Q24)",
+      "label": "next V1"
+    },
+    {
+      "id": "Q26",
+      "ex": "J0K(Q5)K(Q8)J(Q13)K(Q5)",
+      "label": "H after pop"
+    },
+    {
+      "id": "Q27",
+      "ex": "J0K(Q26)K(Q10)J(Q12)K(Q26)",
+      "label": "next H"
+    },
+    {
+      "id": "Q28",
+      "ex": "J0K(Q8)K(Q9)J(Q13)K(Q8)",
+      "label": "D0 after pop"
+    },
+    {
+      "id": "Q29",
+      "ex": "J0K(Q28)K(Q10)J(Q20)K(Q28)",
+      "label": "next D0"
+    },
+    {
+      "id": "Q30",
+      "ex": "J0K(Q9)K(Q10)J(Q21)K(Q9)",
+      "label": "next D1"
+    },
+    {
+      "id": "Q31",
+      "ex": "J0K(Q19)",
+      "label": "B busy"
+    },
+    {
+      "id": "Q32",
+      "ex": "J0K(Q27)",
+      "label": "H active data"
+    },
+    {
+      "id": "Q33",
+      "ex": "J0K(Q23)",
+      "label": "V0 waiting head valid"
+    },
+    {
+      "id": "Q34",
+      "ex": "J0K(Q25)",
+      "label": "V1 waiting second valid"
+    },
+    {
+      "id": "Q35",
+      "ex": "J0K(Q29)",
+      "label": "D0 waiting head data"
+    },
+    {
+      "id": "Q36",
+      "ex": "J0K(Q30)",
+      "label": "D1 waiting second data"
+    },
+    {
+      "id": "Q37",
+      "ex": "J0J(Q19)J(Q27)J(Q23)J(Q25)J(Q29)J(Q30)K1",
+      "label": "all six next-state commits complete"
+    },
+    {
+      "id": "Q38",
+      "ex": "J0K(Q17)J(Q37)",
+      "label": "delivery pulse after commit"
+    },
+    {
+      "id": "Q39",
+      "ex": "J0K(Q32)J(Q38)",
+      "label": "actual delivered data"
+    },
+    {
+      "id": "Q40",
+      "ex": "J0K(Q18)J(Q37)",
+      "label": "request accepted pulse after commit"
+    },
+    {
+      "id": "Q41",
+      "ex": "J0K(Q16)J(Q37)",
+      "label": "valid ACK pulse after commit"
+    },
+    {
+      "id": "Q42",
+      "ex": "J0K(Q15)J(Q37)",
+      "label": "full rejection pulse after commit"
+    }
+  ],
+  "initial_q": {
+    "0": [
+      "Q0",
+      "Q1",
+      "Q2",
+      "Q31",
+      "Q32",
+      "Q33",
+      "Q34",
+      "Q35",
+      "Q36"
+    ],
+    "1": []
+  },
+  "publication": {
+    "Q3": "q=0/1",
+    "Q4": "q=0/1",
+    "Q5": "q=0/1",
+    "Q6": "q=0/1",
+    "Q7": "q=0/1",
+    "Q8": "q=0/1",
+    "Q9": "q=0/1",
+    "Q10": "q=0/1",
+    "Q11": "q=0/1",
+    "Q12": "q=0/1",
+    "Q13": "q=0/1",
+    "Q14": "q=0/1",
+    "Q15": "q=0/1",
+    "Q16": "q=0/1",
+    "Q17": "q=0/1",
+    "Q18": "q=0/1",
+    "Q19": "q=0/1",
+    "Q20": "q=0/1",
+    "Q21": "q=0/1",
+    "Q22": "q=0/1",
+    "Q23": "q=0/1",
+    "Q24": "q=0/1",
+    "Q25": "q=0/1",
+    "Q26": "q=0/1",
+    "Q27": "q=0/1",
+    "Q28": "q=0/1",
+    "Q29": "q=0/1",
+    "Q30": "q=0/1",
+    "Q31": "q=",
+    "Q32": "q=",
+    "Q33": "q=",
+    "Q34": "q=",
+    "Q35": "q=",
+    "Q36": "q=",
+    "Q37": "q=0/1",
+    "Q38": "q=1",
+    "Q39": "q=0/1",
+    "Q40": "q=1",
+    "Q41": "q=1",
+    "Q42": "q=1",
+    "Q0": "q=0/1",
+    "Q1": "q=0/1",
+    "Q2": "q="
+  },
+  "q_y": [
+    {
+      "Y0": "Q39"
+    },
+    {
+      "Y1": "Q41"
+    }
+  ],
+  "roles": {
+    "delivery": "Q39",
+    "accept": "Q40",
+    "ack": "Q41",
+    "reject": "Q42",
+    "busy": "Q31",
+    "data": "Q32",
+    "valid": "Q33",
+    "full": "Q34",
+    "head": "Q35",
+    "tail": "Q36"
+  },
+  "status": "reference design under Page sequence 88; not a native import contract"
+}

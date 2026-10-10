@@ -1,0 +1,86 @@
+{
+  "date": "2026-10-03",
+  "scope": "migration preservation, documentation links and consumer source pointers only",
+  "dependency_check": {
+    "status": "warning",
+    "errors": [],
+    "warnings": [
+      "manifest.attachments[8]: status='unavailable'; attachment migration is incomplete"
+    ],
+    "counts": {
+      "project_documents": 8,
+      "consumers_checked": 6,
+      "markdown_files_checked": 32,
+      "relative_links_checked": 135,
+      "source_pages_checked": 8,
+      "exported_attachments_checked": 9
+    }
+  },
+  "code_fences": [
+    {
+      "path": "docs/overview.md",
+      "fences": 0,
+      "identical": true,
+      "migration_hash_matches": true
+    },
+    {
+      "path": "docs/JKRD.md",
+      "fences": 6,
+      "identical": true,
+      "migration_hash_matches": true
+    },
+    {
+      "path": "docs/projects/ModelShow.md",
+      "fences": 1,
+      "identical": true,
+      "migration_hash_matches": true
+    },
+    {
+      "path": "docs/projects/JK_NET.md",
+      "fences": 0,
+      "identical": true,
+      "migration_hash_matches": true
+    },
+    {
+      "path": "docs/logic-units.md",
+      "fences": 2,
+      "identical": true,
+      "migration_hash_matches": true
+    },
+    {
+      "path": "docs/latch-dynamic-waiting.md",
+      "fences": 1,
+      "identical": true,
+      "migration_hash_matches": true
+    },
+    {
+      "path": "docs/counters-events.md",
+      "fences": 1,
+      "identical": true,
+      "migration_hash_matches": true
+    },
+    {
+      "path": "docs/static-prototypes.md",
+      "fences": 2,
+      "identical": true,
+      "migration_hash_matches": true
+    }
+  ],
+  "consumer_readback": {
+    "files": 22,
+    "mismatches": []
+  },
+  "chrome": {
+    "jk_space_root": "migration banner and local source path observed in rendered Chrome page",
+    "jk_net": "http://127.0.0.1:8000 header shows JK project as source; page loads with both existing 3D panels",
+    "runtime_functional_tests": "not run; changed only header text and documentation/configuration"
+  },
+  "space_readback": "space-readback-verification.json",
+  "limits": [
+    "one referenced evidence archive unavailable",
+    "no runtime compatibility audit",
+    "no full regression",
+    "no Git commit",
+    "no remote repository configured"
+  ]
+}

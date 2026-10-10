@@ -1,0 +1,103 @@
+{
+  "rules_page": "https://chatgpt.com/space/page_1cee9c7aae188191be3608cbf94fb889",
+  "rules_sequence": 88,
+  "reference_runtime_sha256": "0b80f056a93028dda381d83011760d15a44ee5620c79060495d45018ebad62dd",
+  "protocol": "one X0 input event, drain all source events, then next input",
+  "new_counter_examples": {
+    "2": {
+      "transition_cases": 8,
+      "full_cycle_increments": 4,
+      "full_cycle_output_executions": 6,
+      "nodes": 3,
+      "ex_audit": [
+        {
+          "id": "Q0",
+          "ex": "J0K(X0)",
+          "decision": "retain; 1 token is minimum for the first toggle, 2 for the stateless copy or source-referencing unconditional toggle"
+        },
+        {
+          "id": "Q1",
+          "ex": "K(Q0)",
+          "decision": "retain; 1 token is minimum for the first toggle, 2 for the stateless copy or source-referencing unconditional toggle"
+        },
+        {
+          "id": "Q2",
+          "ex": "K1K(Q1)",
+          "decision": "retain; 1 token is minimum for the first toggle, 2 for the stateless copy or source-referencing unconditional toggle"
+        }
+      ],
+      "optimization_boundary": "fixed node interfaces and stated reachable input values; no global topology minimum claimed"
+    },
+    "8": {
+      "transition_cases": 512,
+      "full_cycle_increments": 256,
+      "full_cycle_output_executions": 510,
+      "nodes": 9,
+      "ex_audit": [
+        {
+          "id": "Q0",
+          "ex": "J0K(X0)",
+          "decision": "retain; 1 token is minimum for the first toggle, 2 for the stateless copy or source-referencing unconditional toggle"
+        },
+        {
+          "id": "Q1",
+          "ex": "K(Q0)",
+          "decision": "retain; 1 token is minimum for the first toggle, 2 for the stateless copy or source-referencing unconditional toggle"
+        },
+        {
+          "id": "Q2",
+          "ex": "K1K(Q1)",
+          "decision": "retain; 1 token is minimum for the first toggle, 2 for the stateless copy or source-referencing unconditional toggle"
+        },
+        {
+          "id": "Q3",
+          "ex": "K1K(Q2)",
+          "decision": "retain; 1 token is minimum for the first toggle, 2 for the stateless copy or source-referencing unconditional toggle"
+        },
+        {
+          "id": "Q4",
+          "ex": "K1K(Q3)",
+          "decision": "retain; 1 token is minimum for the first toggle, 2 for the stateless copy or source-referencing unconditional toggle"
+        },
+        {
+          "id": "Q5",
+          "ex": "K1K(Q4)",
+          "decision": "retain; 1 token is minimum for the first toggle, 2 for the stateless copy or source-referencing unconditional toggle"
+        },
+        {
+          "id": "Q6",
+          "ex": "K1K(Q5)",
+          "decision": "retain; 1 token is minimum for the first toggle, 2 for the stateless copy or source-referencing unconditional toggle"
+        },
+        {
+          "id": "Q7",
+          "ex": "K1K(Q6)",
+          "decision": "retain; 1 token is minimum for the first toggle, 2 for the stateless copy or source-referencing unconditional toggle"
+        },
+        {
+          "id": "Q8",
+          "ex": "K1K(Q7)",
+          "decision": "retain; 1 token is minimum for the first toggle, 2 for the stateless copy or source-referencing unconditional toggle"
+        }
+      ],
+      "optimization_boundary": "fixed node interfaces and stated reachable input values; no global topology minimum claimed"
+    }
+  },
+  "old_counter_recheck": {
+    "2": {
+      "transition_cases": 8,
+      "model_sha256": "a3f534bb35e9074779722d68998892d8c1950b104c2bb6a7d8e870dda373a615"
+    },
+    "8": {
+      "transition_cases": 512,
+      "model_sha256": "6637e3875d4b1e7aedac5d29e721a6aec2f47aa9b4926dc2d6ef314ec5e3caa4"
+    }
+  },
+  "detector": {
+    "initial_states": 2,
+    "length_8_sequences": 512,
+    "samples": 4096
+  },
+  "passed": true,
+  "boundary": "Scoped documentation checks only; no production runtime integration, arbitrary overlapping inputs, dynamic node allocation, wall-time performance or global optimality proof."
+}

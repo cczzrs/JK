@@ -1,0 +1,417 @@
+{
+  "status": "PASS",
+  "basis": "JK规则与设计 current_sequence 87; initial_q-based state classification; native FIFO; latest actual state q",
+  "catalog_entries": 12,
+  "implemented_boolean_structures": 11,
+  "unsupported_entry": {
+    "name": "TRI_STATE",
+    "reason": "High impedance Z is outside the current 0/1 output value domain; no native Z implementation or bus resolution claimed."
+  },
+  "counts": {
+    "expression_truth_cases": 80,
+    "valid_gate_declarations": 33,
+    "isolated_first_sends": 704,
+    "same_value_repeat_sends": 704,
+    "native_not_cascade_sends": 704,
+    "initialization_no_execution_cases": 6,
+    "latest_q_with_barrier_sends": 32,
+    "explicit_sync_example_sends": 256,
+    "accumulator_classification_sends": 2,
+    "invalid_structures_rejected": 12,
+    "fifo_sends_total": 2402
+  },
+  "additional_constructed_items": {
+    "MUX2": {
+      "expression_truth_cases": 16,
+      "valid_gate_declarations": 3,
+      "isolated_first_sends": 256,
+      "same_value_repeat_sends": 256,
+      "native_not_cascade_sends": 256,
+      "initialization_no_execution_cases": 2
+    },
+    "TIE_HIGH_TRIGGERED": {
+      "expression_truth_cases": 4,
+      "valid_gate_declarations": 3,
+      "isolated_first_sends": 16,
+      "same_value_repeat_sends": 16,
+      "native_not_cascade_sends": 16,
+      "initialization_no_execution_cases": 2
+    },
+    "TIE_LOW_TRIGGERED": {
+      "expression_truth_cases": 4,
+      "valid_gate_declarations": 3,
+      "isolated_first_sends": 16,
+      "same_value_repeat_sends": 16,
+      "native_not_cascade_sends": 16,
+      "initialization_no_execution_cases": 2
+    }
+  },
+  "additional_invalid_rejections": 2,
+  "truth_tables": {
+    "BUF": [
+      {
+        "inputs": [
+          0
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          1
+        ],
+        "output": 1
+      }
+    ],
+    "NOT": [
+      {
+        "inputs": [
+          0
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          1
+        ],
+        "output": 0
+      }
+    ],
+    "AND2": [
+      {
+        "inputs": [
+          0,
+          0
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          0,
+          1
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          1,
+          0
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          1,
+          1
+        ],
+        "output": 1
+      }
+    ],
+    "OR2": [
+      {
+        "inputs": [
+          0,
+          0
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          0,
+          1
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          1,
+          0
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          1,
+          1
+        ],
+        "output": 1
+      }
+    ],
+    "NAND2": [
+      {
+        "inputs": [
+          0,
+          0
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          0,
+          1
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          1,
+          0
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          1,
+          1
+        ],
+        "output": 0
+      }
+    ],
+    "NOR2": [
+      {
+        "inputs": [
+          0,
+          0
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          0,
+          1
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          1,
+          0
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          1,
+          1
+        ],
+        "output": 0
+      }
+    ],
+    "XOR2": [
+      {
+        "inputs": [
+          0,
+          0
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          0,
+          1
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          1,
+          0
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          1,
+          1
+        ],
+        "output": 0
+      }
+    ],
+    "XNOR2": [
+      {
+        "inputs": [
+          0,
+          0
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          0,
+          1
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          1,
+          0
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          1,
+          1
+        ],
+        "output": 1
+      }
+    ],
+    "MUX2": [
+      {
+        "inputs": [
+          0,
+          0,
+          0
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          0,
+          0,
+          1
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          0,
+          1,
+          0
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          0,
+          1,
+          1
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          1,
+          0,
+          0
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          1,
+          0,
+          1
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          1,
+          1,
+          0
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          1,
+          1,
+          1
+        ],
+        "output": 1
+      }
+    ],
+    "TIE_HIGH_TRIGGERED": [
+      {
+        "inputs": [
+          0
+        ],
+        "output": 1
+      },
+      {
+        "inputs": [
+          1
+        ],
+        "output": 1
+      }
+    ],
+    "TIE_LOW_TRIGGERED": [
+      {
+        "inputs": [
+          0
+        ],
+        "output": 0
+      },
+      {
+        "inputs": [
+          1
+        ],
+        "output": 0
+      }
+    ]
+  },
+  "directed_examples": {
+    "xor_into_accumulator_stateless": [
+      [
+        "X0",
+        1
+      ],
+      [
+        "X1",
+        1
+      ],
+      [
+        "Q0",
+        1
+      ],
+      [
+        "Q0",
+        0
+      ],
+      [
+        "Q1",
+        1
+      ],
+      [
+        "Q1",
+        1
+      ]
+    ],
+    "xor_into_accumulator_stateful": [
+      [
+        "X0",
+        1
+      ],
+      [
+        "X1",
+        1
+      ],
+      [
+        "Q0",
+        1
+      ],
+      [
+        "Q0",
+        0
+      ],
+      [
+        "Q1",
+        0
+      ],
+      [
+        "Q1",
+        0
+      ]
+    ]
+  },
+  "limits": [
+    "Independent specification checker, not JK_NET or ModelShow integration tests",
+    "No claim of global minimization or arbitrary-network equivalence",
+    "Minimal structures omit standard export metadata and hashes",
+    "FIFO tests start with empty arrival caches; do not prove arbitrary residual-cache behavior",
+    "TIE_HIGH_TRIGGERED and TIE_LOW_TRIGGERED require an explicit X0 event; they are not autonomous physical tie cells",
+    "TRI_STATE is a documented capability boundary, not an implemented Boolean cell"
+  ],
+  "script_sha256": "e6360bd457d4038ebeb28241d7afcadebb7a36d9d71abae430e8cfd7d22e05ff"
+}
