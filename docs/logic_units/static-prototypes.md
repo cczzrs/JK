@@ -1,0 +1,473 @@
+# JK异步结构静态原型
+
+> 现行主源：本地 JK 项目。2026-10-03 从 JK 空间迁入；原文、块元数据与来源版本保存在 provenance。后续规则在本项目维护。原有历史验证日期与范围保持不变。
+
+本页保留递交确认、两项 FIFO、独立入口合流及 40/43 节点组合结构，作为纯 J/K 运算与事件排序的受限参考原型。它们没有动态增删节点，不满足最终动态等待区的全部接入与伸缩要求。固定容量与每条命令排空后再输入的限制仅是这些原型的适用和验证边界，不能写回正式动态模式作为需求。
+
+规则依据为 [JK规则与设计](JKRD.md)。参考 JSON 的 `publication` 是本次设计与参考执行器使用的字段，不代表原生快照编码或生产执行器已经接入。
+
+## 递交—确认：6 节点受限原型
+
+这是用于证明基本业务闭环的小构造，不包含动态等待区。基础输入 X0=data，X1=command；command=0 表示递交请求，1 表示消费确认。
+
+| 节点 | 功能 | EX | 初值 / 状态 | 传播 |
+| --- | --- | --- | --- | --- |
+| Q0 | 命令 | `J0K(X1)` | 无状态 | q=0/1 |
+| Q1 | 空闲时接受请求 | `J0K1K(Q0)J(Q3)K1K(Q0)` | 无状态 | q=1 |
+| Q2 | 忙时接受确认 | `J0K(Q0)J(Q3)` | 无状态 | q=1 |
+| Q3 | busy | `J0K1K(Q0)` | 0 | q= |
+| Q4 | 在途数据锁存 | `J0K(X0)J(Q1)` | 0 | q= |
+| Q5 | 数据递交 | `J0K(Q4)J(Q1)` | 无状态 | q=0/1 |
+
+Q0 事件先让 Q1、Q2 读取旧 busy，随后 Q3 保存新 busy。Q1 事件先写 Q4，再由 Q5 读取 Q4 发布数据，包括 0。忙时新请求不覆盖 Q4；这并不保存被挡住的所有新请求，必须由另外的等待区完成。
+
+独立请求 / 确认入口版本为 9 节点，额外的入口合流见下文“独立请求 / 确认入口的合流小结构”。本原型验证仅针对每条命令内部事件排空后的边界，6 节点版本 36 条可达转换、9 节点版本 498 条可达转换，并各测试 1000 条连续命令。
+
+## 入队—出队存储：17 节点容量 2 受限原型
+
+X0=data，X1=command；command=0 为入队、1 为出队。状态节点初值均 0：Q12=队首数据，Q13=队尾数据，Q14=队首有效，Q15=队尾有效，均 q=。有效位 00/10/11 分别表示 0/1/2 项；数据 0 不能当成无数据。
+
+| 节点 | EX | 传播 |
+| --- | --- | --- |
+| Q0 | `J0K(X1)` | q=0/1 |
+| Q1 | `J0J(Q0)K(Q12)` | q=0/1 |
+| Q2 | `J0J(Q0)K(Q13)` | q=0/1 |
+| Q3 | `J0J(Q0)K(Q14)` | q=0/1 |
+| Q4 | `J0J(Q0)K(Q15)` | q=0/1 |
+| Q5 | `J0K(X0)K(Q1)J(Q3)K(X0)` | q=0/1 |
+| Q6 | `J0K(Q2)K(Q5)J(Q0)K(Q5)` | q=0/1 |
+| Q7 | `J0K1K(Q4)J(Q0)K1` | q=0/1 |
+| Q8 | `J0K1K(Q0)J(Q3)` | q=0/1 |
+| Q9 | `J0K(Q7)K(Q4)` | q=0/1 |
+| Q10 | `J0K(Q0)J(Q3)` | q=1 |
+| Q11 | `J0K(X0)K(Q2)J(Q9)K(Q2)` | q=0/1 |
+| Q12 | `J0K(Q6)` | q= |
+| Q13 | `J0K(Q11)` | q= |
+| Q14 | `J0K(Q7)` | q= |
+| Q15 | `J0K(Q8)` | q= |
+| Q16 | `J0K(Q1)J(Q10)` | q=0/1 |
+
+Q1..Q4 先取得旧状态快照，后续以其无状态事件值计算，最后写回 Q12..Q15。Q10 成功出队才发布 1，Q16 携带旧队首数据。重复相同数据分别占槽。满入队和空出队被拒绝，因此该固定容量模型不满足最终“所有输入持续保存、容量随存储结构伸缩”的目标，只保留为局部计算与事件排序示范。
+
+17 节点版本 100 条可达转换、20 节点独立入口版本 1386 条可达转换，并各测试 1000 条连续命令；验证同样采用命令边界串行协议。
+
+## 独立请求 / 确认入口的合流小结构
+
+两个无状态入口同时出现在 EX 中会形成“等待二者到齐”，不能直接表示任一入口到达就处理。本受限原型用状态事件与相位比较合流，将基础版单一命令 Q0 替换成以下 4 个节点，净增加 3 个节点：
+
+| 节点 | 初值 / 状态 | EX | 传播 |
+| --- | --- | --- | --- |
+| Q0，请求相位 | 0 | `K1K(X1)K(X1)` | q=0/1 |
+| Q1，确认唤醒 | 0 | `J0J(X2)` | q=0/1 |
+| Q2，已处理相位 | 0 | `J0J(Q3)K(Q0)` | q= |
+| Q3，合流命令 | 无状态 | `J0J(Q1)K1K(Q0)K(Q2)` | q=0/1 |
+
+Q3 只读取较低编号状态来源，任一状态通知均可触发。请求使 Q0 翻转，Q3 得到 0；确认不翻转请求相位，Q3 得到 1；Q3 的事件随后让 Q2 记住已处理相位。
+
+X1/X2 的事件值 0 或 1 都有效；填 `X2:0` 也表示一次确认，不能用 0 代替“不发生事件”。旧原型需在相位回写完成后才进入下一命令，所以这个 4 节点片段不是最终的并发入口或动态排队实现。
+
+## 锁存＋等待区的 40 / 43 节点受限组合原型
+
+基础版 40 节点；独立请求 / 确认入口版 43 节点。它们把 1 个在途项与 2 个等待项组成统一状态转换网络，确认后自动把等待队首移入在途槽并再次递交。无需宿主程序补发出队命令。
+
+43 节点版本输入：X0=data，X1=请求事件，X2=消费完成确认事件。Q31=busy，Q32=在途数据，Q33/Q34=等待项有效位，Q35/Q36=等待数据。Q0/Q1/Q2 与 Q31..Q36 共 9 个状态位，初值均为 0。Q2、Q31..Q36 不发布事件。
+
+已确认的对外映射只保留：
+
+```json
+"q_y": [{"Y0":"Q39"},{"Y1":"Q41"}]
+```
+
+- Q39：有效数据递交事件，0 和 1 都发布。
+
+- Q41：有效消费确认已处理的通知，只发布 1。
+
+- Q31..Q36 是内部结构状态；Q40 请求接受通知仍是内部节点，均不应再列入该模型的对外 q_y。
+
+q_y 本身是输出节点映射。需要逐次消费数据时，接口必须观察 Q39/Q41 的每一次发布；仅在 send 排空后读取一个最新数值，不能自行还原任意多次历史事件。不要把这一模型接口约定悄悄改成所有 q_y 都是事件队列的新规则。
+
+Q37 收齐全部 6 份下一状态结果；对应写回节点排在其前，确保发布对外事件前状态已经写入。Q38 `J0K(Q17)J(Q37)`、q=1 是递交许可；Q39 `J0K(Q32)J(Q38)`、q=0/1 读取已锁存的数据并一次发布“有效＋数值”。下游接 Q39 即可，不需另外接 busy 或 Q38。
+
+新增 Q311=`J0K(Q31)`、q=1 并不能自动工作，因为 Q31 当前 q= 不发通知。即使改变 Q31 使其传播，Q38 已经包含“本次确实要递交且已写回”的条件，busy=1 只是“存在在途项”，再次合取通常是冗余。`J0J(Q38)K(Q32)` 在 Q38 恒发 1 的现行前提下是同样 3 个 token 的改写；保留完整来源、分类与事件前提后才可认定等价。
+
+历史演示：请求 0、1、0 得到在途 0、等待 [1,0]；第四个请求因固定容量被拒；后续确认依次自动递交 1、0，再恢复空闲。这个拒收行为属于受限原型，**不是最新要求允许的正常策略**。
+
+40 节点版本 212 条可达转换，43 节点版本 2394 条可达转换，各加 1000 条连续命令。六个受限模型共 4626 条转换，参考执行器不内置业务 FIFO / ACK 指令；模型的业务数据存储由 JK 状态节点实现；参考执行器只负责通用事件 FIFO，外部业务数据队列仅用于独立 oracle 比较，验证搜索也使用普通队列。原生执行器没有因此完成集成；`publication` 的 JSON 编码也仍是参考约定。
+
+## 43 节点原型的输入输出规则
+
+X0 保存请求的数据；X1 的一次事件提出请求；X2 的一次事件确认当前消费项已经使用完。X1、X2 的 0 和 1 都算事件，未发生动作时应省略该入口，不能填 0 冒充无动作。
+
+此受限原型在初始化 X0 后，按单条命令完成内部事件再提交下一条来验证。请求先提供 X0，再提供 X1；确认只提供 X2。这个实验输入协议不适用于替代正式动态模式“处理未完仍持续收存”的要求。
+
+| 输入动作示例 | 含义 |
+| --- | --- |
+| `{"X0":0,"X1":1}` | 请求保存并递交数据 0 |
+| `{"X0":1,"X1":0}` | 再请求数据 1；X1=0 仍是一次请求 |
+| `{"X2":1}` | 当前消费者完成后确认一次 |
+| `{"X2":0}` | 同样是一次确认，不能表示不确认 |
+
+Q39 的每次 publication 就是一次有效数据递交，载荷可为 0 或 1；Q41 只在有效消费确认被处理时发布 1。数据 0 与没有递交事件不同。确认可能立即引出下一项递交；消费者应在完成当前项后确认一次，不能把过期确认再次作为新项确认。未发生新事件时，节点保留的最近值也不代表发生了新递交。
+
+## Q311 额外门控的讨论结论
+
+讨论中的新增节点为 Q311：`J0K(Q31)`，传播 `q=1`；改写 Q39 为 `J0J(Q38)J(Q311)J0K(Q32)`。这是局部编号提案，尚非满足连续编号要求的完整快照。
+
+现有 Q31 采用 `q=`，所以只引用它的 Q311 不会收到更新事件。若把 Q31 改成传播，Q39 仍会等待 Q38、Q311 两个无状态来源到齐；多个无状态引用形成 AND 到达屏障，不是任选一路触发。最后的 J0 又重置前面的数值计算，但不会删除这些引用建立的事件依赖。
+
+现有 Q38 已保证“本次确有新递交且状态写回完成”，Q39 已一次发出携带 Q32 数据的事件，因此无需新增 busy 门控。busy=1 仅说明已有在途项，不能单独替代新递交许可。`J0J(Q38)K(Q32)` 可在 Q38 只发布 1 的前提下替换当前三项 EX；这是限定事件不变量下的改写，不能宣称二者在 Q38 任取 0/1 的完整真值表上等价。
+
+## 完整 43 节点参考 JSON
+
+下列内容对应最终 Q39/Q41 输出版本。文件的 capacity、full_policy 与串行 protocol 字段记录本原型限制，不定义动态等待区的最终规格。
+
+```json
+{
+  "name": "async-buffer-1bit-wait2-separate-entries",
+  "spec": {
+    "rules": {
+      "page": "https://chatgpt.com/space/page_1cee9c7aae188191be3608cbf94fb889",
+      "sequence": 88
+    },
+    "data_bits": 1,
+    "active_capacity": 1,
+    "waiting_capacity": 2,
+    "total_capacity": 3,
+    "protocol": "Initialize X0. For request send X0 then X1; for ACK/pop send X2. Do not submit both entry ports in one transaction. Drain each command before submitting another. Consumer ACK may be delayed.",
+    "full_policy": "Reject the request, publish reject=1, and preserve all accepted items.",
+    "queue_storage": "Six state bits B,H,V0,V1,D0,D1; no host data queue or host dequeue/dispatch.",
+    "validation": "See the identity-bound verification report for the current model.",
+    "encoding": "publication is a local reference-design field, not an approved native snapshot extension",
+    "optimization": {
+      "final_nodes": 43,
+      "global_minimum_proven": false,
+      "changes": [
+        "Inline six mux delta helpers",
+        "Inline five single-use Boolean helpers",
+        "Use zero-accumulator snapshots and constant-one all-source barrier"
+      ],
+      "core_baseline_nodes": 51,
+      "core_final_nodes": 40,
+      "entry_adapter_net_added_nodes": 3
+    },
+    "outputs": {
+      "Y0": "delivered data",
+      "Y1": "valid consumer acknowledgement processed"
+    },
+    "ports": {
+      "X0": "data; initialize before first command",
+      "X1": "request/push event; either value",
+      "X2": "ACK/pop event; either value"
+    }
+  },
+  "nodes": [
+    {
+      "id": "Q0",
+      "ex": "K1K(X1)K(X1)",
+      "label": "request_phase"
+    },
+    {
+      "id": "Q1",
+      "ex": "J0J(X2)",
+      "label": "ack_wakeup"
+    },
+    {
+      "id": "Q2",
+      "ex": "J0J(Q3)K(Q0)",
+      "label": "previous_request_phase"
+    },
+    {
+      "id": "Q3",
+      "ex": "J0J(Q1)K1K(Q0)K(Q2)",
+      "label": "cmd"
+    },
+    {
+      "id": "Q4",
+      "ex": "J0J(Q3)K(Q31)",
+      "label": "old B"
+    },
+    {
+      "id": "Q5",
+      "ex": "J0J(Q3)K(Q32)",
+      "label": "old H"
+    },
+    {
+      "id": "Q6",
+      "ex": "J0J(Q3)K(Q33)",
+      "label": "old V0"
+    },
+    {
+      "id": "Q7",
+      "ex": "J0J(Q3)K(Q34)",
+      "label": "old V1"
+    },
+    {
+      "id": "Q8",
+      "ex": "J0J(Q3)K(Q35)",
+      "label": "old D0"
+    },
+    {
+      "id": "Q9",
+      "ex": "J0J(Q3)K(Q36)",
+      "label": "old D1"
+    },
+    {
+      "id": "Q10",
+      "ex": "J0J(Q3)K(X0)",
+      "label": "request data"
+    },
+    {
+      "id": "Q11",
+      "ex": "J0K1K(Q3)",
+      "label": "not operation"
+    },
+    {
+      "id": "Q12",
+      "ex": "J0K1K(Q4)J(Q11)",
+      "label": "N: direct idle request"
+    },
+    {
+      "id": "Q13",
+      "ex": "J0K(Q3)J(Q4)J(Q6)",
+      "label": "T: ACK with waiting head"
+    },
+    {
+      "id": "Q14",
+      "ex": "J0K1K(Q7)J(Q11)J(Q4)",
+      "label": "W: accepted waiting enqueue"
+    },
+    {
+      "id": "Q15",
+      "ex": "J0K(Q11)J(Q4)J(Q7)",
+      "label": "request rejected: full"
+    },
+    {
+      "id": "Q16",
+      "ex": "J0K(Q3)J(Q4)",
+      "label": "valid ACK"
+    },
+    {
+      "id": "Q17",
+      "ex": "J0K(Q12)K(Q13)",
+      "label": "delivery flag"
+    },
+    {
+      "id": "Q18",
+      "ex": "J0K(Q12)K(Q14)",
+      "label": "request accepted flag"
+    },
+    {
+      "id": "Q19",
+      "ex": "J0K(Q4)J(Q6)K1J(Q3)K1",
+      "label": "next B"
+    },
+    {
+      "id": "Q20",
+      "ex": "J0K1K(Q6)J(Q14)",
+      "label": "E0: enqueue at first waiting slot"
+    },
+    {
+      "id": "Q21",
+      "ex": "J0K(Q14)J(Q6)",
+      "label": "E1: enqueue at second waiting slot"
+    },
+    {
+      "id": "Q22",
+      "ex": "J0K(Q6)K(Q7)J(Q13)K(Q6)",
+      "label": "V0 after pop"
+    },
+    {
+      "id": "Q23",
+      "ex": "J0K1K(Q22)J(Q14)K(Q22)",
+      "label": "next V0"
+    },
+    {
+      "id": "Q24",
+      "ex": "J0K1K(Q7)J(Q21)K(Q7)",
+      "label": "V1 before pop-clear"
+    },
+    {
+      "id": "Q25",
+      "ex": "J0K1K(Q13)J(Q24)",
+      "label": "next V1"
+    },
+    {
+      "id": "Q26",
+      "ex": "J0K(Q5)K(Q8)J(Q13)K(Q5)",
+      "label": "H after pop"
+    },
+    {
+      "id": "Q27",
+      "ex": "J0K(Q26)K(Q10)J(Q12)K(Q26)",
+      "label": "next H"
+    },
+    {
+      "id": "Q28",
+      "ex": "J0K(Q8)K(Q9)J(Q13)K(Q8)",
+      "label": "D0 after pop"
+    },
+    {
+      "id": "Q29",
+      "ex": "J0K(Q28)K(Q10)J(Q20)K(Q28)",
+      "label": "next D0"
+    },
+    {
+      "id": "Q30",
+      "ex": "J0K(Q9)K(Q10)J(Q21)K(Q9)",
+      "label": "next D1"
+    },
+    {
+      "id": "Q31",
+      "ex": "J0K(Q19)",
+      "label": "B busy"
+    },
+    {
+      "id": "Q32",
+      "ex": "J0K(Q27)",
+      "label": "H active data"
+    },
+    {
+      "id": "Q33",
+      "ex": "J0K(Q23)",
+      "label": "V0 waiting head valid"
+    },
+    {
+      "id": "Q34",
+      "ex": "J0K(Q25)",
+      "label": "V1 waiting second valid"
+    },
+    {
+      "id": "Q35",
+      "ex": "J0K(Q29)",
+      "label": "D0 waiting head data"
+    },
+    {
+      "id": "Q36",
+      "ex": "J0K(Q30)",
+      "label": "D1 waiting second data"
+    },
+    {
+      "id": "Q37",
+      "ex": "J0J(Q19)J(Q27)J(Q23)J(Q25)J(Q29)J(Q30)K1",
+      "label": "all six next-state commits complete"
+    },
+    {
+      "id": "Q38",
+      "ex": "J0K(Q17)J(Q37)",
+      "label": "delivery pulse after commit"
+    },
+    {
+      "id": "Q39",
+      "ex": "J0K(Q32)J(Q38)",
+      "label": "actual delivered data"
+    },
+    {
+      "id": "Q40",
+      "ex": "J0K(Q18)J(Q37)",
+      "label": "request accepted pulse after commit"
+    },
+    {
+      "id": "Q41",
+      "ex": "J0K(Q16)J(Q37)",
+      "label": "valid ACK pulse after commit"
+    },
+    {
+      "id": "Q42",
+      "ex": "J0K(Q15)J(Q37)",
+      "label": "full rejection pulse after commit"
+    }
+  ],
+  "initial_q": {
+    "0": [
+      "Q0",
+      "Q1",
+      "Q2",
+      "Q31",
+      "Q32",
+      "Q33",
+      "Q34",
+      "Q35",
+      "Q36"
+    ],
+    "1": []
+  },
+  "publication": {
+    "Q3": "q=0/1",
+    "Q4": "q=0/1",
+    "Q5": "q=0/1",
+    "Q6": "q=0/1",
+    "Q7": "q=0/1",
+    "Q8": "q=0/1",
+    "Q9": "q=0/1",
+    "Q10": "q=0/1",
+    "Q11": "q=0/1",
+    "Q12": "q=0/1",
+    "Q13": "q=0/1",
+    "Q14": "q=0/1",
+    "Q15": "q=0/1",
+    "Q16": "q=0/1",
+    "Q17": "q=0/1",
+    "Q18": "q=0/1",
+    "Q19": "q=0/1",
+    "Q20": "q=0/1",
+    "Q21": "q=0/1",
+    "Q22": "q=0/1",
+    "Q23": "q=0/1",
+    "Q24": "q=0/1",
+    "Q25": "q=0/1",
+    "Q26": "q=0/1",
+    "Q27": "q=0/1",
+    "Q28": "q=0/1",
+    "Q29": "q=0/1",
+    "Q30": "q=0/1",
+    "Q31": "q=",
+    "Q32": "q=",
+    "Q33": "q=",
+    "Q34": "q=",
+    "Q35": "q=",
+    "Q36": "q=",
+    "Q37": "q=0/1",
+    "Q38": "q=1",
+    "Q39": "q=0/1",
+    "Q40": "q=1",
+    "Q41": "q=1",
+    "Q42": "q=1",
+    "Q0": "q=0/1",
+    "Q1": "q=0/1",
+    "Q2": "q="
+  },
+  "q_y": [
+    {
+      "Y0": "Q39"
+    },
+    {
+      "Y1": "Q41"
+    }
+  ],
+  "roles": {
+    "delivery": "Q39",
+    "accept": "Q40",
+    "ack": "Q41",
+    "reject": "Q42",
+    "busy": "Q31",
+    "data": "Q32",
+    "valid": "Q33",
+    "full": "Q34",
+    "head": "Q35",
+    "tail": "Q36"
+  },
+  "status": "reference design under Page sequence 88; not a native import contract"
+}
+```
+
+## 验证依据与附件
+
+43 节点文件 SHA-256 为 `95e0de1fc539954c1810a3bef4722e6eb813240486e6ba42e4c695d9c3c20904`。对应报告检查 399 个可达执行状态类别、2394 条边界转换和 1000 条连续命令，逐次检查 Q39 递交事件与 Q41 有效确认事件。六个有限模型合计检查 4626 条转换及 6000 条连续命令；这些数字属于有限、入口串行协议的参考验证，不证明动态创建节点、任意重叠到达或生产执行器兼容。
+
+[43节点独立请求确认模型 Q39 Q41](../assets/static-prototypes/async-buffer-43-q39-q41.json)
+
+[JK设计与验证材料 2026-10-01](../provenance/missing-design-evidence-2026-10-01.md)
+
+证据包包含六种有限原型的设计、验证与优化报告、参考执行器及复现脚本，并收录计数器历史提案与本次小结构补验。归档报告保留原规则序列和测试协议，后续规则与设计以 JK 项目现行文档为主。
+
+动态模式的正式需求见 [JK锁存与动态等待区](latch-dynamic-waiting.md)；计数器、前后值判断和状态分离见 [JK计数器与事件组合](counters-events.md)。

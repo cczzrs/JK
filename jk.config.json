@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "canonical": {
+    "project": "JK",
+    "rules": "docs/JKRD.md",
+    "index": "README.md",
+    "instructions": "AGENTS.md"
+  },
+  "documents": {
+    "JKRD": "docs/JKRD.md",
+    "logic-units": "docs/logic_units/logic-units.md",
+    "latch-dynamic-waiting": "docs/logic_units/latch-dynamic-waiting.md",
+    "counters-events": "docs/logic_units/counters-events.md",
+    "static-prototypes": "docs/logic_units/static-prototypes.md"
+  }
+}
