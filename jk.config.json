@@ -28,7 +28,10 @@
         "rings-and-DAG.CARE",
         "snapshots-recovery-validation-fingerprints"
       ],
-      "node_rule_exemptions": "rejected"
+      "node_rule_exemptions": "rejected",
+      "pending_index": "docs/drafts/JKRD-V5.0.0-pending-index.md",
+      "ring_supervision_pending": "docs/drafts/JKRD-V5.0.0-ring-supervision-pending.md",
+      "snapshot_recovery_pending": "docs/drafts/JKRD-V5.0.0-snapshot-recovery-pending.md"
     }
   }
 }
