@@ -4,13 +4,31 @@
     "project": "JK",
     "rules": "docs/JKRD.md",
     "index": "README.md",
-    "instructions": "AGENTS.md"
+    "instructions": "AGENTS.md",
+    "rules_version": "V5.0.0"
   },
   "documents": {
     "JKRD": "docs/JKRD.md",
     "logic-units": "docs/logic_units/logic-units.md",
     "latch-dynamic-waiting": "docs/logic_units/latch-dynamic-waiting.md",
     "counters-events": "docs/logic_units/counters-events.md",
-    "static-prototypes": "docs/logic_units/static-prototypes.md"
+    "static-prototypes": "docs/logic_units/static-prototypes.md",
+    "async-structural-storage": "docs/logic_units/async-structural-storage-draft.md"
+  },
+  "drafts": {
+    "JKRD-V5.0.0": {
+      "status": "integrated-with-deferred-items",
+      "diff": "docs/drafts/JKRD-V5.0.0-diff.md",
+      "notes": "docs/drafts/JKRD-V5.0.0-notes.md",
+      "async_structural_storage": "docs/logic_units/async-structural-storage-draft.md",
+      "source_thread": "01a13e30-a6a2-78f1-b722-3b96bb9c3be0",
+      "integration": "docs/drafts/JKRD-V5.0.0-integration.md",
+      "module_status": "design-draft",
+      "deferred": [
+        "rings-and-DAG.CARE",
+        "snapshots-recovery-validation-fingerprints"
+      ],
+      "node_rule_exemptions": "rejected"
+    }
   }
 }
