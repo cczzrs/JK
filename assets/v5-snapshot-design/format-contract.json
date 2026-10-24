@@ -1,0 +1,435 @@
+{
+  "artifact_kind": "declarative_format_design_not_validator",
+  "status": "proposal-not-approved-not-implemented",
+  "date": "2026-10-21",
+  "scope": "Current JKRD V5 DAG, queues 1/2/5, and explicitly versioned storage contracts. No executor, no new EX operations.",
+  "notation": {
+    "fields": "Every listed field is required unless its name ends with ?. Unknown fields rejected in every typed object. JSON object extension points require an exact registered contract schema.",
+    "Bit": "JSON numeric 0 or 1; bool is not bit",
+    "Integer": "JSON safe nonnegative integer, decimal lexical form, no exponent/negative zero/fraction",
+    "Index": "Integer in the referenced local array range",
+    "Decimal": "string matching 0|[1-9][0-9]*, arbitrary precision",
+    "PositiveDecimal": "string matching [1-9][0-9]*",
+    "QId": "Q followed by canonical Decimal",
+    "XId": "X followed by canonical Decimal",
+    "YId": "Y followed by canonical Decimal",
+    "TaskId": "T followed by PositiveDecimal",
+    "Hex32": "32 lowercase hexadecimal characters",
+    "string": "Unicode scalar sequence, no lone surrogate",
+    "JSON": "standard JSON values subject to the lexical restrictions; this type alone never grants an executable extension"
+  },
+  "types": {
+    "Document": {
+      "format": "enum(jk-logic-structure-V5.0.0,jk-logic-runtime-V5.0.0)",
+      "schema_revision": "literal(draft-1)",
+      "rule_profile": "literal(JKRD-V5-DAG-1-2-5)",
+      "canonicalization": "literal(jk-json-v5-draft-1)",
+      "structure": "Structure",
+      "runtime?": "Runtime; required for runtime format, forbidden for structure format",
+      "fingerprints": "Fingerprints",
+      "metadata": "Metadata"
+    },
+    "Metadata": {
+      "name": "string",
+      "created_unix_ns": "Decimal",
+      "display": "JSON object; presentation only",
+      "provenance": "JSON object; audit only"
+    },
+    "Fingerprints": {
+      "format_md5": "Hex32",
+      "md5": "Hex32"
+    },
+    "QRef": {
+      "id": "QId",
+      "generation": "PositiveDecimal"
+    },
+    "Target": {
+      "id": "QId",
+      "generation": "PositiveDecimal",
+      "ex_version": "PositiveDecimal"
+    },
+    "XSource": {
+      "kind": "literal(X)",
+      "id": "XId"
+    },
+    "QSource": {
+      "kind": "literal(Q)",
+      "id": "QId",
+      "generation": "PositiveDecimal"
+    },
+    "Node": {
+      "id": "QId",
+      "generation": "PositiveDecimal",
+      "ex_version": "PositiveDecimal",
+      "ex": "nonempty JK EX string",
+      "pro?": "enum(q=0/1,q=0,q=1,q=)"
+    },
+    "Port": {
+      "id": "XId or YId according to containing array",
+      "external": "nonempty string"
+    },
+    "OutputBinding": {
+      "output": "YId",
+      "node": "QRef"
+    },
+    "InitialQ": {
+      "0": "QId[] sorted by numeric id",
+      "1": "QId[] sorted by numeric id"
+    },
+    "Structure": {
+      "nodes": "Node[] sorted by numeric id; gaps allowed",
+      "initial_q": "InitialQ",
+      "inputs": "Port[] in X index order",
+      "outputs": "Port[] in Y index order",
+      "q_y": "OutputBinding[] in Y index order",
+      "capacity": "Capacity",
+      "contracts": "Contract[] sorted by id",
+      "factories": "Factory[] sorted by id",
+      "modules": "StorageDefinition[] sorted by id"
+    },
+    "Capacity": {
+      "max_live_nodes": "PositiveDecimal or null; null means no model-imposed bound, not infinite physical memory"
+    },
+    "Contract": {
+      "id": "nonempty ASCII identifier",
+      "revision": "nonempty ASCII identifier",
+      "definition_md5": "Hex32",
+      "definition": "JSON object governed by exactly this registered contract; embedded declarative templates, operations and parameter schemas, no executable source"
+    },
+    "Factory": {
+      "id": "nonempty ASCII identifier",
+      "contract_id": "existing Contract.id",
+      "bindings": "BehaviorBinding[] sorted by id"
+    },
+    "BehaviorBinding": {
+      "id": "nonempty ASCII identifier",
+      "primary": "Target",
+      "operation": "registered operation name",
+      "phase": "literal(after_primary_own_EX_before_envelope_commit)",
+      "arguments": "JSON object fully checked by the registered operation parameter schema"
+    },
+    "RoleBinding": {
+      "role": "registered contract role name",
+      "nodes": "QRef[]; role-declared order"
+    },
+    "StorageDefinition": {
+      "id": "module identifier",
+      "contract_id": "existing Contract.id",
+      "factory_id": "existing Factory.id",
+      "members": "QRef[] sorted by numeric id",
+      "block_slots": "literal(8)",
+      "max_frame_width": "literal(8)",
+      "roles": "RoleBinding[] sorted by role",
+      "bootstrap": "JSON object governed by contract or null; structure format requires a valid fresh-start bootstrap, runtime may have null"
+    },
+    "Runtime": {
+      "boundary": "Boundary",
+      "q": "SavedQ[] sorted by numeric id",
+      "fifos": "FIFOs",
+      "arrivals": "Arrival[] sorted by target numeric id",
+      "modules": "StorageRuntime[] sorted by module_id",
+      "allocators": "Allocators"
+    },
+    "Boundary": {
+      "kind": "enum(before-first-task,after-complete-task)",
+      "revision": "Decimal",
+      "last_completed_task_id": "TaskId or null",
+      "accepted_input_sequence": "Decimal",
+      "published_output_sequence": "Decimal",
+      "input_handoff_complete": "literal(true)",
+      "propagation_complete": "literal(true)",
+      "active_task": "literal(null)",
+      "active_transaction": "literal(null)"
+    },
+    "SavedQ": {
+      "node": "QRef",
+      "value": "Bit"
+    },
+    "FIFOs": {
+      "Xi.FIFO": "Task[] in FIFO order",
+      "RAM.FIFO": "Task[] in FIFO order",
+      "Qi.FIFO": "Task[] in FIFO order"
+    },
+    "Task": {
+      "id": "TaskId",
+      "kind": "enum(input-copy,node-ex,module-node,output-node)",
+      "target": "Target",
+      "parameter_policy": "enum(event,frame-handoff,output-latched)",
+      "parameters": "Parameters owned by this task",
+      "behavior_id": "BehaviorBinding.id or null",
+      "bound_ex": "BoundEX[] in actual relative auxiliary evaluation order; registered operation places each step at its declared phase among structural/new-node actions, not necessarily immediately after primary EX",
+      "context": "TaskContext or null",
+      "cause": "Cause[]; audit-only, never live parameter references",
+      "protected_reads": "Target[] sorted by numeric id; exact union of already-bound ordinary live Q-source dependencies from primary/auxiliary EX; omit locked sources and each EX target own accumulator"
+    },
+    "Parameters": {
+      "bits": "Bit[]; task-owned flat immutable value pool",
+      "sources": "ParameterSource[] in X-then-Q numeric source order",
+      "frames": "FrameParameters[] in frame identity order"
+    },
+    "ParameterSource": {
+      "source": "XSource or QSource",
+      "index": "Index into this Parameters.bits"
+    },
+    "FrameParameters": {
+      "frame": "FrameRef",
+      "indices": "Index[]; exactly W=1..8, in bit order, into this same owned Parameters.bits",
+      "channels": "(XSource or QSource)[] in the same bit order"
+    },
+    "BoundEX": {
+      "target": "Target",
+      "parameter_policy": "enum(event,frame-handoff,output-latched)",
+      "parameters": "Parameters",
+      "condition": "registered condition-group name; evaluate once at this task plan entry using current head/result/q, then keep that decision for all group steps; never persist an old Boolean"
+    },
+    "TaskContext": {
+      "module_id": "module identifier",
+      "operation": "registered contextual operation name; does not invoke behavior; only behavior_id with the actual primary Q may invoke it",
+      "frame": "FrameRef or null; historical identity does not bind ACK to arrival-time head",
+      "batch_id": "batch identifier or null",
+      "position": "Index or null",
+      "handoff_id": "handoff identifier or null"
+    },
+    "Cause": {
+      "kind": "enum(input,publication,arrival-group,factory-request)",
+      "identity": "string; historical input/task/event identity; not dereferenced on restore"
+    },
+    "Arrival": {
+      "target": "Target",
+      "values": "ArrivedValue[] sorted by effective event source numeric id; nonempty strict subset of required sources"
+    },
+    "ArrivedValue": {
+      "source": "QSource",
+      "value": "Bit"
+    },
+    "Allocators": {
+      "next_node": "Decimal; greater than every physical Q id ever allocated; no id reuse in draft-1",
+      "next_task": "PositiveDecimal",
+      "next_input": "PositiveDecimal",
+      "next_output": "PositiveDecimal"
+    },
+    "FrameRef": {
+      "module_id": "module identifier",
+      "sequence": "PositiveDecimal; never reused within that module"
+    },
+    "BlockRef": {
+      "id": "block identifier",
+      "generation": "PositiveDecimal"
+    },
+    "StorageRuntime": {
+      "module_id": "existing StorageDefinition.id",
+      "input_staging": "StagedInput[] sorted by input id",
+      "handoffs": "Handoff[] in accepted frame order",
+      "areas": "Area[]; PRE then POST",
+      "frontier": "Frontier or null",
+      "rounds": "Round[] in round allocation order",
+      "retire_sets": "RetireSet[] in registration order",
+      "output": "StorageOutput",
+      "free_blocks": "FreeBlock[] in reuse selection order",
+      "allocators": "StorageAllocators"
+    },
+    "StagedInput": {
+      "input": "XId",
+      "value": "Bit; not yet accepted into a FRAME_IN frame"
+    },
+    "Handoff": {
+      "id": "handoff identifier",
+      "frame": "FrameRef",
+      "parameters": "Parameters; owner of complete frame while copies remain",
+      "copy_steps": "CopyStep[] in original enqueue order; includes actual W data copies and FRAME_IN copy",
+      "store_behavior_id": "BehaviorBinding.id for S_W",
+      "check_behavior_id": "BehaviorBinding.id for C_W"
+    },
+    "CopyStep": {
+      "task_id": "TaskId",
+      "target": "Target",
+      "parameter_index": "Index into Handoff.parameters.bits",
+      "completed": "boolean; execution progress, not a second business q"
+    },
+    "Area": {
+      "id": "enum(PRE,POST)",
+      "blocks": "Block[] in allocation/chain order",
+      "live_frames": "FrameRef[] in business order; precisely V=1 slots; not an execution FIFO"
+    },
+    "Block": {
+      "ref": "BlockRef",
+      "accepted_count": "Integer 0..8",
+      "slots": "Slot[] in index order; count exactly accepted_count; no slot reuse in same generation"
+    },
+    "Slot": {
+      "index": "Integer 0..7",
+      "frame": "FrameRef",
+      "data": "QRef[] in bit order, W=1..8",
+      "valid": "QRef",
+      "claim": "QRef or null; PRE requires Q, POST null"
+    },
+    "Frontier": {
+      "state": "QRef[] in business state-bit order",
+      "ready": "QRef"
+    },
+    "Round": {
+      "id": "round identifier",
+      "frame": "FrameRef",
+      "previous_frontier": "Frontier",
+      "join": "QRef",
+      "claim": "QRef",
+      "go": "QRef",
+      "compute": "QRef[] in declared evaluation order",
+      "owned_nodes": "QRef[] sorted by numeric id"
+    },
+    "RetireSet": {
+      "id": "retirement identifier",
+      "nodes": "QRef[] sorted by numeric id; candidates, not live protection edges",
+      "cause": "Cause[]"
+    },
+    "FreeBlock": {
+      "id": "block identifier",
+      "last_generation": "PositiveDecimal",
+      "slots": "literal(8); no live Q members"
+    },
+    "StorageAllocators": {
+      "next_block": "PositiveDecimal",
+      "next_frame": "PositiveDecimal",
+      "next_round": "PositiveDecimal",
+      "next_request": "PositiveDecimal",
+      "next_batch": "PositiveDecimal",
+      "next_handoff": "PositiveDecimal",
+      "next_retire_set": "PositiveDecimal"
+    },
+    "StorageOutput": {
+      "requests": "OutputRequest[] in request order",
+      "active_request_id": "request identifier or null",
+      "selector": "QRef or null",
+      "batches": "OutputBatch[] in batch creation order",
+      "retention": "Retention"
+    },
+    "OutputRequest": {
+      "id": "request identifier",
+      "frame": "FrameRef",
+      "kind_q": "QRef; actual q encodes first/replay",
+      "data": "QRef[] in bit order; independent retained/current slot data; no saved bit mirror"
+    },
+    "OutputBatch": {
+      "id": "batch identifier",
+      "frame": "FrameRef",
+      "request_id": "historical request identifier",
+      "kind": "enum(first,replay); execution record checked against locked marker parameter",
+      "width": "Integer 1..8",
+      "published_prefix": "Integer 0..width",
+      "frame_out_published": "boolean; execution record",
+      "pending": "PendingOutput[] in position order; exactly remaining positions"
+    },
+    "PendingOutput": {
+      "position": "Integer 0..width; width denotes FRAME_OUT",
+      "task_id": "existing unique output TaskId"
+    },
+    "Retention": {
+      "frame": "FrameRef or null; historical identity allowed when validity q revoked",
+      "width": "Integer 0..8",
+      "data": "QRef[] for fixed independent H in bit order",
+      "cache_valid": "QRef",
+      "first_done": "QRef",
+      "consume": "QRef",
+      "ready": "QRef"
+    }
+  },
+  "fixed_profile": {
+    "Xi.FIFO": 1,
+    "RAM.FIFO": 2,
+    "Qi.FIFO": 5,
+    "DAG.FIFO": "not a field in draft-1; reject even if empty; future enabled profile requires another revision",
+    "rings": "reject non-self cycles, SCC suspension, budgets and timers",
+    "failure_state": "reject in-flight/uncommitted/failed/suspended/retry state; F03/F04 must define a later profile",
+    "routing": "input copy first, then current RAM membership, otherwise Qi; queue name is given by containing FIFO, not duplicated in Task",
+    "contract_rule": "Every behavior-affecting module definition is embedded, versioned, hashed and validated against the loader supported contract. A known id without matching definition/schema is insufficient. Unknown extension cannot be ignored."
+  },
+  "fingerprint_contract": {
+    "canonicalization": "jk-json-v5-draft-1",
+    "normalization": "Delete only explicit default pro=q=0/1 at structure.nodes[*].pro. All other fields and all array order remain unchanged.",
+    "format_payload_fields": {
+      "domain": "jk-v5-format-draft-1",
+      "schema_revision": "document.schema_revision",
+      "rule_profile": "document.rule_profile",
+      "canonicalization": "document.canonicalization",
+      "structure": "normalized document.structure"
+    },
+    "document_payload_fields": {
+      "domain": "jk-v5-document-draft-1",
+      "format": "document.format",
+      "format_payload": "the full object above, not its digest",
+      "runtime": "document.runtime for runtime format; JSON null for structure format"
+    },
+    "format_md5": "MD5(UTF8(canonical(format_payload)))",
+    "md5": "MD5(UTF8(canonical(document_payload)))",
+    "contract_definition_md5": "MD5(UTF8(canonical(Contract.definition))); include Contract definition and this checked digest in structure",
+    "excluded_paths": [
+      "document.metadata",
+      "document.fingerprints"
+    ],
+    "meaning": "format_md5 identifies current structure, initial values, interfaces and behavioral contracts; md5 additionally identifies format kind and runtime. Neither proves behavior equivalence, provenance or correctness.",
+    "canonical_bytes": {
+      "encoding": "UTF-8, no BOM, whitespace or terminal newline",
+      "object_keys": "Unicode scalar lexicographic order, recursively",
+      "arrays": "preserve all array order exactly; validate format-required ordering separately",
+      "strings": "no Unicode normalization; escape quote and backslash; U+0008/0009/000A/000C/000D use \\b/\\t/\\n/\\f/\\r; other U+0000..001F use lowercase \\u00xx; other scalar values literal; slash unescaped",
+      "numbers": "nonnegative safe integer in ordinary decimal, no exponent/fraction/negative-zero; large integers stored as canonical decimal strings",
+      "parse_rejections": [
+        "duplicate keys",
+        "invalid UTF-8",
+        "lone surrogate",
+        "trailing content",
+        "non-JSON numeric tokens"
+      ]
+    }
+  },
+  "semantic_obligations": [
+    "All live Q, including quiet/pool/retired candidates, obey current JKRD EX, state, source/user count and full DAG constraints; factory lines and causes do not count.",
+    "initial_q declares creation values for every live stateful Q exactly once. Runtime.q covers exactly that set with current generation. No stateless saved q.",
+    "inputs and outputs are contiguous X/Y ports; Q numbering may have deleted holes after the input-copy prefix. q_y covers each output exactly once with valid default-pro Q.",
+    "No separately supplied statistics or inverse reference graph is authoritative: derive counts, effective source classes, routing, users and DAG from saved structure.",
+    "Task targets, bound auxiliary targets and live EX sources must exist at matching generations/versions. All identities unique. Task id order is not global scheduler order.",
+    "Parameters.bits is immutable and locally owned. sources maps a real source to an index; one binding per source. frames indexes the same bit pool so bit order has one authority. No cross-task payload aliases. Every bit index must be used by source/frame or declared auxiliary contract.",
+    "event policy locks exactly effective Qi_J0 sources, including Xi copy values and input-copy publications; ordinary Qi_q sources and target initial accumulator remain live reads at execution. No constant or cause-as-parameter.",
+    "frame-handoff policy requires a matching S/C/module behavior, actual W channels, exact frame identity, ordered indices and source-to-frame consistency. Output-latched requires the fixed output contract; do not generalize it to ordinary stateful sources.",
+    "An already bound auxiliary EX plan is saved in order with targets, policies, values and contract-defined guards; unresolved operation objects are resolved at execution per contract. No partial execution plan is saved.",
+    "Arrivals are the next, strictly incomplete event-source group. Required sources are derived; no default zeros, duplicated sources, ordinary stateful sources or full unqueued group at a safe boundary.",
+    "Handoff copies may be partly completed. Every incomplete CopyStep has exactly its matching Xi task and bit; completed steps have no pending copy task. The last copy creates adjacent independent S/C tasks exactly once and releases handoff. Every handoff has an incomplete step at a saved boundary.",
+    "FRAME_IN=0 clears only input_staging. Accepted handoffs/tasks/slots are unaffected. No external current Xi value is needed or restored.",
+    "Storage members/roles/block slots/rounds/frontier/requests refer to current Q; PRE/POST data and business control are only JK q, not duplicated bits/flags in module metadata.",
+    "Block slots 0..accepted_count-1 remain until eligible full-block release; V=0 at partial capacity does not reset accepted_count or generation. Freed capacity has no Q nodes; reuse increments generation.",
+    "GC candidate-set internal edges disappear atomically; external task/EX/arrival/bound-plan dependencies still protect. Candidate references alone are not protection edges. Historical cause and old frame identity need not name live slots.",
+    "Output requests are business order, not a FIFO. A request becomes active only at BUSY=0 and request head; restored metadata cannot override BUSY q or rewrite earlier preparation sources.",
+    "Output batches pending task ids occur once in RAM.FIFO, all remaining positions prefix..W are covered and order agrees with FIFO; sent prefix has no regenerated task. Marker remains pending until all W data complete; completed rows have no pending items.",
+    "FRAME_OUT preserves its own locked marker plus the full bound H/validity EX plan and live source protection. In the current A03 contract H reads protected B.q at execution using ordinary event policy, not historical marker payload. Already emitted bit tasks need not survive. An active preparation retains its actual sources until handoff.",
+    "ACK tasks have no frozen arrival-time head. Current head and q qualifications are checked at execution. Old batch completion may not restore consumed-frame validity; frame IDs never reused.",
+    "Boundaries contain no running EX, partial RAM transaction, undelivered publication or unfinished current send handoff. Waiting copies/arrivals/requests are allowed; do not wait for future missing sources.",
+    "Restore validates the entire detached candidate, then installs atomically, initially paused. It does not execute EX, initialize over current q, publish events, refill arrivals or reconstruct FIFO from output progress.",
+    "External output history is not replayed. Input/output sequence cursors support coordinated host continuation; they alone do not provide crash-exactly-once external side effects.",
+    "V4 runtime cannot be upgraded losslessly by renaming/supplying empty fields; explicit fresh-start structural import is a separate action with a migration report.",
+    "A condition group for first-current-unconsumed FRAME_OUT is checked once before its auxiliary plan; H/CACHE_VALID/F/READY execute under that decision. Rechecking after F changes must not skip READY. Context.operation is an audit/association label, never implicit operation dispatch.",
+    "protected_reads explicitly saves expected source generation and EX version for every already-bound ordinary live-read dependency. Its set is checked against primary/bound EX and parameter policies; locked output R sources are not live reads, so their later q changes do not alter old tasks. Source references in current EX remain structurally legal even when their data is locked."
+  ],
+  "deferred": [
+    "schema final approval and official format publication",
+    "approval and consumer support for the complete A03 contract and six dynamic full-checkpoint fixtures; actual restored-versus-uninterrupted execution",
+    "serializers/loaders/validators/runtime equivalence execution",
+    "ring supervision and failure/retry extensions",
+    "cross-process durable external delivery protocol"
+  ],
+  "allocator_requirements": {
+    "global_task": "next_task > numeric ordinal of every persisted TaskId, including FIFO tasks, Handoff CopyStep task_ids, output pending task_ids and boundary.last_completed_task_id. It is saved allocation high-watermark, not recomputed from live tasks.",
+    "input_output": "next_input = accepted_input_sequence + 1 and next_output = published_output_sequence + 1 in this no-reservation profile. Both use arbitrary-precision decimal arithmetic.",
+    "node": "next_node is the saved historical allocation high-watermark plus one; at least greater than every current or preserved historical Q ordinal. A deleted maximum node does not lower it. Existing nodes may not be renumbered.",
+    "module": "Every registered module contract declares identity grammar and allocator namespace. Each next_* must exceed every matching allocated ordinal represented in current objects, free capacities or retained historical frame/request/batch/round/handoff references. Unknown identity grammar rejects the contract.",
+    "history_limit": "Absent historical objects cannot reconstruct their former highest ordinal. The persisted next_* value is authoritative; restore must never shrink it by scanning current objects. No hash or local static check proves an unrecorded historical claim.",
+    "generation": "For a reused block id, generation = last_generation + 1; free block records and active blocks with the same id cannot coexist. Fresh physical Q ids are monotonically allocated; node generation is still checked on all saved references."
+  },
+  "registered_candidate_extensions": [
+    {
+      "id": "a03-ready-2",
+      "path": "a03-dynamic/readiness-format-extension.json",
+      "schema_revision": "draft-2-a03-ready",
+      "compatibility": "Separate exact revision; not implicitly accepted by draft-1 consumers."
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "artifact_kind": "finite_business_structure_design",
+  "status": "proposal_directly_reasoned_not_executed",
+  "rule_source": "../../docs/JKRD.md",
+  "format_notice": "本地设计描述，不是 V5 快照格式。角色 Q7/Q8/Q9/Q10i 与物理节点编号分开。",
+  "scope": "预装四个 bit 的单次累计 XOR，证明逐轮结果保存、状态回写及相同结果的完成事件。不是通用动态等待区接入。",
+  "input_protocol": {"X0":"完整结构建立后只提交一次启动值 1；本标本不定义重复启动或重叠运行。"},
+  "nodes": [
+    {"id":"Q0", "role":"START", "ex":"J0K(X0)", "pro":"q=1"},
+    {"id":"Q1", "role":"D_1", "ex":"J0J(Q0)K(Q1)", "pro":"q="},
+    {"id":"Q2", "role":"D_2", "ex":"J0J(Q0)K(Q2)", "pro":"q="},
+    {"id":"Q3", "role":"D_3", "ex":"J0J(Q0)K(Q3)", "pro":"q="},
+    {"id":"Q4", "role":"D_4", "ex":"J0J(Q0)K(Q4)", "pro":"q="},
+    {"id":"Q5", "role":"STATE_0", "ex":"J0J(Q0)K(Q5)", "pro":"q="},
+    {"id":"Q6", "role":"Q7_1_compute", "ex":"J0K(Q1)K(Q5)J(Q0)", "pro":"q=0/1"},
+    {"id":"Q7", "role":"Q8_1_result", "ex":"J0K(Q6)", "pro":"q=0/1"},
+    {"id":"Q8", "role":"Q9_1_writeback", "ex":"J0K(Q7)", "pro":"q=0/1"},
+    {"id":"Q9", "role":"Q10_2_complete", "ex":"J0J(Q8)K1", "pro":"q=0/1"},
+    {"id":"Q10", "role":"Q7_2_compute", "ex":"J0K(Q2)K(Q8)J(Q9)", "pro":"q=0/1"},
+    {"id":"Q11", "role":"Q8_2_result", "ex":"J0K(Q10)", "pro":"q=0/1"},
+    {"id":"Q12", "role":"Q9_2_writeback", "ex":"J0K(Q11)", "pro":"q=0/1"},
+    {"id":"Q13", "role":"Q10_3_complete", "ex":"J0J(Q12)K1", "pro":"q=0/1"},
+    {"id":"Q14", "role":"Q7_3_compute", "ex":"J0K(Q3)K(Q12)J(Q13)", "pro":"q=0/1"},
+    {"id":"Q15", "role":"Q8_3_result", "ex":"J0K(Q14)", "pro":"q=0/1"},
+    {"id":"Q16", "role":"Q9_3_writeback", "ex":"J0K(Q15)", "pro":"q=0/1"},
+    {"id":"Q17", "role":"Q10_4_complete", "ex":"J0J(Q16)K1", "pro":"q=0/1"},
+    {"id":"Q18", "role":"Q7_4_compute", "ex":"J0K(Q4)K(Q16)J(Q17)", "pro":"q=0/1"},
+    {"id":"Q19", "role":"Q8_4_result", "ex":"J0K(Q18)", "pro":"q=0/1"},
+    {"id":"Q20", "role":"Q9_4_writeback", "ex":"J0K(Q19)", "pro":"q=0/1"},
+    {"id":"Q21", "role":"Q10_5_terminal_complete", "ex":"J0J(Q20)K1", "pro":"q=0/1"}
+  ],
+  "initial_q": {
+    "0": ["Q2","Q5","Q7","Q8","Q11","Q12","Q15","Q16","Q19","Q20"],
+    "1": ["Q1","Q3","Q4"]
+  },
+  "q_y": [{"Y0":"Q7"},{"Y1":"Q11"},{"Y2":"Q15"},{"Y3":"Q19"},{"Y4":"Q21"}],
+  "queue_membership_design": {
+    "Xi.FIFO": ["Q0"],
+    "RAM.FIFO": [],
+    "Qi.FIFO": ["Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","Q21"]
+  },
+  "direct_reasoning": {
+    "input_bits": [1,0,1,1],
+    "initial_business_state": 0,
+    "round_results": [1,1,0,1],
+    "completion_events": [1,1,1,1],
+    "external_events": [{"Y0":1},{"Y1":1},{"Y2":0},{"Y3":1},{"Y4":1}],
+    "task_sequence": ["Q0","Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","Q21"],
+    "start": "初始化不发布。Q0 的一次启动事件按编号排入 Q1 至 Q6；前五个任务保持已预装状态。",
+    "gate": "Q10、Q14、Q18 各自只有一个无状态完成来源。前态 Qi_q 的发布不单独触发；完成事件锁存为 1 才形成一次计算任务。",
+    "same_result": "第二轮与第一轮结果均为 1，Q12 仍发布，Q13 仍产生完成 1，第三轮得到释放。",
+    "dag": "排除合法有状态自引用后，每条 Q 边都由较小编号指向较大编号。",
+    "tail": "Q21 为无状态、pro=q=0/1，Y4 是真实使用者；不豁免链尾。"
+  },
+  "limits": [
+    "五个 Yi 仅属于此独立标本，不增加存储模块的九个 Yi。",
+    "全部未来节点和四个数据 q 在启动前存在；没有利用初始化假装输入事件。",
+    "动态接入仍需处理下一帧晚到、订阅节点创建、前态完成的等待信息、前后等待区同时接入及回收。",
+    "这里没有执行器运行、自动生成结构或测试通过记录。"
+  ]
+}

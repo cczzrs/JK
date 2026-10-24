@@ -1,0 +1,205 @@
+{
+  "artifact_kind": "reasoned_storage_runtime_fragments",
+  "status": "proposal-not-approved-not-implemented",
+  "not_loadable_document": true,
+  "format_reference": "format-contract.json",
+  "scope": "仅展示声明类型中的局部对象；缺少完整Structure、注册Contract、全部q/FIFO/依赖和指纹，不能直接加载，也不代表动态恢复已经通过。四个片段是各自独立的时刻。",
+  "common_requirements": [
+    "下方Handoff、Task、BoundEX、OutputBatch、Retention、Area、Block、FreeBlock与SavedQ对象按format-contract的字段书写；外层说明字段不属于正式Document。",
+    "所有QRef和Target的世代、EX版本、成员归属必须由完整结构证实；片段省略的Q仍须满足合法EX、initial_q分类、真实来源/使用者和DAG约束。",
+    "固定核Q26..33为B，Q34..41为H，Q42为T1，Q43为BUSY，Q44为CACHE_VALID，Q45为F，Q46为C_ACK，Q47为READY，Q53..60为R，Q61为R_FRAME，Q62..69为O，Q70为FRAME_OUT。",
+    "Q34=J0K(Q26)、Q35=J0K(Q27)、Q44=J0K(Q42)、Q45=K(Q42)、Q47=J0K(Q45)K(Q46)、Q63=J0K(Q54)、Q70=J0K(Q61)沿用既有设计，不新增EX操作。",
+    "示例binding标识pre.S2.Q12、pre.C2.Q13、post.frame_out.Q70及条件first_current_unconsumed必须在完整声明契约中注册并验证；本文件没有提供该完整契约。",
+    "ACCEPT_PRE_AND_TRY和POST_PROTOCOL是已有A03操作设计名；TaskContext记录关联上下文，不凭字段本身调用工厂。工厂钩子只按真实顶层主任务的behavior_id绑定执行，附带EX不递归调用钩子。"
+  ],
+  "fragments": [
+    {
+      "id": "partial_input_copy_W2",
+      "premise": "已接受frame 1=[1,0]及FRAME_IN=1；T101(Q0)完成，T102(Q1)与T103(Q8)尚未执行。当前send交接已完成，允许在T101完整边界保存。",
+      "required_node_facts": [
+        "Q0=J0K(X0)、Q1=J0K(X1)、Q8=J0K(X8)是输入副本；本模块采用pro=q=的有状态副本及明确整帧交接。",
+        "W=2的S/C为Q12/Q13，尚未创建本帧S/C任务；没有为X2..X7补零任务。",
+        "Handoff的值池是整帧交接所有者；各输入复制任务另有自己的局部不可变参数，不通过索引跨对象共享。"
+      ],
+      "Handoff": {
+        "id": "H1",
+        "frame": {"module_id": "RAM0", "sequence": "1"},
+        "parameters": {
+          "bits": [1, 0, 1],
+          "sources": [
+            {"source": {"kind": "X", "id": "X0"}, "index": 0},
+            {"source": {"kind": "X", "id": "X1"}, "index": 1},
+            {"source": {"kind": "X", "id": "X8"}, "index": 2}
+          ],
+          "frames": [{"frame": {"module_id": "RAM0", "sequence": "1"}, "indices": [0, 1], "channels": [{"kind": "X", "id": "X0"}, {"kind": "X", "id": "X1"}]}]
+        },
+        "copy_steps": [
+          {"task_id": "T101", "target": {"id": "Q0", "generation": "1", "ex_version": "1"}, "parameter_index": 0, "completed": true},
+          {"task_id": "T102", "target": {"id": "Q1", "generation": "1", "ex_version": "1"}, "parameter_index": 1, "completed": false},
+          {"task_id": "T103", "target": {"id": "Q8", "generation": "1", "ex_version": "1"}, "parameter_index": 2, "completed": false}
+        ],
+        "store_behavior_id": "pre.S2.Q12",
+        "check_behavior_id": "pre.C2.Q13"
+      },
+      "Xi_FIFO_remaining_Tasks": [
+        {
+          "id": "T102", "kind": "input-copy", "target": {"id": "Q1", "generation": "1", "ex_version": "1"}, "parameter_policy": "event", "protected_reads": [],
+          "parameters": {"bits": [0], "sources": [{"source": {"kind": "X", "id": "X1"}, "index": 0}], "frames": []},
+          "behavior_id": null, "bound_ex": [],
+          "context": {"module_id": "RAM0", "operation": "ACCEPT_PRE_AND_TRY", "frame": {"module_id": "RAM0", "sequence": "1"}, "batch_id": null, "position": 1, "handoff_id": "H1"},
+          "cause": [{"kind": "input", "identity": "I1:X1"}]
+        },
+        {
+          "id": "T103", "kind": "input-copy", "target": {"id": "Q8", "generation": "1", "ex_version": "1"}, "parameter_policy": "event", "protected_reads": [],
+          "parameters": {"bits": [1], "sources": [{"source": {"kind": "X", "id": "X8"}, "index": 0}], "frames": []},
+          "behavior_id": null, "bound_ex": [],
+          "context": {"module_id": "RAM0", "operation": "ACCEPT_PRE_AND_TRY", "frame": {"module_id": "RAM0", "sequence": "1"}, "batch_id": null, "position": 2, "handoff_id": "H1"},
+          "cause": [{"kind": "input", "identity": "I1:X8"}]
+        }
+      ],
+      "expected": [
+        "加载不再执行T101，不重新读取X0，也不把Q0当前q当成整帧权威数据。",
+        "后续T102使用自己的0；T103使用自己的1。最后实际复制完成时，一次性建立分别拥有独立参数的相邻S2/C2任务，随后释放H1。",
+        "S2/C2的frames.indices仍为实际两位顺序；其sources转为真实Q0/Q1/Q8来源；S2的普通有状态C2来源不锁存历史q。",
+        "恢复后FRAME_IN=0只清input_staging，不撤销H1或T102/T103。"
+      ]
+    },
+    {
+      "id": "first_output_W2_after_one_bit",
+      "premise": "frame 10=[1,0]的首发首位Y0=1已完成，第二位Y1和FRAME_OUT仍待执行；此前无有效ACK保留。对应首发B.q=[1,0]仍受保护。",
+      "RAM_FIFO_remaining_Tasks": [
+        {
+          "id": "T202", "kind": "output-node", "target": {"id": "Q63", "generation": "1", "ex_version": "1"}, "parameter_policy": "output-latched", "protected_reads": [],
+          "parameters": {"bits": [0], "sources": [{"source": {"kind": "Q", "id": "Q54", "generation": "1"}, "index": 0}], "frames": []},
+          "behavior_id": null, "bound_ex": [],
+          "context": {"module_id": "RAM0", "operation": "POST_PROTOCOL", "frame": {"module_id": "RAM0", "sequence": "10"}, "batch_id": "B10", "position": 1, "handoff_id": null},
+          "cause": [{"kind": "factory-request", "identity": "R_FRAME:T200"}]
+        },
+        {
+          "id": "T203", "kind": "output-node", "target": {"id": "Q70", "generation": "1", "ex_version": "1"}, "parameter_policy": "output-latched",
+          "protected_reads": [
+            {"id": "Q26", "generation": "1", "ex_version": "1"},
+            {"id": "Q27", "generation": "1", "ex_version": "1"},
+            {"id": "Q42", "generation": "1", "ex_version": "1"},
+            {"id": "Q45", "generation": "1", "ex_version": "1"},
+            {"id": "Q46", "generation": "1", "ex_version": "1"}
+          ],
+          "parameters": {
+            "bits": [1],
+            "sources": [{"source": {"kind": "Q", "id": "Q61", "generation": "1"}, "index": 0}],
+            "frames": []
+          },
+          "behavior_id": "post.frame_out.Q70",
+          "bound_ex": [
+            {"target": {"id": "Q34", "generation": "1", "ex_version": "1"}, "parameter_policy": "event", "parameters": {"bits": [], "sources": [], "frames": []}, "condition": "first_current_unconsumed"},
+            {"target": {"id": "Q35", "generation": "1", "ex_version": "1"}, "parameter_policy": "event", "parameters": {"bits": [], "sources": [], "frames": []}, "condition": "first_current_unconsumed"},
+            {"target": {"id": "Q44", "generation": "1", "ex_version": "1"}, "parameter_policy": "event", "parameters": {"bits": [], "sources": [], "frames": []}, "condition": "first_current_unconsumed"},
+            {"target": {"id": "Q45", "generation": "1", "ex_version": "1"}, "parameter_policy": "event", "parameters": {"bits": [], "sources": [], "frames": []}, "condition": "first_current_unconsumed"},
+            {"target": {"id": "Q47", "generation": "1", "ex_version": "1"}, "parameter_policy": "event", "parameters": {"bits": [], "sources": [], "frames": []}, "condition": "first_current_unconsumed"}
+          ],
+          "context": {"module_id": "RAM0", "operation": "POST_PROTOCOL", "frame": {"module_id": "RAM0", "sequence": "10"}, "batch_id": "B10", "position": 2, "handoff_id": null},
+          "cause": [{"kind": "factory-request", "identity": "R_FRAME:T200"}]
+        }
+      ],
+      "OutputBatch": {
+        "id": "B10", "frame": {"module_id": "RAM0", "sequence": "10"}, "request_id": "R10", "kind": "first", "width": 2,
+        "published_prefix": 1, "frame_out_published": false,
+        "pending": [{"position": 1, "task_id": "T202"}, {"position": 2, "task_id": "T203"}]
+      },
+      "SavedQ_subset": [
+        {"node": {"id": "Q26", "generation": "1"}, "value": 1},
+        {"node": {"id": "Q27", "generation": "1"}, "value": 0},
+        {"node": {"id": "Q42", "generation": "1"}, "value": 1},
+        {"node": {"id": "Q44", "generation": "1"}, "value": 0},
+        {"node": {"id": "Q45", "generation": "1"}, "value": 0},
+        {"node": {"id": "Q46", "generation": "1"}, "value": 0},
+        {"node": {"id": "Q47", "generation": "1"}, "value": 0}
+      ],
+      "guard_and_parameters": [
+        "first_current_unconsumed是执行时条件：批次为首发，frame身份仍等于当前POST队首且未消费，W个数据输出已经完成，本首发尚未建立完成资格。不能把保存时结果冻结为true。",
+        "该条件在进入整个条件附带计划前求值并控制该计划，不在F更新后重新判定已完成资格而跳过READY。具体分组由注册契约明确。",
+        "FRAME_OUT任务只锁存自己的R_FRAME标记参数；该首发的整帧数据由仍受保护的B.q保存，不能从已结束的数据输出任务拼回，也不在marker里新增冗余帧数组。",
+        "H的真实EX仍读对应B的当前q，event参数为空；不用output-latched覆盖H的普通Qi_q读取。protected_reads保存整个已绑定附带计划的普通来源并集：H0读Q26，H1读Q27，CACHE_VALID/F读Q42，READY读Q45/Q46；来源身份和版本受保护，但每条EX仍在开始时读当前q。首发协议保证B保持对应帧。",
+        "附带计划依次执行H0、H1、CACHE_VALID、F、READY；每个EX真实执行，后续EX读取此前已完成步骤的新q，统一提交。只有顶层Q70绑定工厂行为，H等附带EX不递归触发工厂。"
+      ],
+      "expected": "加载不重发Y0；继续T202输出Y1=0，T203发布FRAME_OUT=1；条件成立时H=[1,0]、CACHE_VALID=1、F=1、C_ACK=0、READY=1。在T203完成前ACK0/ACK1均无资格。"
+    },
+    {
+      "id": "consumed_old_replay_marker_new_head_waiting",
+      "premise": "frame 10首发已完成，之后ACK0重发被接受；其两位已发。ACK1已消费frame 10，当前POST队首为frame 11且尚未完成自身首发；旧重发的FRAME_OUT任务T303仍待执行。",
+      "RAM_FIFO_old_marker_Task": {
+        "id": "T303", "kind": "output-node", "target": {"id": "Q70", "generation": "1", "ex_version": "1"}, "parameter_policy": "output-latched", "protected_reads": [],
+        "parameters": {
+          "bits": [0],
+          "sources": [{"source": {"kind": "Q", "id": "Q61", "generation": "1"}, "index": 0}],
+          "frames": []
+        },
+        "behavior_id": "post.frame_out.Q70", "bound_ex": [],
+        "context": {"module_id": "RAM0", "operation": "POST_PROTOCOL", "frame": {"module_id": "RAM0", "sequence": "10"}, "batch_id": "B11", "position": 2, "handoff_id": null},
+        "cause": [{"kind": "factory-request", "identity": "accepted-replay:R11"}]
+      },
+      "OutputBatch": {
+        "id": "B11", "frame": {"module_id": "RAM0", "sequence": "10"}, "request_id": "R11", "kind": "replay", "width": 2,
+        "published_prefix": 2, "frame_out_published": false, "pending": [{"position": 2, "task_id": "T303"}]
+      },
+      "Area_POST_subset": {
+        "id": "POST",
+        "blocks": [{"ref": {"id": "POST.B2", "generation": "1"}, "accepted_count": 1, "slots": [{"index": 0, "frame": {"module_id": "RAM0", "sequence": "11"}, "data": [{"id": "Q180", "generation": "1"}, {"id": "Q181", "generation": "1"}], "valid": {"id": "Q182", "generation": "1"}, "claim": null}]}],
+        "live_frames": [{"module_id": "RAM0", "sequence": "11"}]
+      },
+      "Retention": {
+        "frame": {"module_id": "RAM0", "sequence": "10"}, "width": 2,
+        "data": [{"id": "Q34", "generation": "1"}, {"id": "Q35", "generation": "1"}],
+        "cache_valid": {"id": "Q44", "generation": "1"}, "first_done": {"id": "Q45", "generation": "1"}, "consume": {"id": "Q46", "generation": "1"}, "ready": {"id": "Q47", "generation": "1"}
+      },
+      "SavedQ_subset": [
+        {"node": {"id": "Q34", "generation": "1"}, "value": 1},
+        {"node": {"id": "Q35", "generation": "1"}, "value": 0},
+        {"node": {"id": "Q44", "generation": "1"}, "value": 1},
+        {"node": {"id": "Q45", "generation": "1"}, "value": 1},
+        {"node": {"id": "Q46", "generation": "1"}, "value": 1},
+        {"node": {"id": "Q47", "generation": "1"}, "value": 0},
+        {"node": {"id": "Q182", "generation": "1"}, "value": 1}
+      ],
+      "required_node_facts": [
+        "Q180/Q181/Q182是此独立W=2片段的示例新分配POST数据/有效节点，非声称它们存在于此前80或87节点标本；完整结构必须给出合法自保持、有效清除EX及真实使用者。",
+        "Area_POST_subset只列当前队首所在块；旧frame 10所在块如果未满8仍须在完整Area中保留，只有合法整块释放后才可省略旧块。",
+        "Retention.frame是已撤销资格的历史身份，不要求旧槽仍存在；READY取Q47当前0，不能由CACHE_VALID=1或旧frame存在推导为有效。"
+      ],
+      "expected": "T303使用独立锁存标记0发布旧FRAME_OUT；其replay类型与旧frame身份均不允许执行首发H/F/READY计划。它不能重获frame 10资格，也不能为frame 11授予资格。当前新队首ACK无效，直到其自己的首发完成；没有额外ready布尔。"
+    },
+    {
+      "id": "partial_empty_PRE_vs_reusable_capacity",
+      "premise": "两个独立容量状态对照：PRE.B1本世代仅接纳2帧且都内部消费；PRE.B9旧世代3已满8、全部消费且依赖解除，节点已删除。",
+      "Area_partial_empty": {
+        "id": "PRE",
+        "blocks": [{
+          "ref": {"id": "PRE.B1", "generation": "1"}, "accepted_count": 2,
+          "slots": [
+            {"index": 0, "frame": {"module_id": "RAM0", "sequence": "1"}, "data": [{"id": "Q74", "generation": "1"}], "valid": {"id": "Q75", "generation": "1"}, "claim": {"id": "Q76", "generation": "1"}},
+            {"index": 1, "frame": {"module_id": "RAM0", "sequence": "2"}, "data": [{"id": "Q86", "generation": "1"}], "valid": {"id": "Q87", "generation": "1"}, "claim": {"id": "Q88", "generation": "1"}}
+          ]
+        }],
+        "live_frames": []
+      },
+      "SavedQ_subset": [
+        {"node": {"id": "Q75", "generation": "1"}, "value": 0},
+        {"node": {"id": "Q76", "generation": "1"}, "value": 1},
+        {"node": {"id": "Q87", "generation": "1"}, "value": 0},
+        {"node": {"id": "Q88", "generation": "1"}, "value": 1}
+      ],
+      "FreeBlock": {"id": "PRE.B9", "last_generation": "3", "slots": 8},
+      "Block_after_capacity_reuse_before_first_admission": {"ref": {"id": "PRE.B9", "generation": "4"}, "accepted_count": 0, "slots": []},
+      "expected": [
+        "PRE.B1的live_frames空不意味着可复用；恢复后accepted_count仍为2、generation仍为1，下次接纳使用index=2，既有槽Q仍满足全部节点规则。",
+        "FreeBlock没有data/valid/claim或任何活Q；它是释放容量及上次世代记录，不是零引用池节点。",
+        "复用PRE.B9时从free_blocks移出，登记generation=4的Block；实际接纳时按帧宽分配新的物理Q编号。draft-1不重用旧Q编号，也不把旧世代任务改指到新节点。",
+        "仅恢复本检查点不主动执行容量复用；新块示例描述以后实际工厂事务的结果。"
+      ]
+    }
+  ],
+  "verification": {
+    "method": "手工按既有模块语义与format-contract声明类型组织局部数据；没有执行节点、恢复器或模拟器。",
+    "not_claimed": ["完整动态运行检查点", "全部引用闭合", "完整注册契约", "真实续算等价通过", "外部副作用恰好一次"]
+  }
+}

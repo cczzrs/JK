@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>异步结构存储 · JK 设计实验室</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./frame-layout.css">
+  <link rel="stylesheet" href="./canvas-fullscreen.css">
+</head>
+<body>
+  <header class="page-header">
+    <div class="brand-mark" aria-hidden="true">JK<span>↗</span></div>
+    <div class="page-heading"><p class="eyebrow">LOGIC UNIT / V5 DESIGN STUDY</p><h1>异步结构存储</h1></div>
+    <div class="header-meta"><span class="badge draft">独立设计草稿</span><a href="../../docs/logic_units/async-structural-storage-draft.md" target="_blank" rel="noopener">规则原文 ↗</a></div>
+  </header>
+
+  <main>
+    <section class="intro" aria-label="设计范围">
+      <p>看见每一帧如何进入、保存、递交与回收。<span>节点在结构里，任务在队列里；一步对应一个完整 EX 或 RAM 事务。</span></p>
+      <button class="text-button" data-action="show-rules">查看实现边界 →</button>
+    </section>
+
+    <section class="control-deck" aria-label="输入和执行控制">
+      <form id="input-form" class="input-control">
+        <label for="frame-input">输入帧 <span id="width-label">4 bit</span></label>
+        <div class="input-row"><input id="frame-input" type="text" value="1011" inputmode="numeric" autocomplete="off" spellcheck="false" aria-describedby="input-help" maxlength="24"><button type="submit" class="primary">提交 FRAME_IN = 1</button></div>
+        <div class="input-footer"><span id="input-help">1–8 bit · 可连续提交</span><button type="button" class="text-button" data-action="clear">FRAME_IN = 0 清暂态</button></div>
+      </form>
+      <div class="ack-control">
+        <div class="control-label">外部 ACK <span id="ack-state" class="status-pill">等待完整递交</span></div>
+        <div class="button-row"><button data-action="ack0">ACK 0 <span>重发</span></button><button data-action="ack1">ACK 1 <span>消费</span></button></div>
+        <p class="control-note">两种 ACK 均可随时输入，执行时检查队首及有效 q。</p>
+      </div>
+      <div class="execution-control">
+        <div class="control-label">执行器 <span id="run-state" class="status-pill">已暂停</span></div>
+        <div class="button-row"><button data-action="step" class="step-button">↦ 单步</button><button data-action="run" id="run-button">▶ 连续运行</button><button data-action="reset" class="icon-button" title="重置运行现场" aria-label="重置运行现场">↺</button></div>
+        <label class="speed-control" for="speed">速度 <input id="speed" type="range" min="1" max="20" value="4"><output id="speed-label">4 步/秒</output></label>
+      </div>
+    </section>
+    <div id="message" class="message" role="status" aria-live="polite">提交一帧，再单步观察从 Xi.FIFO 到 RAM.FIFO 的接力。</div>
+
+    <section class="metrics" aria-label="运行统计" id="metrics"></section>
+
+    <section class="workspace" aria-label="结构与检查器">
+      <div class="diagram-panel">
+        <div class="diagram-toolbar">
+          <div class="toolbar-title"><span class="live-dot"></span><h2>结构现场</h2><span id="step-label" class="mono">STEP 0</span></div>
+          <div class="diagram-actions"><label class="follow-control"><input id="follow-task" type="checkbox">跟随执行</label><button class="icon-button" data-action="zoom-out" title="缩小" aria-label="缩小">−</button><button id="zoom-label" class="zoom-label" data-action="zoom-reset" title="恢复 100%">100%</button><button class="icon-button" data-action="zoom-in" title="放大" aria-label="放大">＋</button><button data-action="fullscreen" aria-pressed="false" title="画板全屏">⛶ 全屏</button></div>
+        </div>
+        <div id="frame-editor" class="frame-editor" aria-label="画框设置">
+          <div class="frame-editor-title">当前画框 <strong data-frame-name>异步结构存储</strong></div>
+          <label>宽 <input type="number" data-frame-field="width" min="80" max="6000" step="1" aria-label="画框宽度" title="宽度，单位 px；留空恢复自适应"></label>
+          <label>高 <input type="number" data-frame-field="height" min="80" max="6000" step="1" aria-label="画框高度" title="高度，单位 px；留空恢复自适应"></label>
+          <label>颜色 <input type="color" data-frame-field="color" value="#6e9d94" aria-label="画框颜色"></label>
+          <div class="frame-palette" aria-label="常用画框颜色">
+            <button type="button" data-frame-color="#478b73" style="--swatch:#478b73" aria-label="画框设为绿色" aria-pressed="false"></button>
+            <button type="button" data-frame-color="#4f80b9" style="--swatch:#4f80b9" aria-label="画框设为蓝色" aria-pressed="false"></button>
+            <button type="button" data-frame-color="#9472b4" style="--swatch:#9472b4" aria-label="画框设为紫色" aria-pressed="false"></button>
+            <button type="button" data-frame-color="#c28c3b" style="--swatch:#c28c3b" aria-label="画框设为金色" aria-pressed="false"></button>
+            <button type="button" data-frame-color="#be6f69" style="--swatch:#be6f69" aria-label="画框设为珊瑚色" aria-pressed="false"></button>
+          </div>
+          <button type="button" data-frame-reset>恢复此框</button><button type="button" data-layout-reset>恢复全部布局</button>
+          <span class="frame-editor-hint">拖动 ⠿ 移动 · 边缘调尺寸 · 自动保存到本机</span>
+        </div>
+        <div class="edge-toolbar" aria-label="图关系图例">
+          <label><input id="edge-refs" type="checkbox" checked><i class="line-key ref"></i>EX 引用</label>
+          <label><input id="edge-binding" type="checkbox" checked><i class="line-key binding"></i>q_y 绑定</label>
+          <label><input id="edge-cause" type="checkbox" checked><i class="line-key cause"></i>触发原因</label>
+          <label><input id="edge-management" type="checkbox" checked><i class="line-key management"></i>工厂管理</label>
+          <label><input id="edge-membership" type="checkbox"><i class="line-key membership"></i>成员关系</label>
+          <label class="all-edges"><input id="all-edges" type="checkbox">全图 EX</label>
+        </div>
+        <div id="diagram-viewport" class="diagram-viewport" tabindex="0" aria-label="可滚动模块关系图">
+          <div id="diagram-size" class="diagram-size"><div id="diagram-scene" class="diagram-scene"></div></div>
+        </div>
+        <div class="diagram-footer"><span><i class="node-key stateful"></i>有状态 Q <i class="node-key stateless"></i>无状态 Q <i class="bit-key"></i>q = 1</span><span>点选画框设置外观 · 标题折叠 · 移动/尺寸手柄支持方向键</span></div>
+      </div>
+
+      <aside class="inspector-panel" aria-label="详细检查器">
+        <div class="inspector-tabs" role="tablist" aria-label="检查器内容"><button role="tab" aria-selected="true" data-tab="node">节点</button><button role="tab" aria-selected="false" data-tab="event">本步</button><button role="tab" aria-selected="false" data-tab="rules">规则</button></div>
+        <div class="node-search"><label for="node-search" class="sr-only">搜索节点</label><input id="node-search" type="text" placeholder="查找 Q 编号或节点名称"><button data-action="find-node" class="icon-button" title="定位节点" aria-label="定位节点">⌕</button></div>
+        <div id="inspector" class="inspector-body" role="tabpanel"></div>
+      </aside>
+    </section>
+
+    <section class="bottom-grid">
+      <div class="output-panel"><div class="section-title"><h2>对外递交</h2><span>真实 Yi 发布 → FRAME_OUT</span></div><div id="output-log" class="output-log"></div></div>
+      <div class="timeline-panel"><div class="section-title"><h2>执行时间线</h2><span id="history-count">尚未执行</span></div><div id="timeline" class="timeline"></div></div>
+    </section>
+    <footer class="page-footer"><span>JK · 逻辑单元设计实验室</span><span>本地实验实现 · 未并入现行 JKRD · 环监督、失败重试与完整快照未实现</span></footer>
+  </main>
+  <noscript><p class="boot-error">请启用 JavaScript，以运行真实节点任务和结构视图。</p></noscript>
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>

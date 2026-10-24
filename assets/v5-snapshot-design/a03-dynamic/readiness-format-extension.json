@@ -1,0 +1,62 @@
+{
+  "artifact_kind": "declarative-candidate-format-extension-not-a-validator",
+  "status": "design-not-approved-as-general-format-not-implemented",
+  "extends": "../format-contract.json",
+  "schema_revision": "draft-2-a03-ready",
+  "rule_profile": "JKRD-V5-DAG-1-2-5+A03-ready-2",
+  "contract": "checkpoint-contract.json",
+  "changes": [
+    {
+      "field": "Task.bound_ex[]",
+      "old": "target, parameter_policy, parameters, condition",
+      "new": "target, expression, parameters, condition, final_ex",
+      "requirement": "Every expression is concrete ordinary JK; each input is present before the parent task is enqueued. Private load/restore is explicitly declared and protection-checked."
+    },
+    {
+      "field": "Task.admission",
+      "new": "{rule,evidence}",
+      "requirement": "Descriptive evidence only; never executable readiness state or a substitute for gates."
+    },
+    {
+      "field": "Runtime.arrivals[]",
+      "new": "{target,arrived:[{source,value,cause}],waiting_for,meaning}",
+      "requirement": "For this exact candidate: arrived and waiting_for partition distinct effective event sources in target EX; missing nonempty; no task for that incomplete group."
+    },
+    {
+      "field": "StorageRuntime",
+      "new_fields": [
+        "reservation_tail",
+        "ack_instances",
+        "output.activation_request_id"
+      ],
+      "requirement": "Frame/node identities only. Readiness, claims, BUSY and qualification remain actual JK q. Reserved future frontier exists as initial0 legal nodes before a later JOIN references it."
+    },
+    {
+      "field": "Runtime.allocators.node_id_reservations",
+      "new": "{profile,not_yet_created,retired_or_unavailable}",
+      "requirement": "Reserved numeric names are not Q nodes and cannot supply values. Never-created, live and retired partitions are disjoint. Deleted identities may never be recreated in this profile."
+    },
+    {
+      "field": "Structure.factories[]",
+      "new": "{id,contract_id,binding_policy}",
+      "requirement": "Exact definitions/recipes embedded in the named supported contract; reject unknown profiles/operations. Binding policy is descriptive registration, not executable source."
+    },
+    {
+      "field": "Task.planned_creations",
+      "new": "[{node,initial_q,role,condition}]",
+      "requirement": "Only explicit creation descriptors may name a bound target absent from the current graph. Initial literals and all load inputs must already be present before admission; no future result of a new node may be used as an input."
+    },
+    {
+      "field": "Task.operation_parameters and protected_operation_targets",
+      "new": "Concrete frame-bound ACK arguments and Target refs",
+      "requirement": "CP4 carries actual bound F1 actions, retained data and slot/qualification refs, plus R2/R3 recipes. The input ACK0 lock passed to K130 remains 0 while Q9.q=1. Restore does not decode again or reselect a head."
+    }
+  ],
+  "unchanged": [
+    "Outer format kind separates structure/runtime",
+    "q and initial_q remain separate",
+    "Fixed output EX/q_y",
+    "Canonical bytes and F/M fingerprint domains, including complete contract and runtime, excluding metadata"
+  ],
+  "compatibility": "A draft-1-only consumer must reject this revision instead of ignoring new fields. The existing core draft-1 examples remain unchanged. These are concrete documents and a descriptive contract, not a complete reusable JSON Schema implementation."
+}

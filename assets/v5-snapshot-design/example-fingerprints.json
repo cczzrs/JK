@@ -1,0 +1,108 @@
+{
+  "status": "byte-digest-verified-not-runtime-verified",
+  "method": "Python hashlib and system OpenSSL on identical explicitly constructed canonical UTF-8 payloads; no EX evaluation or task execution",
+  "records": [
+    {
+      "file": "structure-example.json",
+      "field": "format_md5",
+      "canonical_bytes": 633,
+      "md5": "51a1ef11e72009f4b0cfcebdad51822f",
+      "independent_digest_match": true
+    },
+    {
+      "file": "structure-example.json",
+      "field": "md5",
+      "canonical_bytes": 738,
+      "md5": "7a24648abe5ceda22f05e2b4a7c1cda2",
+      "independent_digest_match": true
+    },
+    {
+      "file": "runtime-example.json",
+      "field": "format_md5",
+      "canonical_bytes": 633,
+      "md5": "51a1ef11e72009f4b0cfcebdad51822f",
+      "independent_digest_match": true
+    },
+    {
+      "file": "runtime-example.json",
+      "field": "md5",
+      "canonical_bytes": 2794,
+      "md5": "e6e30387f62e62102cb0672e413ae351",
+      "independent_digest_match": true
+    }
+  ],
+  "byte_sensitivity_checks": [
+    {
+      "change": "metadata name",
+      "expected_changed": {
+        "format_md5": false,
+        "md5": false
+      },
+      "observed_changed": {
+        "format_md5": false,
+        "md5": false
+      },
+      "scope": "byte-digest-only; no execution"
+    },
+    {
+      "change": "explicit default pro",
+      "expected_changed": {
+        "format_md5": false,
+        "md5": false
+      },
+      "observed_changed": {
+        "format_md5": false,
+        "md5": false
+      },
+      "scope": "byte-digest-only; no execution"
+    },
+    {
+      "change": "current q",
+      "expected_changed": {
+        "format_md5": false,
+        "md5": true
+      },
+      "observed_changed": {
+        "format_md5": false,
+        "md5": true
+      },
+      "scope": "byte-digest-only; no execution"
+    },
+    {
+      "change": "queued bit",
+      "expected_changed": {
+        "format_md5": false,
+        "md5": true
+      },
+      "observed_changed": {
+        "format_md5": false,
+        "md5": true
+      },
+      "scope": "byte-digest-only; no execution"
+    },
+    {
+      "change": "task array order",
+      "expected_changed": {
+        "format_md5": false,
+        "md5": true
+      },
+      "observed_changed": {
+        "format_md5": false,
+        "md5": true
+      },
+      "scope": "byte-digest-only; no execution"
+    },
+    {
+      "change": "external input mapping",
+      "expected_changed": {
+        "format_md5": true,
+        "md5": true
+      },
+      "observed_changed": {
+        "format_md5": true,
+        "md5": true
+      },
+      "scope": "byte-digest-only; no execution"
+    }
+  ]
+}

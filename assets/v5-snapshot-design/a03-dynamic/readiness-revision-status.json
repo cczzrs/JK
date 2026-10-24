@@ -1,0 +1,50 @@
+{
+  "artifact_kind": "design_revision_status_not_runtime_schema",
+  "date": "2026-10-21",
+  "status": "rederived-structure-json-and-manual-continuations-statically-checked-not-runtime-verified",
+  "authority": "Direct user clarification in this conversation; recorded in docs/drafts/JKRD-V5.0.0-notes.md#transaction-ready-before-enqueue",
+  "user_confirmations": [
+    "利用事务触发入队的 JK 结构，判断事务所包含的所有节点和操作的参数都准备好后才会加入相应 FIFO 队列",
+    "参数在入队前尚未产生？？那就是参数没有全部准备好就继续等待啊",
+    "采用：译码后触发独立事务"
+  ],
+  "confirmed_requirement": "All required parameters of every included node and operation must actually be ready before the JK trigger structure enqueues this transaction. An unproduced result is unavailable; do not admit a transaction on the assumption that its earlier internal EX will later produce that result.",
+  "affected_designs": [
+    "assets/async-structural-storage-v5-design/a03-factory-transactions.json",
+    "checkpoint-contract.json",
+    "reasoned-continuations.json",
+    "01-input-copy-midway.json",
+    "02-pre-post-overlap.json",
+    "03-partial-first-output.json",
+    "04-ack-pair-and-retired-rounds.json",
+    "05-old-replay-and-next-preparation.json",
+    "06-next-frame-complete.json"
+  ],
+  "preserved_evidence": "The historical 49-task text is superseded. The six named checkpoint files and contract are replaced by draft-2-a03-ready, with a 75-task manually reasoned continuation. No execution equivalence is claimed.",
+  "unchanged_rules": [
+    "No node exemptions; existing J/K, pro, FIFO ownership and priority remain.",
+    "Readiness does not introduce blanket early locking of ordinary Qi_q.",
+    "A zero bit is present data; ACK READY=0 is not a missing parameter. An ineligible ACK remains ignored, never retained until eligibility becomes1.",
+    "FRAME_OUT completion qualification, immediate ACK1 revocation, stale-completion protection and full8/all-consumed/no-dependency block reuse remain requirements."
+  ],
+  "pending_work": [
+    "Executor and supported-format validator implementation after design confirmation",
+    "Actual interrupted/uninterrupted continuation equivalence",
+    "Runtime arbitrary interleavings, full8 generation reuse and failures"
+  ],
+  "canonical_or_executor_modified": false,
+  "ack_boundary": "Decoder chooses current qualified frame; later atomic action is bound to that frame. If already consumed, ignore; never retarget next frame.",
+  "completed_artifacts": [
+    "../../async-structural-storage-v5-design/a03-readiness-business.json",
+    "../../async-structural-storage-v5-design/a03-readiness-output.json",
+    "../../async-structural-storage-v5-design/a03-readiness-ack.json",
+    "checkpoint-contract.json",
+    "reasoned-continuations.json",
+    "verification-record.json"
+  ],
+  "current_profile": {
+    "schema_revision": "draft-2-a03-ready",
+    "rule_profile": "JKRD-V5-DAG-1-2-5+A03-ready-2",
+    "contract": "a03-w2-ready-checkpoint@draft-2"
+  }
+}

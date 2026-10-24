@@ -1,0 +1,81 @@
+{
+  "format": "jk-logic-structure-V5.0.0",
+  "schema_revision": "draft-1",
+  "rule_profile": "JKRD-V5-DAG-1-2-5",
+  "canonicalization": "jk-json-v5-draft-1",
+  "structure": {
+    "nodes": [
+      {
+        "id": "Q0",
+        "generation": "1",
+        "ex_version": "1",
+        "ex": "J0K(X0)"
+      },
+      {
+        "id": "Q1",
+        "generation": "1",
+        "ex_version": "1",
+        "ex": "J0K(X1)"
+      },
+      {
+        "id": "Q2",
+        "generation": "1",
+        "ex_version": "1",
+        "ex": "K(Q0)K(Q1)"
+      }
+    ],
+    "initial_q": {
+      "0": [
+        "Q0",
+        "Q1",
+        "Q2"
+      ],
+      "1": []
+    },
+    "inputs": [
+      {
+        "id": "X0",
+        "external": "X0"
+      },
+      {
+        "id": "X1",
+        "external": "X1"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "Y0",
+        "external": "Y0"
+      }
+    ],
+    "q_y": [
+      {
+        "output": "Y0",
+        "node": {
+          "id": "Q2",
+          "generation": "1"
+        }
+      }
+    ],
+    "capacity": {
+      "max_live_nodes": null
+    },
+    "contracts": [],
+    "factories": [],
+    "modules": []
+  },
+  "metadata": {
+    "name": "两输入累计异或：新结构初始化设计例",
+    "created_unix_ns": "0",
+    "display": {},
+    "provenance": {
+      "status": "draft-example-not-executed",
+      "source": "docs/JKRD.md",
+      "timestamp_notice": "0 is a fixture value, not the actual creation time"
+    }
+  },
+  "fingerprints": {
+    "format_md5": "51a1ef11e72009f4b0cfcebdad51822f",
+    "md5": "7a24648abe5ceda22f05e2b4a7c1cda2"
+  }
+}
