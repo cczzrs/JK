@@ -1,0 +1,1018 @@
+{
+  "status": "candidate-design-rederived-for-all-actual-parameters-ready-before-enqueue",
+  "format": "jk-a03-readiness-business-design-draft-1",
+  "scope": "A03 W=2, cumulative XOR; design and hand reasoning only, no executor or JKRD change",
+  "sources": [
+    {
+      "path": "../../docs/JKRD.md",
+      "clauses": [
+        "full flat EX is atomic; J=AND and K=XOR",
+        "stateless-source arrival groups lock 0/1 data; ordinary state sources read latest q at EX start",
+        "same publication uses ascending target IDs within RAM.FIFO",
+        "all real Q edges including silent nodes are a DAG; non-self sources and consumers both required",
+        "initialization publishes no event; pro=q= affects publication only"
+      ]
+    },
+    {
+      "path": "../../docs/logic_units/async-structural-storage-draft.md#transaction-ready-before-enqueue",
+      "clauses": [
+        "all included node/operation parameters must already exist before task enqueue",
+        "no use of a future internal EX result as ready",
+        "zero is a valid value; ordinary q is not globally latched"
+      ]
+    }
+  ],
+  "external_fixed_roles": {
+    "T1": {
+      "id": 42,
+      "required_q": 1,
+      "role": "already existing legal constant-result state node; no new pure constant node"
+    },
+    "GC": {
+      "id": 71,
+      "role": "later real RAM task with factory retire transaction"
+    },
+    "A": {
+      "id": 51,
+      "role": "real EX closure for quiet terminal state nodes only; live publishing READY/PRE.V are excluded, and retained PRE.V has the real CLAIM consumer"
+    },
+    "input_copies": [
+      0,
+      1
+    ],
+    "frame_in": 8
+  },
+  "symbolic_templates": {
+    "PRE_D": {
+      "creation_initial_q": 0,
+      "creation_load_ex": "J0K(input_copy_i)",
+      "load_parameters": "actual frame event lock already owned by ACCEPT parent before enqueue",
+      "visible_hold_ex": "J0J(T1)K(self)",
+      "pro": "q="
+    },
+    "PRE_V": {
+      "initial_q": 0,
+      "set_ex": "J0K(T1)",
+      "pro": "q=1",
+      "go_rewrite_clear_ex": "J0J(T1)"
+    },
+    "CLAIM": {
+      "initial_q": 0,
+      "ex": "K1J(PRE.V)J(previous.READY)K(self)",
+      "pro": "q=",
+      "boolean": "old_C XOR ((NOT old_C) AND PRE.V AND previous.READY) = old_C OR (PRE.V AND previous.READY)",
+      "go_final_ex": "J0J(T1)K(self)K(PRE.V)K(PRE.V)",
+      "go_final_purpose": "Keep the consumed PRE.V a genuine EX source after JOIN deletion; repeated XOR cancels while preserving CLAIM q. PRE.V clear0 publishes nothing."
+    },
+    "JOIN": {
+      "stateful": false,
+      "ex": "J0K1K(CLAIM)J(PRE.V)J(previous.READY)",
+      "pro": "q=1",
+      "boolean": "NOT CLAIM AND PRE.V AND previous.READY"
+    },
+    "GO": {
+      "stateful": false,
+      "ex": "J0K(JOIN)",
+      "pro": "q=1",
+      "parameter_policy": "JOIN is stateless; lock the published 1 in the GO task"
+    },
+    "COMP_i": {
+      "stateful": false,
+      "ex": "J0K(PRE.D_i)K(previous.S_i)J(GO)",
+      "pro": "q=0/1",
+      "parameter_policy": "GO is stateless; lock its 1. PRE.D and previous.S remain ordinary state reads and protected stable identities."
+    },
+    "COMMIT": {
+      "initial_q": 0,
+      "ex": "J0K(COMP_0)K(COMP_1)",
+      "pro": "q=",
+      "parameter_policy": "Each COMP is stateless. Collect both actual 0/1 results before this task exists. Own parity result is observation and is not an operation parameter."
+    },
+    "POST_D_and_NEXT_S": {
+      "initial_q": 0,
+      "visible_hold_ex": "J0J(T1)K(self)",
+      "commit_private_load_ex": "J0K(COMP_i)",
+      "parameter_policy": "Each independent EX uses its own copy of the already collected COMP_i lock; NEXT.S never reads freshly loaded POST.D."
+    },
+    "NEXT_READY": {
+      "initial_q": 0,
+      "ex": "J0K(T1)",
+      "pro": "q=1",
+      "atomic_context": "Set together with all independent next-state loads; it reads existing T1, not newly computed next-state values."
+    },
+    "READY_OBSERVER": {
+      "initial_q": 0,
+      "ex": "J0J(NEXT_READY)K1",
+      "pro": "q=",
+      "purpose": "Real consumer keeps a completed frontier legal when no successor JOIN exists. The READY event produces one actual observation task; A consumes this silent observer."
+    }
+  },
+  "ordering_requirements": [
+    "JOIN.id < CLAIM.id for every round; each READY/PRE.V completion publication enqueues JOIN before CLAIM in RAM.FIFO.",
+    "Each PRE.V and NEXT.READY is set and publishes exactly once per physical round; initial zero is no event, and later zero clear is filtered by pro=q=1.",
+    "All JOIN and CLAIM tasks produced by the two one-shot completion events precede the successful GO task. This is proved by same-source target order and RAM FIFO. GO checks the actual saved dependency set before mutation; if unexpected protection contradicts this admitted profile, reject the candidate operation under the still-pending failure policy, never block a RAM queue head or spin/re-enqueue a not-ready GO. A generalized design must perform waiting before GO admission.",
+    "Next-frontier nodes are reserved with initial zero and READY zero at ACCEPT so an early next frame can reference the exact next-state identities without reading them as finished results.",
+    "A reserved frontier identity and a completed frontier identity are distinct lifecycle metadata; no duplicate business readiness boolean is introduced."
+  ],
+  "seed_nodes": [
+    {
+      "id": 72,
+      "role": "seed.S0",
+      "generation": "1",
+      "ex_version": "1",
+      "ex": "J0J(Q42)K(Q72)",
+      "pro": "q=",
+      "stateful": true,
+      "initial_q": 0
+    },
+    {
+      "id": 73,
+      "role": "seed.S1",
+      "generation": "1",
+      "ex_version": "1",
+      "ex": "J0J(Q42)K(Q73)",
+      "pro": "q=",
+      "stateful": true,
+      "initial_q": 0
+    },
+    {
+      "id": 74,
+      "role": "seed.READY",
+      "generation": "1",
+      "ex_version": "1",
+      "ex": "J0K(Q42)",
+      "pro": "q=1",
+      "stateful": true,
+      "initial_q": 1
+    },
+    {
+      "id": 101,
+      "role": "seed.READY_OBSERVER",
+      "generation": "1",
+      "ex_version": "1",
+      "ex": "J0J(Q74)K1",
+      "pro": "q=",
+      "stateful": true,
+      "initial_q": 0
+    }
+  ],
+  "rounds": [
+    {
+      "id": "R1",
+      "mapping": {
+        "name": "R1",
+        "pre": [
+          75,
+          76
+        ],
+        "valid": 77,
+        "join": 78,
+        "claim": 79,
+        "go": 80,
+        "compute": [
+          81,
+          82
+        ],
+        "commit": 83,
+        "post": [
+          84,
+          85
+        ],
+        "next": [
+          86,
+          87
+        ],
+        "ready": 88,
+        "post_valid": 89,
+        "observer": 100,
+        "previous": [
+          72,
+          73
+        ],
+        "previous_ready": 74,
+        "previous_observer": 101
+      },
+      "nodes_at_accept_commit": [
+        {
+          "id": 75,
+          "role": "R1.PRE.D0",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0J(Q42)K(Q75)",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 76,
+          "role": "R1.PRE.D1",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0J(Q42)K(Q76)",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 77,
+          "role": "R1.PRE.V",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0K(Q42)",
+          "pro": "q=1",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 78,
+          "role": "R1.JOIN",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0K1K(Q79)J(Q77)J(Q74)",
+          "pro": "q=1",
+          "stateful": false
+        },
+        {
+          "id": 79,
+          "role": "R1.CLAIM",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "K1J(Q77)J(Q74)K(Q79)",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 80,
+          "role": "R1.GO",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0K(Q78)",
+          "pro": "q=1",
+          "stateful": false
+        },
+        {
+          "id": 81,
+          "role": "R1.COMP0",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0K(Q75)K(Q72)J(Q80)",
+          "pro": "q=0/1",
+          "stateful": false
+        },
+        {
+          "id": 82,
+          "role": "R1.COMP1",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0K(Q76)K(Q73)J(Q80)",
+          "pro": "q=0/1",
+          "stateful": false
+        },
+        {
+          "id": 83,
+          "role": "R1.COMMIT",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0K(Q81)K(Q82)",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 84,
+          "role": "R1.POST.D0",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0J(Q42)K(Q84)",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 85,
+          "role": "R1.POST.D1",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0J(Q42)K(Q85)",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 86,
+          "role": "R1.NEXT.S0",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0J(Q42)K(Q86)",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 87,
+          "role": "R1.NEXT.S1",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0J(Q42)K(Q87)",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 88,
+          "role": "R1.NEXT.READY",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0K(Q42)",
+          "pro": "q=1",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 89,
+          "role": "R1.POST.V",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0K(Q42)",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 100,
+          "role": "R1.NEXT.READY_OBSERVER",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0J(Q88)K1",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        }
+      ],
+      "load_and_rewrite_plan": {
+        "accept_pre_load": [
+          {
+            "target": 75,
+            "load_ex": "J0K(Q0)",
+            "parameter_source": "parent frame lock input channel 0",
+            "final_ex": "J0J(Q42)K(Q75)",
+            "visible_version": "1"
+          },
+          {
+            "target": 76,
+            "load_ex": "J0K(Q1)",
+            "parameter_source": "parent frame lock input channel 1",
+            "final_ex": "J0J(Q42)K(Q76)",
+            "visible_version": "1"
+          }
+        ],
+        "accept_pre_valid": {
+          "target": 77,
+          "ex": "J0K(Q42)",
+          "available_parameter": "existing Q42.q=1",
+          "publish_after_pre_loads": true
+        },
+        "go_after_join_claim_tasks": [
+          {
+            "target": 79,
+            "old_ex": "K1J(Q77)J(Q74)K(Q79)",
+            "final_ex": "J0J(Q42)K(Q79)K(Q77)K(Q77)",
+            "new_ex_version": "2",
+            "q_unchanged": true
+          },
+          {
+            "target": 77,
+            "old_ex": "J0K(Q42)",
+            "final_ex": "J0J(Q42)",
+            "new_ex_version": "2",
+            "q_unchanged": true
+          }
+        ],
+        "commit_private_independent_loads": [
+          {
+            "target": 84,
+            "load_ex": "J0K(Q81)",
+            "parameter_source": "COMMIT task owns the already collected COMP0 event value",
+            "final_ex": "J0J(Q42)K(Q84)",
+            "visible_version": "1",
+            "install_after_source_publications": true
+          },
+          {
+            "target": 85,
+            "load_ex": "J0K(Q82)",
+            "parameter_source": "COMMIT task owns the already collected COMP1 event value",
+            "final_ex": "J0J(Q42)K(Q85)",
+            "visible_version": "1",
+            "install_after_source_publications": true
+          },
+          {
+            "target": 86,
+            "load_ex": "J0K(Q81)",
+            "parameter_source": "COMMIT task owns the already collected COMP0 event value",
+            "final_ex": "J0J(Q42)K(Q86)",
+            "visible_version": "1",
+            "install_after_source_publications": true
+          },
+          {
+            "target": 87,
+            "load_ex": "J0K(Q82)",
+            "parameter_source": "COMMIT task owns the already collected COMP1 event value",
+            "final_ex": "J0J(Q42)K(Q87)",
+            "visible_version": "1",
+            "install_after_source_publications": true
+          }
+        ],
+        "commit_independent_flags": [
+          {
+            "target": 89,
+            "ex": "J0K(Q42)",
+            "expected_value": 1
+          },
+          {
+            "target": 88,
+            "ex": "J0K(Q42)",
+            "expected_value": 1
+          },
+          {
+            "target": 77,
+            "ex": "J0J(Q42)",
+            "expected_value": 0
+          }
+        ]
+      },
+      "retire_after_commit": {
+        "nodes": [
+          72,
+          73,
+          74,
+          101,
+          78,
+          80,
+          81,
+          82,
+          83
+        ],
+        "preserve_pre_slot_nodes": [
+          75,
+          76,
+          77,
+          79
+        ],
+        "preserve_current_post_and_frontier_nodes": [
+          84,
+          85,
+          86,
+          87,
+          89,
+          88,
+          100
+        ],
+        "current_COMMIT_is_registered_only": "Delete only in a later GC transaction after the currently executing COMMIT and all queued tasks, arrivals, live-read/EX-version, preparation and structural external dependencies have ended."
+      }
+    },
+    {
+      "id": "R2",
+      "mapping": {
+        "name": "R2",
+        "pre": [
+          110,
+          111
+        ],
+        "valid": 112,
+        "join": 113,
+        "claim": 114,
+        "go": 115,
+        "compute": [
+          116,
+          117
+        ],
+        "commit": 118,
+        "post": [
+          119,
+          120
+        ],
+        "next": [
+          121,
+          122
+        ],
+        "ready": 123,
+        "post_valid": 124,
+        "observer": 125,
+        "previous": [
+          86,
+          87
+        ],
+        "previous_ready": 88,
+        "previous_observer": 100
+      },
+      "nodes_at_accept_commit": [
+        {
+          "id": 110,
+          "role": "R2.PRE.D0",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0J(Q42)K(Q110)",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 111,
+          "role": "R2.PRE.D1",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0J(Q42)K(Q111)",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 112,
+          "role": "R2.PRE.V",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0K(Q42)",
+          "pro": "q=1",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 113,
+          "role": "R2.JOIN",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0K1K(Q114)J(Q112)J(Q88)",
+          "pro": "q=1",
+          "stateful": false
+        },
+        {
+          "id": 114,
+          "role": "R2.CLAIM",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "K1J(Q112)J(Q88)K(Q114)",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 115,
+          "role": "R2.GO",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0K(Q113)",
+          "pro": "q=1",
+          "stateful": false
+        },
+        {
+          "id": 116,
+          "role": "R2.COMP0",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0K(Q110)K(Q86)J(Q115)",
+          "pro": "q=0/1",
+          "stateful": false
+        },
+        {
+          "id": 117,
+          "role": "R2.COMP1",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0K(Q111)K(Q87)J(Q115)",
+          "pro": "q=0/1",
+          "stateful": false
+        },
+        {
+          "id": 118,
+          "role": "R2.COMMIT",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0K(Q116)K(Q117)",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 119,
+          "role": "R2.POST.D0",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0J(Q42)K(Q119)",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 120,
+          "role": "R2.POST.D1",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0J(Q42)K(Q120)",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 121,
+          "role": "R2.NEXT.S0",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0J(Q42)K(Q121)",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 122,
+          "role": "R2.NEXT.S1",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0J(Q42)K(Q122)",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 123,
+          "role": "R2.NEXT.READY",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0K(Q42)",
+          "pro": "q=1",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 124,
+          "role": "R2.POST.V",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0K(Q42)",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        },
+        {
+          "id": 125,
+          "role": "R2.NEXT.READY_OBSERVER",
+          "generation": "1",
+          "ex_version": "1",
+          "ex": "J0J(Q123)K1",
+          "pro": "q=",
+          "stateful": true,
+          "initial_q": 0
+        }
+      ],
+      "load_and_rewrite_plan": {
+        "accept_pre_load": [
+          {
+            "target": 110,
+            "load_ex": "J0K(Q0)",
+            "parameter_source": "parent frame lock input channel 0",
+            "final_ex": "J0J(Q42)K(Q110)",
+            "visible_version": "1"
+          },
+          {
+            "target": 111,
+            "load_ex": "J0K(Q1)",
+            "parameter_source": "parent frame lock input channel 1",
+            "final_ex": "J0J(Q42)K(Q111)",
+            "visible_version": "1"
+          }
+        ],
+        "accept_pre_valid": {
+          "target": 112,
+          "ex": "J0K(Q42)",
+          "available_parameter": "existing Q42.q=1",
+          "publish_after_pre_loads": true
+        },
+        "go_after_join_claim_tasks": [
+          {
+            "target": 114,
+            "old_ex": "K1J(Q112)J(Q88)K(Q114)",
+            "final_ex": "J0J(Q42)K(Q114)K(Q112)K(Q112)",
+            "new_ex_version": "2",
+            "q_unchanged": true
+          },
+          {
+            "target": 112,
+            "old_ex": "J0K(Q42)",
+            "final_ex": "J0J(Q42)",
+            "new_ex_version": "2",
+            "q_unchanged": true
+          }
+        ],
+        "commit_private_independent_loads": [
+          {
+            "target": 119,
+            "load_ex": "J0K(Q116)",
+            "parameter_source": "COMMIT task owns the already collected COMP0 event value",
+            "final_ex": "J0J(Q42)K(Q119)",
+            "visible_version": "1",
+            "install_after_source_publications": true
+          },
+          {
+            "target": 120,
+            "load_ex": "J0K(Q117)",
+            "parameter_source": "COMMIT task owns the already collected COMP1 event value",
+            "final_ex": "J0J(Q42)K(Q120)",
+            "visible_version": "1",
+            "install_after_source_publications": true
+          },
+          {
+            "target": 121,
+            "load_ex": "J0K(Q116)",
+            "parameter_source": "COMMIT task owns the already collected COMP0 event value",
+            "final_ex": "J0J(Q42)K(Q121)",
+            "visible_version": "1",
+            "install_after_source_publications": true
+          },
+          {
+            "target": 122,
+            "load_ex": "J0K(Q117)",
+            "parameter_source": "COMMIT task owns the already collected COMP1 event value",
+            "final_ex": "J0J(Q42)K(Q122)",
+            "visible_version": "1",
+            "install_after_source_publications": true
+          }
+        ],
+        "commit_independent_flags": [
+          {
+            "target": 124,
+            "ex": "J0K(Q42)",
+            "expected_value": 1
+          },
+          {
+            "target": 123,
+            "ex": "J0K(Q42)",
+            "expected_value": 1
+          },
+          {
+            "target": 112,
+            "ex": "J0J(Q42)",
+            "expected_value": 0
+          }
+        ]
+      },
+      "retire_after_commit": {
+        "nodes": [
+          86,
+          87,
+          88,
+          100,
+          113,
+          115,
+          116,
+          117,
+          118
+        ],
+        "preserve_pre_slot_nodes": [
+          110,
+          111,
+          112,
+          114
+        ],
+        "preserve_current_post_and_frontier_nodes": [
+          119,
+          120,
+          121,
+          122,
+          124,
+          123,
+          125
+        ],
+        "current_COMMIT_is_registered_only": "Delete only in a later GC transaction after the currently executing COMMIT and all queued tasks, arrivals, live-read/EX-version, preparation and structural external dependencies have ended."
+      }
+    }
+  ],
+  "transactions": [
+    {
+      "name": "ACCEPT_PRE_AND_RESERVE",
+      "primary": "existing S_W",
+      "ready_before_enqueue": [
+        "complete actual W input-bit frame locks",
+        "T1 current q",
+        "full planned node descriptors, assigned IDs, block/slot/round identities and all initial zeros",
+        "applicable existing previous-frontier identities and states"
+      ],
+      "operations": [
+        "Run S_W observation EX without using its result as a later parameter.",
+        "Create the entire legal round, reserved POST and next-frontier nodes with initial zero, plus the READY observer. Node descriptors and creation values are already available; initial values do not publish.",
+        "Independently execute PRE.D_i load EX from parent frame locks; install hold EX.",
+        "Execute PRE.V set EX from pre-existing T1 and publish. This schedules real JOIN/CLAIM tasks; it does not execute them recursively."
+      ],
+      "does_not_use": [
+        "future S_W observation result",
+        "future COMP results",
+        "newly produced PRE.D as a parameter to PRE.V"
+      ]
+    },
+    {
+      "name": "JOIN_AND_CLAIM_ARE_DISTINCT_EX_TASKS",
+      "ready_before_enqueue": [
+        "PRE.V, previous.READY and CLAIM actual q values exist, including valid zeros"
+      ],
+      "operations": [
+        "JOIN computes readiness and publishes only 1.",
+        "CLAIM independently updates C OR (V AND R) from its old q and the existing readiness flags.",
+        "Their order is defined by numeric target order for every source event, not by a factory loop or external Boolean readiness test."
+      ]
+    },
+    {
+      "name": "GO_AND_PREPARE_COMMIT_TARGETS",
+      "primary": "GO",
+      "ready_before_enqueue": [
+        "latched JOIN=1",
+        "all existing target identities and EX descriptors to rewrite"
+      ],
+      "operations": [
+        "Run GO real EX, detach CLAIM from previous.READY with J0J(T1)K(self)K(PRE.V)K(PRE.V), and prepare PRE.V clear EX. The admitted one-shot topology proves all JOIN/CLAIM predecessors already finished; check this actual dependency fact, with no blocking wait or spin at the FIFO head.",
+        "Publish GO=1 to all COMP_i; each COMP_i receives a separate actual RAM task."
+      ],
+      "forbidden": "Do not wait for or use a COMP result in this task."
+    },
+    {
+      "name": "COMP_i",
+      "ready_before_enqueue": [
+        "GO event lock=1",
+        "PRE and previous-state identities whose actual data were committed before the readiness publication"
+      ],
+      "operations": [
+        "One full XOR EX per actual channel. Publish both zero and one.",
+        "COMMIT arrival group retains partial results until every actual channel has produced an event."
+      ]
+    },
+    {
+      "name": "SAVE_POST_AND_ADVANCE",
+      "primary": "COMMIT",
+      "ready_before_enqueue": [
+        "all W COMP event values individually locked in this task",
+        "all preallocated POST and next-frontier target identities",
+        "existing T1 q",
+        "PRE.V already prepared clear EX and all mutation descriptors"
+      ],
+      "operations": [
+        "Run COMMIT own observation EX.",
+        "Privately install, execute and restore each independent POST.D_i / NEXT.S_i load EX with task-owned COMP_i values. These load EX are installed after COMP publications; they do not receive duplicate automatic COMP events. All values and descriptors existed before COMMIT enqueue.",
+        "Execute POST.V set, PRE.V clear and NEXT.READY set EX from existing T1. The order of these independent EX must be specified in the containing checkpoint contract. Publish NEXT.READY only after all data loads; atomic transaction prevents successors running before commit.",
+        "Register completed POST/frontier and old-node retire candidates using already known identities.",
+        "Any later transaction requiring these new results is created only after they exist, through its actual ready structure."
+      ],
+      "forbidden": [
+        "POST.D→NEXT.S within this transaction",
+        "new COMMIT q used by a factory operation",
+        "treat initial zero placeholders as this round computed results"
+      ]
+    },
+    {
+      "name": "RETIRE",
+      "primary": "Q71",
+      "ready_before_enqueue": [
+        "explicit candidate node identities and relevant existing dependency records"
+      ],
+      "operations": [
+        "After original COMMIT and consumers complete, atomically detach closure edges and delete eligible candidates.",
+        "Keep partially used PRE/POST block slot nodes; reclaim block capacity only at 8 accepted frames, all consumed and all dependencies cleared.",
+        "Never drop pending tasks, arrival groups or source protections in order to reclaim."
+      ]
+    }
+  ],
+  "automatic_order_reasoning": [
+    {
+      "case": "PRE first, previous frontier still unavailable",
+      "events": [
+        "PRE.V real load completes with 1; previous.READY=0.",
+        "JOIN=0, CLAIM remains0; no GO task exists.",
+        "Later previous.READY completion publishes1; JOIN then sees1/1/C0 and publishes1; CLAIM becomes1; GO uses locked1."
+      ]
+    },
+    {
+      "case": "frontier first, next frame late",
+      "events": [
+        "previous.READY=1 is retained in q; its observer is a real consumer even without a next JOIN.",
+        "Next ACCEPT installs complete round then sets PRE.V=1.",
+        "JOIN/CLAIM are triggered by PRE.V; JOIN reads existing READY1 and publishes one GO1. Initial READY1 need not replay a fake event."
+      ]
+    },
+    {
+      "case": "both completion events enqueue before either JOIN executes",
+      "events": [
+        "RAM sequence is JOIN_a,CLAIM_a,JOIN_b,CLAIM_b.",
+        "JOIN_a publishes1 and queues GO after those already queued tasks; CLAIM_a becomes1.",
+        "JOIN_b computes0; CLAIM_b stays1. Exactly one GO exists.",
+        "GO keeps the stateless JOIN=1 event; later JOIN0 cannot overwrite the task parameter."
+      ]
+    },
+    {
+      "case": "calculated zero",
+      "events": [
+        "COMP_i=0 publishes just like1.",
+        "COMMIT waits for arrival presence from each COMP_i, not for all bits to be1.",
+        "For initial [0,0], frames [1,0] then[0,1], results are[1,0] then[1,1]."
+      ]
+    }
+  ],
+  "additional_trace_tasks": {
+    "per_completion": "Each PRE.V and each previous.READY publication also reaches their current real consumers. Include JOIN then CLAIM when both exist.",
+    "seed_observer": {
+      "target": 101,
+      "task_count_at_initialization": 0,
+      "reason": "Initialization produces no event."
+    },
+    "R1_frontier_observer": {
+      "target": 100,
+      "trigger": "Q88 completion publishes1",
+      "value": 1,
+      "task_count_for_this_trace": 1
+    },
+    "R2_frontier_observer": {
+      "target": 125,
+      "trigger": "Q123 completion publishes1",
+      "value": 1,
+      "task_count_for_this_trace": 1
+    },
+    "observers_are_not_exempt": "They are actual RAM tasks, their target/live-read protections are checkpointed, and they delay reclamation when pending."
+  },
+  "reference_closure_requirements": [
+    "All input copies, data nodes and event nodes retain genuine EX consumers; fixed output closure remains the containing complete graph responsibility.",
+    "A must consume quiet terminal data, COMMIT, retained CLAIM and READY_OBSERVER nodes that otherwise have no real user.",
+    "A must not directly consume a live publishing NEXT.READY or PRE.V: this would create extra A tasks and protect mutable A EX versions. READY has its observer; PRE.V has JOIN/CLAIM while live.",
+    "On old-frontier deletion, delete its observer with it and remove its A reference atomically. No exemption or phantom consumer is used.",
+    "After GO, CLAIM final EX is J0J(T1)K(self)K(PRE.V)K(PRE.V), so PRE.V retains a real consumer even after JOIN retirement. The two PRE.V XOR uses cancel the value but are genuine EX parameters; PRE.V clear0 is filtered by pro=q=1. Do not add PRE.V to A merely to repair a dangling node."
+  ],
+  "verification_status": {
+    "performed": "direct Boolean/FIFO reasoning and static JSON authoring only",
+    "not_performed": [
+      "executor implementation",
+      "EX interpretation",
+      "scheduler execution",
+      "runtime recovery test",
+      "formal proof for all frame widths and arbitrary interleavings"
+    ],
+    "requires_root_integration": [
+      "complete graph references and DAG check with output/ACK design",
+      "exact observer/JOIN/CLAIM/COMP/COMMIT ordering in revised continuation trace",
+      "all six checkpoints, protected_reads, EX versions, contracts and fingerprints"
+    ]
+  },
+  "concrete_w2_case": {
+    "seed": [
+      0,
+      0
+    ],
+    "rounds": [
+      {
+        "round": "R1",
+        "input_bits": [
+          1,
+          0
+        ],
+        "GO": 1,
+        "COMP_bits": [
+          1,
+          0
+        ],
+        "COMMIT_observation": 1,
+        "POST_bits": [
+          1,
+          0
+        ],
+        "next_state_bits": [
+          1,
+          0
+        ],
+        "NEXT_READY": 1
+      },
+      {
+        "round": "R2",
+        "input_bits": [
+          0,
+          1
+        ],
+        "GO": 1,
+        "COMP_bits": [
+          1,
+          1
+        ],
+        "COMMIT_observation": 0,
+        "POST_bits": [
+          1,
+          1
+        ],
+        "next_state_bits": [
+          1,
+          1
+        ],
+        "NEXT_READY": 1
+      }
+    ],
+    "observation_zero_is_not_failure": "R2 COMMIT XOR is0 but all parameters arrived, so the transaction still saves both result bits and sets NEXT.READY1."
+  },
+  "private_load_version_rule": {
+    "precondition": "Before COMMIT enqueue, its complete descriptor identifies each actual target, current visible EX version, private load EX, task-owned COMP lock and final hold EX. No target or private source is resolved from a future result.",
+    "execution": "Validate queued and arrival dependencies before the operation; execute each genuine private load EX, preserve its pro, and restore the declared final hold EX. No q is assigned by factory mutation.",
+    "version": "Private stages are described by the transaction contract. If the final visible EX equals the previously committed hold EX, the visible EX version stays1. If private-stage versioning is used by the outer format instead, it must be explicit and consistently checkpointed; do not omit a live task dependency.",
+    "restore": "Snapshots occur only after the complete atomic transaction. No partial private EX plan or partially loaded state appears as a completed checkpoint."
+  }
+}

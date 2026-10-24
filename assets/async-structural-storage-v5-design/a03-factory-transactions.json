@@ -1,0 +1,659 @@
+{
+  "artifact_kind": "dynamic_integration_design",
+  "status": "prior-candidate-requires-rederivation-for-all-parameters-ready-before-enqueue",
+  "date": "2026-10-21",
+  "rule_source": "../../docs/JKRD.md",
+  "user_confirmation": "RAM.FACTORY 根据异步结构的相应节点引用触发和决定行为；可以作为节点行为，但自身不执行 EX，而是执行操作事务。",
+  "format_notice": "本地设计 JSON；不定义正式快照、恢复格式或可执行脚本语言。下列分配与绑定是构造说明。",
+  "structure_files": {
+    "first_dispatch": "a03-dynamic-structure.json",
+    "late_frame_dispatch": "a03-late-frame-structure.json"
+  },
+  "scope": {
+    "composition": "一个异步结构存储模块内的 PRE 原始输入等待区、逐轮 JK 业务结构、POST 结果等待区，共用 RAM.FACTORY 与已有 FIFO 队列组。",
+    "PRE": "外部 W=1..8 帧通过既有输入复制和 S/C 接力保存；内部完成凭据是本轮结果及状态已经保存，不伪造外部 ACK。",
+    "POST": "内部接入由实际 Q7 结果逐位写入独立 Q8；不伪造 Xi 或 FRAME_IN。对外仍使用固定中转、W 个 Yi、FRAME_OUT 后资格、ACK0/ACK1 协议。",
+    "business_example": "初态 0 的 1 bit 累计 XOR；结构接入方式适用于提供了完整 JK EX 的有限业务模板。",
+    "no_fixed_total_capacity": true,
+    "block_capacity_per_area": 8,
+    "backpressure": "POST 未 ACK 只保留结果槽；资源可用时继续接收和计算，不用入口暂停替代动态增长。严格优先级不保证持续 Xi 下的有限等待。"
+  },
+  "ownership": {
+    "JK_evaluator": [
+      "逐个执行真实 Q.EX",
+      "每个 EX 开始时固定参数",
+      "更新该 Q 的事务内暂存 q",
+      "提交后根据最终 q/pro 发布"
+    ],
+    "RAM_FACTORY": [
+      "分配完整片段与创建初值",
+      "绑定/改接实际 EX 引用",
+      "登记成员、块槽和结构身份",
+      "维护有序槽与当前轮身份",
+      "检查依赖并安全删除或复用容量",
+      "根据已绑定节点行为提出真实 Q 求值请求"
+    ],
+    "factory_has_own_EX": false,
+    "factory_is_Q_with_q_or_pro": false,
+    "factory_references_count_as_EX_consumers": false,
+    "existing_q_write_primitive": false,
+    "new_execution_FIFO": false,
+    "atomic_envelope": "既有 RAM 节点任务原子边界；JK 求值步骤与工厂操作步骤有不同执行主体，共同提交。不是工厂解释或执行 EX。",
+    "read_your_writes": "每个后续 EX 读取本事务已经完成的前序 EX 的新 q；不是一次性读取全部旧 q。外部任务只看完整提交。此处是具体事务绑定的设计细化。"
+  },
+  "behavior_binding_contract": {
+    "phase": "after_primary_own_EX_before_envelope_commit",
+    "trigger_reference": "显式绑定的真实主任务 Q 身份、世代、operation 与本次结果；不得靠轮询所有 q 或把 factory 名称伪装成 Q。",
+    "silent_nodes": "pro=q= 仍可以绑定本次完整 EX 后的操作行为；它不是普通 Q publication，不伪造来源事件。",
+    "no_recursive_hooks": "事务内 evaluator_steps 的附带 Q 不自动递归调用相同顶层行为；需要的后继步骤列在同一有限计划中。",
+    "publication": "所有实际 EX 与结构操作成功后统一提交，再按最终 q/pro 发布一次。本例控制节点静默，仅 GO 的一次结果事件按普通规则排入 Q7。",
+    "requests": "显式工厂请求只能指向合法真实 Q，按该 Q 的归属进入已有队列；锁存参数与原因分别保存，不能直接运行排队中的下游 EX。",
+    "current_vs_bound_objects": "主任务目标与已确定的附带 EX 保护世代/版本；由执行时队首选择的结构操作对象在当前事务内解析、绑定并立即使用，不留下悬空等待绑定。",
+    "request_order": "本方案先登记本事务的显式后继任务请求，再统一发布 GO 等 Q 事件；同一次 Q publication 的目标仍按 Q 编号升序入队。该模块内次序是待确认的绑定细节。"
+  },
+  "factory_operations": [
+    {
+      "name": "allocate_complete_fragment",
+      "allowed": "新建节点、initial_q、完整引用及结构身份，最终图一起可见",
+      "forbidden": "用初始化替代结果计算或制造 publication；提交半成品零引用 Q"
+    },
+    {
+      "name": "bind_or_detach_references",
+      "allowed": "无旧任务/到达集合/附带 EX 依赖时更改声明的 EX，更新 A 的有状态来源；本事务新建对象在全部复制步骤的最后使用完成后再安装保持EX",
+      "forbidden": "改写固定 O.EX/q_y；改变现存节点initial_q分类或pro；静默改变既有成员的队列归属；把 factory 管理线计作真实 EX 边；改变有依赖目标版本"
+    },
+    {
+      "name": "register_members_and_slots",
+      "allowed": "登记成员、PRE/POST 槽、位序、帧序、轮身份、世代和容量",
+      "forbidden": "在元数据内长期保存另一份业务 bit 数组或 READY/CLAIM 布尔副本"
+    },
+    {
+      "name": "request_real_Q_evaluation",
+      "allowed": "携带合法来源参数、原因与版本，向已有 FIFO 追加真实 Q 任务；或在当前获授权的多 EX 计划列出真实 Q 步骤",
+      "forbidden": "工厂 eval(EX)、直接 write_q、跳过该 Q 的 EX、把 cause 当参数"
+    },
+    {
+      "name": "advance_slot_head",
+      "allowed": "对应的 JK V 已由自身 EX 清零、结果及前态已独立保存后推进 PRE；POST 只在有效 ACK1 后推进",
+      "forbidden": "POST ACK 慢时覆盖结果；Q7 尚未回写就释放 PRE"
+    },
+    {
+      "name": "retire_detached_round",
+      "allowed": "按拟原子删除集合检查外部依赖，移除可管理的 A 观察边，集合内部 EX 边随节点一并删除；仍被外部真实 EX、任务、到达集合或事务现场使用的对象保留",
+      "forbidden": "删除仍在执行的主目标；只加 retired 标记就免检；把集合内部边误当永不解除的外部依赖"
+    },
+    {
+      "name": "release_and_reuse_block",
+      "allowed": "本世代接纳8、全部 V=0、所有依赖解除后释放整块 Q，复用容量时 generation 加一",
+      "forbidden": "部分使用空块提前复用；用旧身份命中新世代；回填本世代已用槽"
+    }
+  ],
+  "control_formulas": {
+    "JOIN": "(1 XOR CLAIM) AND V_pre AND READY_previous",
+    "dispatch": "同一事务：JOIN EX；若 q=1，CLAIM EX 置1，READY_previous EX清0，GO EX读已保存的 JOIN=1。期间不重算 JOIN。",
+    "duplicate_check": "后一次检查必须重新执行 JOIN；CLAIM=1 或 READY=0 时为0，不再次执行 GO，不合并已经形成的真实任务。",
+    "late_frame": "没有下一帧时保留 S_previous.q 和 READY_previous.q=1；新 PRE-store 主任务重新求 JOIN，创建新的 GO publication，不重播过去事件。"
+  },
+  "generic_construction": {
+    "PRE_slot": {
+      "data_count": "恰好实际 W",
+      "data_load": "每个新 D 初值0，由 JK 求值器执行 J0K(本位真实输入副本)，使用该帧锁存参数。",
+      "data_hold": "装载后安装 J0J(T1)K(D自身)，不再依赖会变化的输入事件参数。",
+      "V": "初值1，清除 EX=J0J(T1)",
+      "CLAIM": "初值0，领取 EX=J0K(T1)",
+      "block_policy": "已消费 D/V/CLAIM 仍属于该8槽块，部分使用时保留合法引用，不提前回填。"
+    },
+    "frontier": {
+      "state_carriers": "每个跨轮状态位单独 S，保持 EX=J0J(T1)K(S自身)",
+      "READY": "唯一当前许可 Q；初始许可1，领取时执行 J0J(T1) 清零。",
+      "new_frontier": "结果及状态逐位真实复制后，新 READY 初值0，执行 J0J(本轮已完成状态或完成汇聚 Q)K1 得1，再安装清除 EX；不把初值当完成事件。"
+    },
+    "round": {
+      "identity": "PRE 槽身份/世代加旧 frontier 身份构成唯一轮key；一个已领取PRE槽只关联一轮，CLAIM/READY防止重复领取。",
+      "allocation_and_recheck": "只为当前PRE队首建立轮片段。若同一key已存在，只重新执行它的JOIN，不另建GO/Q7；若没有PRE队首，不创建空壳轮。READY=0时若有在途轮，继续保留既有绑定；后续帧只入队。结构身份登记和领取状态同一事务提交。",
+      "JOIN": "有状态初值0、pro=q=；EX按上式逐操作展开。",
+      "GO": "无状态、pro=q=1、EX=J0K(JOIN)；在 dispatch 边界由 JK 求值器真实执行，发布给本轮 Q7。",
+      "Q7_single_node_transform": "原 EX 的有状态起点由新 EX 前缀 J0K(S_previous)提供；原 EX 逐项展开，输入副本Q来源替换成本帧D，自引用参数替换成S_previous，最后J(GO)。业务节点不能直接引用Xi。GO锁存为1，不改变数值；原EX若首位J0则正常清掉前缀。",
+      "example_instantiated_EX": "J0K(Q74)K(Q72)J(Q78)",
+      "multi_node_template": "接入方提供有限、真实、无环的 JK 业务模板和输出/跨轮状态清单；逐节点按拓扑序由 JK 求值器执行。各节点拥有完整 EX，内部数据用有状态静默 Q，所需多 EX 位于明确的原子计划。输入门只形成一次启动任务；不承诺自动转换任意事件网络或反馈环。",
+      "completion": "仅当模板全部输出及跨轮状态实际求值、独立复制完成后才释放 READY。单节点样例以 Q7 任务完成钩子为边界；多节点模板必须列出自己的完整求值计划及最终完成节点。"
+    },
+    "POST_slot_and_state": {
+      "Q8": "每个结果位新建独立 Q8，初值0；执行 J0K(本轮真实结果 Q)，然后改为 J0J(T1)K(Q8自身)。",
+      "Q9": "每个下一轮状态位新建独立 Q9，初值0；执行 J0K(本轮对应状态或Q8)，然后改为 J0J(T1)K(Q9自身)。",
+      "release_PRE": "Q8、Q9、下一 READY 都已完成后，V_pre 自身 EX 清0，结构操作推进 PRE。",
+      "POST_V": "新结果槽初值1，清除 EX=J0J(T1)；消费沿用外部 ACK1。",
+      "POST_request_ordering": "POST由空变非空只登记有序首发请求，其类型保存在真实K.q，身份和顺序属于结构记录。仅当该请求位于请求队首且BUSY=0时，才建立当前SELECT、改接B/MODE/R并通过真实EX开始准备；BUSY=1时等待既有R_FRAME锁存移交后继续，不增加执行FIFO。POST空不代表旧重发已经完成准备。",
+      "no_history_chain": "改接后 Q8 不引用旧 Q7，Q9 不引用 Q8，READY 不引用旧轮；慢 POST 只保留结果槽，晚 PRE 只需要独立 frontier。"
+    },
+    "A_source_policy": "加入所有需要闭合的有状态新 Q；排除 GO 等无状态 Q。GO 已有 Q7 真使用者。A 不订阅 GO，不新增自动 A 任务或未齐集合。"
+  },
+  "bindings": [
+    {
+      "operation": "ACCEPT_PRE_AND_TRY",
+      "primary_refs": [
+        "S_W 当前真实主任务"
+      ],
+      "factory": "建立PRE槽、登记位序/成员，解析当前队首与frontier，建立完整轮片段",
+      "JK_steps": [
+        "S_W自身EX",
+        "每个D装载EX",
+        "JOIN",
+        "若JOIN=1：CLAIM、旧READY、GO"
+      ],
+      "after_commit": "GO唯一结果事件触发本轮Q7；原已相邻入队的C_W仍在S_W后，未插入工厂FIFO。"
+    },
+    {
+      "operation": "SAVE_POST_AND_ADVANCE",
+      "primary_refs": [
+        "本轮Q7真实任务"
+      ],
+      "factory": "分配Q8/Q9/新READY/POST_V，复制后改接自保持，登记POST槽与frontier，消费PRE结构，登记旧轮待安全删除集合",
+      "JK_steps": [
+        "Q7自身EX",
+        "Q8各位EX",
+        "Q9各状态EX",
+        "新READY置1EX",
+        "旧PRE.V清0EX"
+      ],
+      "explicit_successors": [
+        "真实GC节点Q71任务",
+        "若POST由空变非空：登记首发请求，仅在请求队首且BUSY=0时启动既有准备流程并排入SELECT任务"
+      ],
+      "continuation": "若PRE已有下一项，可在本边界重新求其JOIN并真实执行领取/GO；否则只保留frontier。"
+    },
+    {
+      "operation": "RETIRE_SCAN",
+      "primary_refs": [
+        "Q71真实任务"
+      ],
+      "factory": "执行时解析当前可删除片段及块，移除可管理A引用后原子删除；没有候选则操作为空",
+      "JK_steps": [
+        "Q71自身EX"
+      ],
+      "no_recursion": "GC不再排GC；每次具体依赖解除的主任务可独立请求Q71，不用外部gcPending布尔或同目标去重。"
+    },
+    {
+      "operation": "POST_PROTOCOL",
+      "primary_refs": [
+        "SELECT",
+        "R_FRAME",
+        "FRAME_OUT",
+        "ACK0",
+        "ACK1 的实际任务"
+      ],
+      "factory": "沿用既有首发/重发准备、输出锁存、执行时队首、H保留、回收协议；EX均由JK求值机制执行",
+      "note": "工厂自身无EX不意味着跳过B/R/O等节点的独立任务。"
+    }
+  ],
+  "concrete_phases": [
+    {
+      "id": "P1_first_dispatch",
+      "full_structure_file": "a03-dynamic-structure.json",
+      "node_count": 80,
+      "premise": "seed=0，f1=[1] 已独立保存；本轮领取后、Q79尚未执行。",
+      "reasoned_q": {
+        "Q74": 1,
+        "Q75": 1,
+        "Q76": 1,
+        "Q73": 0,
+        "Q77": 1,
+        "Q72": 0
+      },
+      "actual_dispatch_EX_order": [
+        "Q77",
+        "Q76",
+        "Q73",
+        "Q78"
+      ],
+      "ordinary_publication": {
+        "source": "Q78",
+        "bit": 1,
+        "target": "Q79",
+        "latched_source_parameters": {
+          "Q78": 1
+        }
+      },
+      "PRE": {
+        "block": "PRE.B1",
+        "generation": 1,
+        "accepted": 1,
+        "head": "f1",
+        "slots": [
+          {
+            "frame": "f1",
+            "data": [
+              "Q74"
+            ],
+            "V": "Q75",
+            "CLAIM": "Q76"
+          }
+        ]
+      },
+      "POST": {
+        "slots": []
+      },
+      "frontier": {
+        "state": [
+          "Q72"
+        ],
+        "READY": "Q73"
+      }
+    },
+    {
+      "id": "P2_first_completion_before_GC",
+      "base_phase": "P1_first_dispatch",
+      "node_count": 86,
+      "output_premise": "本例POST此前为空、没有旧准备请求且BUSY=0，故可以立即建立Q84/Q85并开始首发准备；通用情况必须遵守POST_request_ordering。",
+      "add_nodes": [
+        {
+          "id": "Q80",
+          "role": "POST.f1.Q8",
+          "ex": "J0J(Q42)K(Q80)",
+          "pro": "q="
+        },
+        {
+          "id": "Q81",
+          "role": "FRONTIER.f1.Q9",
+          "ex": "J0J(Q42)K(Q81)",
+          "pro": "q="
+        },
+        {
+          "id": "Q82",
+          "role": "FRONTIER.f1.READY",
+          "ex": "J0J(Q42)",
+          "pro": "q="
+        },
+        {
+          "id": "Q83",
+          "role": "POST.f1.V",
+          "ex": "J0J(Q42)",
+          "pro": "q="
+        },
+        {
+          "id": "Q84",
+          "role": "POST.p1.K",
+          "ex": "J0K(Q42)",
+          "pro": "q="
+        },
+        {
+          "id": "Q85",
+          "role": "POST.p1.SELECT",
+          "ex": "J0K(Q83)J(Q43)",
+          "pro": "q="
+        }
+      ],
+      "creation_initial_q": {
+        "0": [
+          "Q80",
+          "Q81",
+          "Q82",
+          "Q84",
+          "Q85"
+        ],
+        "1": [
+          "Q83"
+        ]
+      },
+      "actual_completion_EX_steps": [
+        {
+          "target": "Q79",
+          "ex": "J0K(Q74)K(Q72)J(Q78)",
+          "locked_event_parameters": {
+            "Q78": 1
+          },
+          "latest_q_parameters": {
+            "Q74": 1,
+            "Q72": 0
+          },
+          "result": 1
+        },
+        {
+          "target": "Q80",
+          "ex": "J0K(Q79)",
+          "result": 1
+        },
+        {
+          "target": "Q81",
+          "ex": "J0K(Q80)",
+          "result": 1
+        },
+        {
+          "target": "Q82",
+          "ex": "J0J(Q81)K1",
+          "result": 1
+        },
+        {
+          "target": "Q75",
+          "ex": "J0J(Q42)",
+          "result": 0
+        }
+      ],
+      "replace_EX_before_commit": [
+        {
+          "id": "Q26",
+          "ex": "J0K(Q80)"
+        },
+        {
+          "id": "Q48",
+          "ex": "J0K(Q84)"
+        },
+        {
+          "id": "Q53",
+          "ex": "J0K(Q26)J(Q85)K(Q52)K(Q52)"
+        }
+      ],
+      "A_sources_add_stateful": [
+        "Q80",
+        "Q81",
+        "Q82",
+        "Q83",
+        "Q84",
+        "Q85"
+      ],
+      "post_prepare_JK_steps": [
+        "Q84",
+        "Q43",
+        "Q48",
+        "Q51",
+        "Q52"
+      ],
+      "explicit_RAM_successors_in_order": [
+        "Q71",
+        "Q85"
+      ],
+      "reasoned_q": {
+        "Q79": 1,
+        "Q80": 1,
+        "Q81": 1,
+        "Q82": 1,
+        "Q83": 1,
+        "Q75": 0,
+        "Q84": 1,
+        "Q43": 1,
+        "Q48": 1
+      },
+      "new_frontier": {
+        "state": [
+          "Q81"
+        ],
+        "READY": "Q82"
+      },
+      "POST_append": {
+        "frame": "result.f1",
+        "width": 1,
+        "data": [
+          "Q80"
+        ],
+        "V": "Q83"
+      },
+      "retire_candidates": [
+        "Q72",
+        "Q73",
+        "Q77",
+        "Q78",
+        "Q79"
+      ],
+      "retain_until_block_eligible": [
+        "Q74",
+        "Q75",
+        "Q76"
+      ],
+      "protected_current_target": "Q79仍是当前任务目标，本事务不删除它。"
+    },
+    {
+      "id": "P3_GC_and_wait_for_late_frame",
+      "base_phase": "P2_first_completion_before_GC",
+      "node_count": 81,
+      "primary": "Q71",
+      "primary_EX": "J0J(Q42)K1",
+      "remove_nodes_after_dependency_check": [
+        "Q72",
+        "Q73",
+        "Q77",
+        "Q78",
+        "Q79"
+      ],
+      "A_sources_remove": [
+        "Q72",
+        "Q73",
+        "Q77",
+        "Q79"
+      ],
+      "reasoned_q": {
+        "Q71": 1,
+        "Q81": 1,
+        "Q82": 1
+      },
+      "waiting": "PRE无活帧；新状态Q81=1、许可Q82=1继续保留。POST.f1未ACK，不影响等待后续输入。",
+      "GC_identity_rule": "候选在Q71执行时按当前身份/世代与依赖解析；cause只作审计，不预先持有旧片段的保护引用。重复GC看不到已删除旧世代，操作为空。"
+    },
+    {
+      "id": "P4_late_f2_dispatch",
+      "base_phase": "P3_GC_and_wait_for_late_frame",
+      "full_structure_file": "a03-late-frame-structure.json",
+      "node_count": 87,
+      "premise": "f2=[0] 晚到；POST.f1仍未ACK，SELECT已执行也不改变本阶段EX图。",
+      "add_nodes": [
+        {
+          "id": "Q86",
+          "role": "PRE.f2.D0",
+          "ex": "J0J(Q42)K(Q86)",
+          "pro": "q="
+        },
+        {
+          "id": "Q87",
+          "role": "PRE.f2.V",
+          "ex": "J0J(Q42)",
+          "pro": "q="
+        },
+        {
+          "id": "Q88",
+          "role": "PRE.f2.CLAIM",
+          "ex": "J0K(Q42)",
+          "pro": "q="
+        },
+        {
+          "id": "Q89",
+          "role": "ROUND.f2.JOIN",
+          "ex": "J0K1K(Q88)J(Q87)J(Q82)",
+          "pro": "q="
+        },
+        {
+          "id": "Q90",
+          "role": "ROUND.f2.Q10_GO",
+          "ex": "J0K(Q89)",
+          "pro": "q=1"
+        },
+        {
+          "id": "Q91",
+          "role": "ROUND.f2.Q7_COMPUTE",
+          "ex": "J0K(Q86)K(Q81)J(Q90)",
+          "pro": "q="
+        }
+      ],
+      "creation_initial_q": {
+        "0": [
+          "Q86",
+          "Q88",
+          "Q89",
+          "Q91"
+        ],
+        "1": [
+          "Q87"
+        ]
+      },
+      "A_sources_add_stateful": [
+        "Q86",
+        "Q87",
+        "Q88",
+        "Q89",
+        "Q91"
+      ],
+      "actual_JK_steps": [
+        {
+          "target": "Q86",
+          "ex": "J0K(Q0)",
+          "locked_event_parameters": {
+            "Q0": 0
+          },
+          "result": 0
+        },
+        {
+          "target": "Q89",
+          "result": 1
+        },
+        {
+          "target": "Q88",
+          "result": 1
+        },
+        {
+          "target": "Q82",
+          "result": 0
+        },
+        {
+          "target": "Q90",
+          "result": 1
+        }
+      ],
+      "ordinary_publication": {
+        "source": "Q90",
+        "bit": 1,
+        "target": "Q91",
+        "latched_source_parameters": {
+          "Q90": 1
+        }
+      },
+      "reasoned_q": {
+        "Q86": 0,
+        "Q87": 1,
+        "Q88": 1,
+        "Q89": 1,
+        "Q82": 0,
+        "Q81": 1
+      },
+      "expected_compute_result": 1,
+      "not_used": "没有重播f1完成事件，也没有从旧Q79或外部数组读取前态。"
+    }
+  ],
+  "model_obligations": [
+    "每个提交边界完整Q图合法；真实自引用只用于有状态保持，所有Q均有非自身来源和真实使用者。",
+    "A仅包含可读取最新q的有状态来源；GO由本轮Q7使用，不靠工厂引用满足闭合。",
+    "旧Q8/Q9先真实复制再改成T1自保持；改EX不改q，不代替计算，不发布事件。",
+    "当前Q7主任务结束前不删除它；GC任务本身是普通合法Q任务，无独立工厂FIFO。",
+    "GC先在候选最终图中移除拟删除旧轮及其内部边，再判断PRE整块释放；也可合并为一个删除集合。集合内部边不阻止原子删除，集合外实际依赖仍受完整保护。",
+    "POST输出已有任务锁存参数，仍保护输出目标与首发附带H等EX；业务GC不删除这些对象。",
+    "只复制实际W个输入/输出数据；模板结果宽度M必须明确为1..8，状态位数由业务模板声明。",
+    "新创建片段的初始化、成员、引用、版本及最终图一致；对外不暴露零引用中间态。"
+  ],
+  "reasoned_scenarios": [
+    {
+      "id": "both_waiting_areas",
+      "input": [
+        1,
+        0,
+        1
+      ],
+      "seed": 0,
+      "POST_ACK": "暂停消费",
+      "expected_POST_results": [
+        1,
+        1,
+        0
+      ],
+      "expected": "每项结果独立JK q；前区在每轮回写后推进，后区队列增长，不覆盖上一结果。"
+    },
+    {
+      "id": "next_frame_late",
+      "order": [
+        "f1完成",
+        "GC旧轮",
+        "无新输入",
+        "f2=0到达"
+      ],
+      "expected": "Q9=1及READY=1持久保留；新JOIN=1，产生一次新的GO，结果1。"
+    },
+    {
+      "id": "next_frame_early",
+      "order": [
+        "f2已领取",
+        "f3=1到达",
+        "f2回写完成"
+      ],
+      "expected": "到达时当前CLAIM=1/READY=0，不启动第二轮；只追加f3。回写后用新前态重新JOIN，f3得到0。"
+    },
+    {
+      "id": "same_result_completes",
+      "input": [
+        1,
+        0
+      ],
+      "expected": "两轮结果都是1，第二轮仍实际执行Q8/Q9/READY，仍释放PRE并形成新frontier。"
+    },
+    {
+      "id": "duplicate_reconcile",
+      "premise": "前槽到达和上一轮完成先后各发起检查",
+      "expected": "首次成功领取原子置CLAIM=1并清READY；后一次真实重算JOIN为0，不再发GO。"
+    },
+    {
+      "id": "retire_current_target",
+      "premise": "Q79自身EX刚完成而RAM事务尚未结束",
+      "expected": "保留Q79；Q71后续任务才检查并删除旧72/73/77/78/79。"
+    },
+    {
+      "id": "partial_block",
+      "premise": "PRE.B1接纳两帧并全部计算完成",
+      "expected": "D/V/CLAIM保留合法引用；下一项用第三槽，generation不变。旧业务轮可独立回收。"
+    },
+    {
+      "id": "full_block_and_generation",
+      "premise": "PRE.B1接纳8并全部完成；最后旧轮与整块拟在同一GC中删除，没有集合外依赖；后续新帧到达",
+      "expected": "旧轮内部边及其指向旧PRE的边在候选最终图中一起解除，不错误阻塞满块；原子移除A观察边和节点，容量复用generation加一。POST若仍未ACK，其独立结果块不回收。"
+    },
+    {
+      "id": "input_growth",
+      "premise": "业务尚在计算，外部第9帧到达，PRE.B1不可复用",
+      "expected": "建立PRE.B2，不覆盖B1；W实际数据各占独立D。"
+    },
+    {
+      "id": "slow_POST",
+      "premise": "POST.f1的Yi或ACK尚未完成，f2完成；另检查ACK1已使POST为空但旧重发仍BUSY=1时新结果到达",
+      "expected": "新增独立结果槽；后一区间只登记有序首发请求，不提前改接B/MODE/R或抢占SELECT，待旧R_FRAME锁存移交且BUSY=0后准备。既有保留数据和旧输出任务参数不受新接入改写，业务state可以前进。"
+    },
+    {
+      "id": "GC_repeated",
+      "premise": "两次独立Q71任务排队，第一次已删除旧轮",
+      "expected": "第二次仍执行自身EX，解析不到旧身份则无删除；不复活、不重复释放、不命中新世代。"
+    },
+    {
+      "id": "rejects",
+      "premise": "把CLAIM.EX改为读JOIN；把GO加入A；复制前删除Q7；未满8复用；工厂直接write_q",
+      "expected": "分别拒绝真实引用环、错误事件型来源/自动A任务、丢失来源、生命周期违规、绕过真实EX。"
+    }
+  ],
+  "deferred": [
+    "执行器与浏览器实现",
+    "任意交错运行穷举",
+    "失败任务存放、资源不足、回滚及重试完整协议F03/F04",
+    "快照恢复与指纹",
+    "任意旧事件网络或反馈环的自动业务转换"
+  ],
+  "review_choices": [
+    "同一个模块内采用PRE/POST两个槽区，内部完成与外部ACK端口分开",
+    "顶层node_behavior与JK evaluator_steps的非递归原子计划",
+    "模块显式任务请求先登记、再统一发布GO的边界次序",
+    "透明A闭合沿用候选设计，并排除无状态GO",
+    "合法有限业务模板的逐轮展开；没有新J/K运算、节点豁免或反馈环许可"
+  ],
+  "latest_revision_status": "../v5-snapshot-design/a03-dynamic/readiness-revision-status.json",
+  "readiness_supersession": {
+    "status": "historical-candidate-for-comparison",
+    "current_design": [
+      "a03-readiness-business.json",
+      "a03-readiness-output.json",
+      "a03-readiness-ack.json"
+    ],
+    "complete_checkpoints": "../v5-snapshot-design/a03-dynamic/checkpoint-contract.json",
+    "reason": "Old internally dependent transaction stages are replaced; old structures/counts are not the current all-ready A03 contract."
+  }
+}

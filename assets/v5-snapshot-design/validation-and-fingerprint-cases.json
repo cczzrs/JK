@@ -1,0 +1,341 @@
+{
+  "artifact_kind": "jk-v5-snapshot-design-cases",
+  "status": "design-only",
+  "schema_revision": "draft-1",
+  "scope": {
+    "purpose": "第四模块的格式校验、规范字节、双指纹与恢复预期设计数据；不是执行器、校验器或可直接加载的运行检查点。",
+    "executed": ["六个固定规范字节向量分别由 Python hashlib.md5 和 OpenSSL MD5 复算；两者结果一致"],
+    "not_executed": ["V5 格式校验器", "序列化或恢复执行器", "下列 reasoned_cases 的运行验证", "任意交错及故障恢复等价验证"],
+    "source_files": [
+      "../../docs/JKRD.md",
+      "../../docs/drafts/JKRD-V5.0.0-snapshot-recovery-pending.md",
+      "../../docs/drafts/JKRD-V4.0.0-snapshot-reference.md",
+      "../../docs/logic_units/async-structural-storage-draft.md"
+    ]
+  },
+  "format_contract": {
+    "structure_format": "jk-logic-structure-V5.0.0",
+    "runtime_format": "jk-logic-runtime-V5.0.0",
+    "schema_revision": "draft-1",
+    "rule_profile": "JKRD-V5-DAG-1-2-5",
+    "canonicalization": "jk-json-v5-draft-1",
+    "approval_boundary": "两个 format 使用历史候选名称，并以 draft-1 明确本轮设计身份；不据此声称现有消费者已支持该格式。"
+  },
+  "canonicalization_contract": {
+    "encoding": "UTF-8 without BOM",
+    "object_keys": "递归按 Unicode 标量值序列字典序排序；不是 JavaScript 默认 UTF-16 代码单元顺序。",
+    "arrays": "保持全部数组原顺序及重复元素；身份表的规定顺序由格式合法性校验处理，规范化器不排序数组。",
+    "whitespace": "对象键值分隔符为冒号，元素分隔符为逗号；无排版空白、无尾换行。",
+    "strings": "保留 Unicode 标量序列，不做 NFC/NFD 转换；非 ASCII 直接 UTF-8 编码。双引号和反斜杠转义；控制字符按 Python json.dumps(ensure_ascii=False, separators=(',', ':')) 的字符串转义规则编码：短转义用于退格、制表、换行、换页和回车，其余 U+0000..U+001F 使用小写十六进制的 \\u00xx。斜杠不转义。",
+    "lexical_rejections": [
+      "非法 UTF-8 或 BOM",
+      "重复的已解码对象键，包括 a 与 \\u0061 形成的重复键",
+      "孤立代理码点或其他非 Unicode 标量字符串",
+      "NaN、Infinity、尾随内容及 JSON 之外的注释",
+      "数值负零、浮点、指数记法或不满足对应字段范围的数值"
+    ],
+    "numbers": "bit 使用 JSON 数值 0/1，小整数仅使用格式允许范围内的非负整数；计数器、需无限增长的身份编号及世代使用正则 0|[1-9][0-9]* 的十进制字符串。Q/X/Y 端口节点符号仍遵守各自字段语法。true/false 不替代 0/1。",
+    "only_semantic_normalization": {
+      "path": "structure.nodes[*].pro",
+      "input_value": "q=0/1",
+      "action": "delete property",
+      "meaning": "仅在该确切路径移除显式默认传播条件；缺省与显式默认得到相同规范结构。其他路径、字段和值不自动补齐、删除或改写。"
+    },
+    "excluded_root_field": "metadata",
+    "exclusion_boundary": "name、导出时间及 display 只能放在根 metadata 内，且不得参与行为。没有其他任意字段排除，也不递归删除所有名为 metadata、md5 或 display 的字段；指纹载荷严格按下方 F/M 定义构造。",
+    "unknown_fields": "所有语义对象按各自字段契约拒绝未知字段；所需模块、行为契约、profile 或 schema_revision 未识别时拒绝加载，不静默忽略。"
+  },
+  "fingerprint_contract": {
+    "algorithm": "MD5",
+    "representation": "32 lowercase hexadecimal characters",
+    "F_definition": {
+      "domain": "jk-v5-format-draft-1",
+      "schema_revision": "draft-1",
+      "rule_profile": "JKRD-V5-DAG-1-2-5",
+      "canonicalization": "jk-json-v5-draft-1",
+      "structure": "normalized_structure placeholder; replace this description with the actual normalized structure object"
+    },
+    "M_definition": {
+      "domain": "jk-v5-document-draft-1",
+      "format": "actual document format placeholder",
+      "format_payload": "the complete F object placeholder; not the format_md5 string",
+      "runtime": "actual runtime object placeholder, or JSON null for a structure document"
+    },
+    "formulas": [
+      "format_md5 = MD5(UTF8(canonical_JSON(F)))",
+      "md5 = MD5(UTF8(canonical_JSON(M)))"
+    ],
+    "definitions_are_not_payloads": "F_definition/M_definition 中的说明占位文字只描述公式，不能直接用来计算正式文件指纹。",
+    "shared_structure_identity": "两个 format 共用同一 F：规范结构相同时 format_md5 相同。M 含实际 format 和 runtime，结构文件使用 runtime=null，运行文件保存完整运行对象。",
+    "semantic_coverage": "结构载荷覆盖 EX、initial_q、传播、端口映射、位序、q_y、成员、容量和结构配置，以及会改变行为的模块及工厂契约身份。当前 q、任务、未齐集合、输入交接、输出/ACK 进度及分配器等运行现场进入 runtime。",
+    "limitations": "指纹仅是已定义载荷的内容摘要；不能替代格式及节点合法性校验、功能验证、续算等价验证或来源认证。V4 值不复用为 V5 值。"
+  },
+  "byte_vectors": [
+    {
+      "id": "H01_empty_object",
+      "canonical_text": "{}",
+      "utf8_hex": "7b7d",
+      "md5": "99914b932bd37a50b983c5e7c90ae93b",
+      "verified_with": ["Python hashlib.md5", "OpenSSL dgst -md5"],
+      "role": "规范字节单元向量，不是完整模型"
+    },
+    {
+      "id": "H02_object_key_order",
+      "canonical_text": "{\"a\":1,\"b\":0}",
+      "utf8_hex": "7b2261223a312c2262223a307d",
+      "md5": "2350142c9cdf4db2a521b340cb0c06c4",
+      "equivalent_input_text": "{ \"b\" : 0, \"a\" : 1 }",
+      "verified_with": ["Python hashlib.md5", "OpenSSL dgst -md5"],
+      "role": "规范字节单元向量，不是完整模型"
+    },
+    {
+      "id": "H03_array_order_and_duplicate",
+      "canonical_text": "{\"x\":[1,0,1]}",
+      "utf8_hex": "7b2278223a5b312c302c315d7d",
+      "md5": "c6f6d929734fc02755ec4dee23371c1a",
+      "verified_with": ["Python hashlib.md5", "OpenSSL dgst -md5"],
+      "role": "数组顺序和重复项单元向量，不是完整模型"
+    },
+    {
+      "id": "H04_array_permutation",
+      "canonical_text": "{\"x\":[0,1,1]}",
+      "utf8_hex": "7b2278223a5b302c312c315d7d",
+      "md5": "c278530f5d2e0e16c0b0f3095fed0640",
+      "verified_with": ["Python hashlib.md5", "OpenSSL dgst -md5"],
+      "role": "与 H03 的数组顺序不同，规范字节及实算摘要不同"
+    },
+    {
+      "id": "H05_unicode_and_newline_escape",
+      "canonical_text": "{\"a\":\"汉\",\"z\":\"\\n\"}",
+      "utf8_hex": "7b2261223a22e6b189222c227a223a225c6e227d",
+      "md5": "36274d53f6bee2f02284a635bb3d93c1",
+      "verified_with": ["Python hashlib.md5", "OpenSSL dgst -md5"],
+      "role": "汉字直接 UTF-8；z 的规范文本是反斜杠 n 两个字节，不是文本中的实际换行"
+    },
+    {
+      "id": "H06_default_pro_normalized_node",
+      "canonical_text": "{\"ex\":\"J0K(Q0)\",\"id\":\"Q1\"}",
+      "utf8_hex": "7b226578223a224a304b28513029222c226964223a225131227d",
+      "md5": "319d65999ae8a6a2054cfc36f28de6a0",
+      "verified_with": ["Python hashlib.md5", "OpenSSL dgst -md5"],
+      "role": "取 structure.nodes 中单节点删除显式默认 pro 后的规范字节；不是完整 F/M 载荷或完整合法模型"
+    }
+  ],
+  "reasoned_case_status": "以下均为从当前条款和本轮格式提案独立推导的预期，未执行格式校验器或模型恢复。",
+  "reasoned_cases": [
+    {
+      "id": "S01_separate_initial_and_current_q",
+      "source": "JKRD 节点规则；本轮结构/运行分层",
+      "given": "同一有状态节点 initial_q=0，检查点当前 q=1。",
+      "expected": "恢复使用当前 q=1；结构初始化定义仍为0。只改变 runtime.q 不改变 F，改变 M 的规范载荷。",
+      "counterexample": "用当前 q 改写 initial_q，或恢复时只读 initial_q。"
+    },
+    {
+      "id": "S02_state_set_exactness",
+      "source": "JKRD initial_q 分类",
+      "given": "runtime.q 缺一个 initial_q 声明的成员，或多出无状态成员。",
+      "expected": "拒绝加载；不得补0或把暂存结果升级为有状态节点。",
+      "counterexample": "只校验已出现的 q 值是0/1而忽略完整性。"
+    },
+    {
+      "id": "S03_repeated_input_latches",
+      "source": "JKRD 逐次输入锁存、独立任务",
+      "given": "同一 Xi 依次到达1、0、0，三个复制任务仍未执行，外部当前 Xi 不可读。",
+      "expected": "保存三个独立任务及各自1、0、0；恢复后不读取当前 Xi，不合并两个0。",
+      "counterexample": "恢复成最后一次输入0，或把0当成缺失。"
+    },
+    {
+      "id": "S04_incomplete_arrival_set",
+      "source": "JKRD Qi_J0 到达集合",
+      "given": "目标需要两个事件型来源，已保存第一来源的数据，第二来源尚未到达。",
+      "expected": "运行文件保留已到达项；恢复不提前生成任务，第二来源到达后与保存项组成一组；保存不等待未来来源。",
+      "counterexample": "恢复时清空集合、用初始 q 补齐或从旧已入队任务复制数据补齐。"
+    },
+    {
+      "id": "S05_same_source_overwrite",
+      "source": "JKRD Qi_J0 同来源覆盖",
+      "given": "同一尚未收齐集合中，来源A先到1后到0；此前另有完整任务锁存A=1。",
+      "expected": "集合内A保存0，旧任务内A仍为1，两者独立；恢复保持该区别。",
+      "counterexample": "用单一全局来源缓存表示集合和已成任务。"
+    },
+    {
+      "id": "S06_queue_priority_and_order",
+      "source": "JKRD FIFO 归属、1/2/5 优先级与重复任务",
+      "given": "三个队列各有任务，RAM.FIFO 连续两个任务目标相同。",
+      "expected": "先按固定优先值选择队列，队内按数组顺序且保留重复；不按任务序号跨队排序。",
+      "counterexample": "把全部任务合并后按目标、创建时间或全局序号排序。"
+    },
+    {
+      "id": "S07_queue_membership_mismatch",
+      "source": "JKRD 输入优先归属与 RAM 成员归属",
+      "given": "RAM 成员的普通计算任务被写入 Qi.FIFO，或输入副本任务被写入 RAM.FIFO。",
+      "expected": "拒绝加载；任务包装的队列标签不能覆盖实际目标归属。",
+      "counterexample": "只检查队列名属于允许列表。"
+    },
+    {
+      "id": "S08_missing_queue_and_duplicate_task_id",
+      "source": "本轮运行格式完整性；JKRD 独立任务",
+      "given": "少写一个必需队列，或不同任务占用同一个身份编号。",
+      "expected": "拒绝加载；缺失队列不补成空，重复目标合法但重复任务身份非法。",
+      "counterexample": "按目标去重，或接受缺队列并推断为空。"
+    },
+    {
+      "id": "S09_stale_target_generation_or_ex",
+      "source": "模块任务目标与附带 EX 依赖保护",
+      "given": "任务绑定 Q 的旧世代或旧 EX 版本，而现存同编号 Q 已变更。",
+      "expected": "拒绝加载该现场；不得让旧任务命中新世代，也不得静默替换为当前 EX。",
+      "counterexample": "只按 Q 编号找到节点便认定有效。"
+    },
+    {
+      "id": "S10_auxiliary_ex_protection",
+      "source": "模块 FRAME_OUT 附带 EX 完整依赖",
+      "given": "主输出目标身份正确，但首发完成事务附带的 H/CACHE_VALID/READY 目标缺失或版本错误。",
+      "expected": "拒绝加载；事务附带 EX 与未锁存来源同样属于完整校验范围。",
+      "counterexample": "只校验任务主目标。"
+    },
+    {
+      "id": "S11_dynamic_latched_source_retired",
+      "source": "模块独立输出锁存和安全回收",
+      "given": "旧输出任务已完整锁存参数，原数据槽在依赖解除后合法回收，输出目标及所有实际保护依赖仍有效。",
+      "expected": "按明确的锁存参数模式恢复；纯来源追溯标记不重新变成当前 q 读取或阻止合法回收。仍须校验真实保护引用。",
+      "counterexample": "恢复时重新读取已回收槽，或把所有追溯身份一律当作现存保护节点。"
+    },
+    {
+      "id": "S12_pre_frame_out_ack_disabled",
+      "source": "模块 FRAME_OUT 完成后才有 ACK 资格",
+      "given": "数据 Yi 已部分或全部发出，但当前队首的 FRAME_OUT 尚未完成。",
+      "expected": "ACK0、ACK1 均无效；恢复不能因数据位齐全而提前授予 ACK 资格。",
+      "counterexample": "根据下一位索引等于W推断 ACK 已有效。"
+    },
+    {
+      "id": "S13_replay_after_frame_out",
+      "source": "模块 ACK 保留 q",
+      "given": "当前队首首发 FRAME_OUT 已完成，独立保留 H 及有效状态已建立，随后中转 B 被下一批改变。",
+      "expected": "ACK0 重发使用保留 H 的本帧值；完整运行文件中的 H 当前 q 与资格、帧身份一致。",
+      "counterexample": "恢复后从最新B或当前外部输入重建重发数据。"
+    },
+    {
+      "id": "S14_consumption_and_old_completion",
+      "source": "模块 ACK1 撤销资格、旧完成不得复活",
+      "given": "ACK1 已消费旧队首，旧批次仍有锁存输出待完成，新队首未完成首发 FRAME_OUT。",
+      "expected": "旧输出按自身锁存继续；旧完成不能恢复旧资格，新队首保持 ACK 无效直到自己的 FRAME_OUT 完成。",
+      "counterexample": "任何 FRAME_OUT 完成都无条件把 READY 置1。"
+    },
+    {
+      "id": "S15_output_progress_exact_suffix",
+      "source": "快照 snapshot-progress 与模块 W 位及标记顺序",
+      "given": "W=3，前两位已按模型输出边界交付，第三位和 FRAME_OUT 未交付。",
+      "expected": "恢复只保留/继续第三位与 FRAME_OUT 的未完成部分；进度、剩余任务和输出顺序一致，不补发前两位。",
+      "counterexample": "从第0位重新输出，或跳过尚未输出的 FRAME_OUT。"
+    },
+    {
+      "id": "S16_frame_handoff_and_input_clear",
+      "source": "模块 FRAME_IN 独立帧接力与清除范围",
+      "given": "一个W位帧已经封存并跟随待执行任务；下一帧仍为未提交输入暂态；在FRAME_IN=0清除当前未提交暂态后的安全边界保存。",
+      "expected": "封存帧的完整有序bit与帧身份继续存在，当前未提交暂态为空；恢复不使用后到输入改写旧帧，也不取消已锁存输入任务或存储任务。",
+      "counterexample": "只保存当前输入副本 q 并把它作为所有帧的参数。"
+    },
+    {
+      "id": "S17_atomic_save_boundary",
+      "source": "JKRD 完整 EX/RAM 事务和传播边界；snapshot-boundary",
+      "given": "在 RAM 原子事务或结果传播中请求保存。",
+      "expected": "请求等待当前完整事务、全部传播和当前输入交接结束，在下一任务前形成一致现场；不序列化半条 EX 或半提交结构。",
+      "counterexample": "节点 q 来自提交后而成员表或任务队列来自提交前。"
+    },
+    {
+      "id": "S18_partial_block_and_generation",
+      "source": "模块满8、全消费、无依赖的块复用条件",
+      "given": "某块本世代只接纳3帧且均已消费，无未完成依赖。",
+      "expected": "恢复后保持该世代及已用3个名额，继续剩余5槽；不能因活帧为0而重置接纳计数或递增世代。",
+      "counterexample": "只保存活帧列表导致空块被当作全新8槽。"
+    },
+    {
+      "id": "S19_unknown_semantic_field",
+      "source": "本轮严格字段契约",
+      "given": "节点、任务或工厂绑定中出现未定义字段，或旧 propagation 字段。",
+      "expected": "拒绝加载；不能忽略未知字段后恰好通过指纹就执行。",
+      "counterexample": "把未知字段移到展示区或不经报告直接丢弃。"
+    },
+    {
+      "id": "S20_default_pro_and_nondefault",
+      "source": "JKRD pro 默认等价；本轮唯一归一化",
+      "given": "合法 structure.nodes 中一个节点仅在缺省 pro 和显式 q=0/1 之间变化。",
+      "expected": "规范 F/M 完全相同；若改为合法非默认 pro，则保留该值并改变规范载荷。只在定义路径归一化。",
+      "counterexample": "删除全部 pro 字段，或在任意嵌套对象中按名称删除 pro。"
+    },
+    {
+      "id": "S21_unicode_key_order_and_identity",
+      "source": "本轮 jk-json-v5-draft-1",
+      "given": "允许字符串对象中同时有 U+E000 与 U+10000 的键，或字符串分别使用 NFC 和 NFD 的等形文本。",
+      "expected": "键按 Unicode 标量排序，U+E000 在 U+10000 之前；NFC/NFD 不自动合并。非法代理码点拒绝。",
+      "counterexample": "用默认 UTF-16 sort，或无说明地做 Unicode 归一化。"
+    },
+    {
+      "id": "S22_duplicate_keys_and_numeric_tokens",
+      "source": "本轮词法校验",
+      "given": "出现重复解码键，或以true代替bit，以01字符串表示世代，以1e0、1.0或-0表示数值bit。",
+      "expected": "按对应词法/字段规则拒绝，不先由宽松解析器覆盖重复键或转换数值再验证。",
+      "counterexample": "只在 JSON.parse 后检查对象和值，导致原文本歧义已经丢失。"
+    },
+    {
+      "id": "S23_metadata_and_semantic_fields",
+      "source": "本轮 F/M 参与字段定义",
+      "given": "只改变合法根metadata中的名称、导出时间或display；另一对照改变接口位序、容量规则或工厂契约版本。",
+      "expected": "第一组F/M不变；第二组必须进入结构载荷，改变其规范字节。metadata不能改变行为。",
+      "counterexample": "沿用V4端口/位宽/容量不参与指纹的旧排除表。"
+    },
+    {
+      "id": "S24_two_formats_share_F",
+      "source": "本轮双指纹公式",
+      "given": "结构文件与运行文件具有相同规范structure，实际format不同，前者runtime=null。",
+      "expected": "两者F完全相同，format_md5相同；M因实际format和runtime不同而具有不同规范载荷。M包含F对象，不包含format_md5替代品。",
+      "counterexample": "在F加入外层实际format导致结构身份不再共用，或将format_md5字符串当作format_payload。"
+    },
+    {
+      "id": "S25_task_array_permutation",
+      "source": "JKRD队内顺序；本轮数组保序",
+      "given": "同一队列两个不同独立任务互换位置，其他结构不变。",
+      "expected": "F不变，M规范字节改变；规范化器不把任务按目标或序号重新排序。重复任务仍保留。",
+      "counterexample": "以任务集合或目标映射替代有序数组。"
+    },
+    {
+      "id": "S26_v4_no_lossless_runtime_upgrade",
+      "source": "V4参考 Xi.FIFO空载荷、未齐集合不保存；当前逐次锁存",
+      "given": "V4快照中有Xi复制任务但无每次到达值，亦无完整未齐集合和输出现场。",
+      "expected": "拒绝作为完整V5运行文件直接续算；不得仅改format、补空队列或用当前Xi猜旧值。可另行显式导入为新结构运行并记录舍弃范围。",
+      "counterexample": "重算V5指纹后宣称无损迁移。"
+    },
+    {
+      "id": "S27_unknown_module_ring_or_retry",
+      "source": "当前DAG范围；环监督及F03/F04未定完整协议",
+      "given": "文件要求未识别模块/工厂行为契约，或携带当前profile未定义的环预算、监督等待区、失败重试现场。",
+      "expected": "拒绝以当前完整运行profile加载；明确不支持的范围，不能删掉这些内容后宣称继续原运行。",
+      "counterexample": "保留未知JSON但执行时忽略，或自动清空等待/重试任务。"
+    },
+    {
+      "id": "S28_hash_does_not_override_legality",
+      "source": "JKRD无豁免引用与DAG；指纹验证边界",
+      "given": "文件哈希可重新计算匹配，但包含零被引用池Q、悬空EX来源、多节点环或不合法q_y。",
+      "expected": "仍拒绝加载；管理线、cause、正确哈希均不能代替真实EX/q_y合法性。",
+      "counterexample": "匹配双指纹后跳过结构和队列检查。"
+    },
+    {
+      "id": "S29_restore_has_no_initialization_events",
+      "source": "当前初始化不发布；snapshot-boundary恢复原则",
+      "given": "完整运行文件通过全部检查且恢复了当前q、任务和未齐集合。",
+      "expected": "恢复动作不执行EX、不重新发布初始化/当前q事件、不重新判定已入队任务触发条件；随后按原队列选择。",
+      "counterexample": "加载每个q时向下游广播，从而新增任务或重复输出。"
+    },
+    {
+      "id": "S30_live_stateful_source_is_not_general_latch",
+      "source": "JKRD任务开始读取Qi_q；独立锁存参数规则",
+      "given": "普通任务等待时，其Qi_q来源在另一已完成任务中由0变1；任务只锁存其事件型来源。",
+      "expected": "保存并恢复最新来源q=1，普通任务开始时读取1；不能从cause或旧事件历史恢复出0覆盖该读取。",
+      "counterexample": "为了快照完整性给所有来源统一复制历史值，改变原求值语义。"
+    }
+  ],
+  "formal_document_hashes": {
+    "status": "not_recorded_here",
+    "reason": "本文件不预填尚未定稿或尚不存在的结构/runtime正式示例指纹；由主设计文件在载荷确定后单独记录与复算。"
+  }
+}

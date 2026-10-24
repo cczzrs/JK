@@ -1,0 +1,148 @@
+{
+  "artifact_kind": "directly_reasoned_continuation_example_notes",
+  "status": "design_data_not_executed",
+  "date": "2026-10-21",
+  "format_notice": "本文件是手工推导说明，不是正式检查点格式，也不是执行器输出。正式结构、运行检查点和校验字段由同目录设计文件定义。",
+  "sources": [
+    {"path": "../../docs/JKRD.md", "lines": "233-240", "basis": "输入逐次锁存；输入副本按事件型参数参与下游任务；按目标身份确定队列"},
+    {"path": "../../docs/JKRD.md", "lines": "269-308", "basis": "重复任务保留；到达集合覆盖、收齐、移交与清空；任务参数独立；目标自身q执行时读取"},
+    {"path": "../../docs/JKRD.md", "lines": "320-338", "basis": "Xi优先于Qi；每个完整任务及传播结束后重新选择"},
+    {"path": "../../docs/JKRD.md", "lines": "369-405", "basis": "每次输入独立任务；相同值的发布仍输出；Yi不是独立计算任务"},
+    {"path": "../../docs/drafts/JKRD-V5.0.0-snapshot-recovery-pending.md", "anchor": "snapshot-boundary", "basis": "保存与恢复边界设计，恢复后比较完整剩余轨迹"}
+  ],
+  "model": {
+    "nodes": [
+      {"id": "Q0", "ex": "J0K(X0)", "initial_q": 0},
+      {"id": "Q1", "ex": "J0K(X1)", "initial_q": 0},
+      {"id": "Q2", "ex": "K(Q0)K(Q1)", "initial_q": 0}
+    ],
+    "pro": "三节点均省略pro，采用默认q=0/1",
+    "q_y": {"Y0": "Q2"},
+    "ram_members": [],
+    "node_generation": 1,
+    "ex_version": 1,
+    "topology": ["X0 -> Q0 -> Q2 -> Y0", "X1 -> Q1 -> Q2 -> Y0"],
+    "legality": "Q0/Q1具有同编号Xi专用来源且被Q2真实引用；Q2具有两个非自身来源且被Y0使用；全部非自身Q边无环。Q0/Q1有状态仍按输入副本的事件型参数方式为Q2锁存。"
+  },
+  "trace_notation": {
+    "arrival_Q2": "Q2尚未组成下一任务的来源数据；未列出的来源表示缺失，不表示bit=0",
+    "q": "有状态节点当前q，不替代其创建initial_q",
+    "queues": "数组第一个元素为队首；T号仅为身份，不按跨队全局T号调度",
+    "output": "本步实际发布到Y0的序列；空数组表示没有输出"
+  },
+  "reasoned_history": [
+    {"step": "initial", "q": {"Q0": 0, "Q1": 0, "Q2": 0}, "arrival_Q2": {}, "Xi": [], "Qi": [], "output": []},
+    {"step": "accept I1", "input": {"X0": 1}, "created": {"id": "T1", "target": "Q0", "latched": {"X0": 1}}, "Xi": ["T1"], "Qi": [], "output": []},
+    {"step": "accept I2", "input": {"X1": 0}, "created": {"id": "T2", "target": "Q1", "latched": {"X1": 0}}, "Xi": ["T1", "T2"], "Qi": [], "output": []},
+    {"step": "execute T1", "q": {"Q0": 1, "Q1": 0, "Q2": 0}, "arrival_Q2": {"Q0": 1}, "Xi": ["T2"], "Qi": [], "output": []},
+    {"step": "execute T2", "q": {"Q0": 1, "Q1": 0, "Q2": 0}, "created": {"id": "T3", "target": "Q2", "latched": {"Q0": 1, "Q1": 0}}, "arrival_Q2": {}, "Xi": [], "Qi": ["T3"], "output": []},
+    {"step": "execute T3", "reason": "Q2从0起算：0 XOR 1 XOR 0 = 1", "q": {"Q0": 1, "Q1": 0, "Q2": 1}, "arrival_Q2": {}, "Xi": [], "Qi": [], "output": [1]},
+    {"step": "accept I3", "input": {"X0": 1}, "created": {"id": "T4", "target": "Q0", "latched": {"X0": 1}}, "Xi": ["T4"], "Qi": [], "output": []},
+    {"step": "execute T4", "reason": "Q0结果仍为1，默认pro仍发布一次", "q": {"Q0": 1, "Q1": 0, "Q2": 1}, "arrival_Q2": {"Q0": 1}, "Xi": [], "Qi": [], "output": []},
+    {"step": "accept I4", "input": {"X1": 1}, "created": {"id": "T5", "target": "Q1", "latched": {"X1": 1}}, "Xi": ["T5"], "Qi": [], "output": []},
+    {"step": "execute T5", "q": {"Q0": 1, "Q1": 1, "Q2": 1}, "created": {"id": "T6", "target": "Q2", "latched": {"Q0": 1, "Q1": 1}}, "arrival_Q2": {}, "Xi": [], "Qi": ["T6"], "output": []},
+    {"step": "accept I5 before selecting T6", "input": {"X0": 0}, "created": {"id": "T7", "target": "Q0", "latched": {"X0": 0}}, "Xi": ["T7"], "Qi": ["T6"], "output": []},
+    {"step": "execute T7", "q": {"Q0": 0, "Q1": 1, "Q2": 1}, "arrival_Q2": {"Q0": 0}, "Xi": [], "Qi": ["T6"], "output": []},
+    {"step": "accept I6 before selecting T6", "input": {"X0": 1}, "created": {"id": "T8", "target": "Q0", "latched": {"X0": 1}}, "Xi": ["T8"], "Qi": ["T6"], "output": []},
+    {"step": "accept I7 while calculation remains paused", "input": {"X0": 0}, "created": {"id": "T9", "target": "Q0", "latched": {"X0": 0}}, "Xi": ["T8", "T9"], "Qi": ["T6"], "output": []},
+    {"step": "accept I8 while calculation remains paused", "input": {"X1": 1}, "created": {"id": "T10", "target": "Q1", "latched": {"X1": 1}}, "Xi": ["T8", "T9", "T10"], "Qi": ["T6"], "output": []}
+  ],
+  "checkpoint": {
+    "boundary": "T7完整执行及传播结束；I6/I7/I8各自输入交接完成；T8尚未开始",
+    "current_q": {"Q0": 0, "Q1": 1, "Q2": 1},
+    "FIFOS": {"Xi.FIFO": ["T8", "T9", "T10"], "RAM.FIFO": [], "Qi.FIFO": ["T6"]},
+    "arrival_Q2": {"Q0": 0},
+    "pending_task_payloads": [
+      {"id": "T8", "target": "Q0", "latched": {"X0": 1}},
+      {"id": "T9", "target": "Q0", "latched": {"X0": 0}},
+      {"id": "T10", "target": "Q1", "latched": {"X1": 1}},
+      {"id": "T6", "target": "Q2", "latched": {"Q0": 1, "Q1": 1}}
+    ],
+    "next_task_sequence": 11,
+    "next_input_sequence": 9,
+    "already_published_output_count": 1,
+    "already_published_output_history_for_explanation_only": [1],
+    "history_is_not_replayed": true,
+    "external_Xi_current_values_are_not_required": true,
+    "active_task": null,
+    "active_transaction": null,
+    "pending_publications": []
+  },
+  "restore_assertions": {
+    "EX_executions": 0,
+    "Q_publications": 0,
+    "Yi_outputs": 0,
+    "new_input_tasks": 0,
+    "arrival_Q2_after_load": {"Q0": 0},
+    "next_task_sequence_after_load": 11,
+    "requirement": "只装载检查点，不根据q补到达、不重新触发旧任务、不执行J0、不重放已有Y0=1。"
+  },
+  "reasoned_continuation_without_new_inputs": [
+    {"step": "execute T8", "q": {"Q0": 1, "Q1": 1, "Q2": 1}, "arrival_Q2": {"Q0": 1}, "Xi": ["T9", "T10"], "Qi": ["T6"], "output": [], "reason": "锁存X0=1；同来源覆盖当前未齐集合Q0=0，旧T6载荷不变"},
+    {"step": "execute T9", "q": {"Q0": 0, "Q1": 1, "Q2": 1}, "arrival_Q2": {"Q0": 0}, "Xi": ["T10"], "Qi": ["T6"], "output": [], "reason": "锁存X0=0是有效参数，覆盖当前组Q0=1"},
+    {"step": "execute T10", "q": {"Q0": 0, "Q1": 1, "Q2": 1}, "created": {"id": "T11", "target": "Q2", "latched": {"Q0": 0, "Q1": 1}}, "arrival_Q2": {}, "Xi": [], "Qi": ["T6", "T11"], "output": [], "reason": "Q1重复结果1仍发布；当前组收齐后独立锁存并清空；T11追加在T6后"},
+    {"step": "execute T6", "q": {"Q0": 0, "Q1": 1, "Q2": 1}, "arrival_Q2": {}, "Xi": [], "Qi": ["T11"], "output": [1], "reason": "Q2从当前1起算，使用旧锁存1、1：1 XOR 1 XOR 1 = 1；相同结果仍发布"},
+    {"step": "execute T11", "q": {"Q0": 0, "Q1": 1, "Q2": 0}, "arrival_Q2": {}, "Xi": [], "Qi": [], "output": [0], "reason": "Q2从前任务提交的1起算，使用独立锁存0、1：1 XOR 0 XOR 1 = 0"}
+  ],
+  "expected": {
+    "task_sequence": ["T8", "T9", "T10", "T6", "T11"],
+    "remaining_Y0_outputs": [1, 0],
+    "whole_history_Y0_outputs_for_comparison": [1, 1, 0],
+    "final_q": {"Q0": 0, "Q1": 1, "Q2": 0},
+    "final_arrival_Q2": {},
+    "final_all_queues_empty": true,
+    "next_task_sequence": 12,
+    "next_input_sequence": 9,
+    "total_published_output_count": 3
+  },
+  "counterexamples_and_detection": [
+    {"error": "T6重新读取输入副本最新q，而非任务锁存1、1", "wrong_result": "T6得到0，T11随后得到1，续发[0,1]", "detected_by": "剩余输出[1,0]及T6参数检查"},
+    {"error": "所有Q2任务从initial_q=0重新起算", "wrong_result": "T6得到0，T11得到1，续发[0,1]", "detected_by": "current_q还原与有状态起点检查"},
+    {"error": "恢复时补发已经发布的Y0=1", "wrong_result": "加载阶段出现输出，且续接外部轨迹多一个1", "detected_by": "加载零执行、零发布、零Yi输出断言"},
+    {"error": "把T8/T9同目标任务合并，或把bit=0当缺失", "wrong_result": "Xi任务序列或中间Q0/到达集合轨迹不符；具体末输出可能仍相同", "detected_by": "逐任务身份、锁存数据和中间状态比较，不只比较最终bit"},
+    {"error": "Q1结果未变化便跳过T10的publication", "wrong_result": "缺少T11，续发仅[1]", "detected_by": "T10产生T11的因果与剩余输出数量"},
+    {"error": "Q2结果未变化便跳过T6的publication", "wrong_result": "续发仅[0]", "detected_by": "T6默认pro和输出事件数量"},
+    {"error": "按全局任务序号先执行T6，再处理Xi", "wrong_result": "任务轨迹错误，最终续发仍可能是[1,0]", "detected_by": "精确任务序T8,T9,T10,T6,T11"},
+    {"error": "加载时丢弃checkpoint的Q2到达集合", "wrong_result": "加载集合错误；主案例后续T8/T9覆盖Q0，因此最终续发仍可能相同", "detected_by": "直接核对加载集合；额外分支见下项"},
+    {"error": "把尚未齐集合按Q1当前q补齐成任务", "wrong_result": "加载时新建多余Q2任务，破坏next_task和队列", "detected_by": "加载零任务生成与原队列身份检查"}
+  ],
+  "additional_reasoned_case_for_partial_arrival_persistence": {
+    "status": "单独推导分支，不改变上面的主案例输入与预期，也未执行",
+    "checkpoint_position": "历史执行T7后、尚未接受I6/I7/I8：q=(0,1,1)，Xi空，Qi=[T6]，Q2集合={Q0:0}",
+    "new_input": "仅接受一次X1=1，创建新的T8(Q1锁存X1=1)",
+    "correct_task_sequence": ["T8", "T6", "T9"],
+    "correct_reason": "T8重复发布Q1=1，使用恢复的Q0=0收齐，生成T9(Q2锁存0,1)；T6得1，T9得0",
+    "correct_remaining_outputs": [1, 0],
+    "if_arrivals_were_cleared": "T8后仅有Q1=1，不能形成T9；只执行T6并输出[1]，最终保留缺Q0的集合"
+  },
+  "coverage": {
+    "directly_reasoned": [
+      "输入复制任务与下游旧任务同时待执行",
+      "独立输入锁存与0值；同目标任务不去重",
+      "输入副本事件型参数、旧任务载荷与下一组到达集合分离",
+      "同一来源覆盖未齐集合；收齐后独立锁存并清空",
+      "严格Xi优先级、队内顺序和新任务追加",
+      "initial_q与当前q区别；有状态目标承接前任务结果",
+      "重复结果仍发布；加载零执行零发布；剩余输出顺序"
+    ],
+    "not_proven_by_remaining_output_alone": [
+      "原未齐集合的持久化，因主案例随后覆盖该来源",
+      "Xi与Qi的优先级轨迹",
+      "T8/T9是否曾被合并或跳过"
+    ],
+    "not_covered": [
+      "保存器、加载器、格式校验器或执行器的实际实现",
+      "RAM.FACTORY操作事务、多EX及附带依赖",
+      "FRAME输入交接、PRE/POST、动态世代与旧节点回收",
+      "输出锁存例外、FRAME_OUT、ACK资格及重发消费交错",
+      "普通非输入有状态来源执行时读取最新q的专门反例",
+      "环、DAG.CARE、失败回滚、资源不足与重试",
+      "宿主外部输入重放和输出副作用的跨进程崩溃恢复"
+    ],
+    "verification_level": "依据条款和逐式XOR手工推导；未调用模拟器或执行任务。"
+  },
+  "host_boundary": {
+    "claim": "检查点恢复只续算模型尚未完成部分；加载不补发已发布Yi。",
+    "limitation": "检查点自身不保证外部副作用恰好一次。发布到外部与检查点持久化之间的崩溃、保存后又接受的输入、重放与投递确认需要另行定义宿主协议。输出序号和输入序号是衔接身份，不能单独替代该协议。"
+  }
+}

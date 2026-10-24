@@ -1,0 +1,909 @@
+{
+  "artifact_kind": "complete_instantiated_structure_design",
+  "status": "proposal_not_executor_or_snapshot",
+  "date": "2026-10-21",
+  "rule_source": "../../docs/JKRD.md",
+  "transaction_design": "a03-factory-transactions.json",
+  "boundary": "P4：f1完成且旧轮已GC；f2=[0]晚到并领取。POST.f1未ACK，当前输出准备的K84/SELECT85仍存在。",
+  "initial_q_notice": "initial_q 是各节点创建时的分类与初值；reasoned_current_q_partial 是推导的部分当前值，不是完整恢复状态。",
+  "inputs": {
+    "data": [
+      "X0",
+      "X1",
+      "X2",
+      "X3",
+      "X4",
+      "X5",
+      "X6",
+      "X7"
+    ],
+    "frame_in": "X8",
+    "ack": "X9",
+    "frame_width_min": 1,
+    "frame_width_max": 8,
+    "copy_only_actual_data_channels": true
+  },
+  "nodes": [
+    {
+      "id": "Q0",
+      "role": "INPUT_0",
+      "ex": "J0K(X0)",
+      "pro": "q="
+    },
+    {
+      "id": "Q1",
+      "role": "INPUT_1",
+      "ex": "J0K(X1)",
+      "pro": "q="
+    },
+    {
+      "id": "Q2",
+      "role": "INPUT_2",
+      "ex": "J0K(X2)",
+      "pro": "q="
+    },
+    {
+      "id": "Q3",
+      "role": "INPUT_3",
+      "ex": "J0K(X3)",
+      "pro": "q="
+    },
+    {
+      "id": "Q4",
+      "role": "INPUT_4",
+      "ex": "J0K(X4)",
+      "pro": "q="
+    },
+    {
+      "id": "Q5",
+      "role": "INPUT_5",
+      "ex": "J0K(X5)",
+      "pro": "q="
+    },
+    {
+      "id": "Q6",
+      "role": "INPUT_6",
+      "ex": "J0K(X6)",
+      "pro": "q="
+    },
+    {
+      "id": "Q7",
+      "role": "INPUT_7",
+      "ex": "J0K(X7)",
+      "pro": "q="
+    },
+    {
+      "id": "Q8",
+      "role": "FRAME_IN",
+      "ex": "J0K(X8)",
+      "pro": "q="
+    },
+    {
+      "id": "Q9",
+      "role": "ACK_INPUT",
+      "ex": "J0K(X9)",
+      "pro": "q="
+    },
+    {
+      "id": "Q10",
+      "role": "S_1",
+      "ex": "J0K(Q0)K(Q11)J(Q8)",
+      "pro": "q="
+    },
+    {
+      "id": "Q11",
+      "role": "C_1",
+      "ex": "J0K(Q0)J(Q8)",
+      "pro": "q="
+    },
+    {
+      "id": "Q12",
+      "role": "S_2",
+      "ex": "J0K(Q0)K(Q1)K(Q13)J(Q8)",
+      "pro": "q="
+    },
+    {
+      "id": "Q13",
+      "role": "C_2",
+      "ex": "J0K(Q0)K(Q1)J(Q8)",
+      "pro": "q="
+    },
+    {
+      "id": "Q14",
+      "role": "S_3",
+      "ex": "J0K(Q0)K(Q1)K(Q2)K(Q15)J(Q8)",
+      "pro": "q="
+    },
+    {
+      "id": "Q15",
+      "role": "C_3",
+      "ex": "J0K(Q0)K(Q1)K(Q2)J(Q8)",
+      "pro": "q="
+    },
+    {
+      "id": "Q16",
+      "role": "S_4",
+      "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)K(Q17)J(Q8)",
+      "pro": "q="
+    },
+    {
+      "id": "Q17",
+      "role": "C_4",
+      "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)J(Q8)",
+      "pro": "q="
+    },
+    {
+      "id": "Q18",
+      "role": "S_5",
+      "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)K(Q4)K(Q19)J(Q8)",
+      "pro": "q="
+    },
+    {
+      "id": "Q19",
+      "role": "C_5",
+      "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)K(Q4)J(Q8)",
+      "pro": "q="
+    },
+    {
+      "id": "Q20",
+      "role": "S_6",
+      "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)K(Q4)K(Q5)K(Q21)J(Q8)",
+      "pro": "q="
+    },
+    {
+      "id": "Q21",
+      "role": "C_6",
+      "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)K(Q4)K(Q5)J(Q8)",
+      "pro": "q="
+    },
+    {
+      "id": "Q22",
+      "role": "S_7",
+      "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)K(Q4)K(Q5)K(Q6)K(Q23)J(Q8)",
+      "pro": "q="
+    },
+    {
+      "id": "Q23",
+      "role": "C_7",
+      "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)K(Q4)K(Q5)K(Q6)J(Q8)",
+      "pro": "q="
+    },
+    {
+      "id": "Q24",
+      "role": "S_8",
+      "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)K(Q4)K(Q5)K(Q6)K(Q7)K(Q25)J(Q8)",
+      "pro": "q="
+    },
+    {
+      "id": "Q25",
+      "role": "C_8",
+      "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)K(Q4)K(Q5)K(Q6)K(Q7)J(Q8)",
+      "pro": "q="
+    },
+    {
+      "id": "Q26",
+      "role": "B_0",
+      "ex": "J0K(Q80)",
+      "pro": "q="
+    },
+    {
+      "id": "Q27",
+      "role": "B_1",
+      "ex": "J0K(Q1)",
+      "pro": "q="
+    },
+    {
+      "id": "Q28",
+      "role": "B_2",
+      "ex": "J0K(Q2)",
+      "pro": "q="
+    },
+    {
+      "id": "Q29",
+      "role": "B_3",
+      "ex": "J0K(Q3)",
+      "pro": "q="
+    },
+    {
+      "id": "Q30",
+      "role": "B_4",
+      "ex": "J0K(Q4)",
+      "pro": "q="
+    },
+    {
+      "id": "Q31",
+      "role": "B_5",
+      "ex": "J0K(Q5)",
+      "pro": "q="
+    },
+    {
+      "id": "Q32",
+      "role": "B_6",
+      "ex": "J0K(Q6)",
+      "pro": "q="
+    },
+    {
+      "id": "Q33",
+      "role": "B_7",
+      "ex": "J0K(Q7)",
+      "pro": "q="
+    },
+    {
+      "id": "Q34",
+      "role": "H_0",
+      "ex": "J0K(Q26)",
+      "pro": "q="
+    },
+    {
+      "id": "Q35",
+      "role": "H_1",
+      "ex": "J0K(Q27)",
+      "pro": "q="
+    },
+    {
+      "id": "Q36",
+      "role": "H_2",
+      "ex": "J0K(Q28)",
+      "pro": "q="
+    },
+    {
+      "id": "Q37",
+      "role": "H_3",
+      "ex": "J0K(Q29)",
+      "pro": "q="
+    },
+    {
+      "id": "Q38",
+      "role": "H_4",
+      "ex": "J0K(Q30)",
+      "pro": "q="
+    },
+    {
+      "id": "Q39",
+      "role": "H_5",
+      "ex": "J0K(Q31)",
+      "pro": "q="
+    },
+    {
+      "id": "Q40",
+      "role": "H_6",
+      "ex": "J0K(Q32)",
+      "pro": "q="
+    },
+    {
+      "id": "Q41",
+      "role": "H_7",
+      "ex": "J0K(Q33)",
+      "pro": "q="
+    },
+    {
+      "id": "Q42",
+      "role": "T1",
+      "ex": "J0J(Q8)K1",
+      "pro": "q="
+    },
+    {
+      "id": "Q43",
+      "role": "BUSY",
+      "ex": "K(Q42)",
+      "pro": "q="
+    },
+    {
+      "id": "Q44",
+      "role": "CACHE_VALID",
+      "ex": "J0K(Q42)",
+      "pro": "q="
+    },
+    {
+      "id": "Q45",
+      "role": "F",
+      "ex": "K(Q42)",
+      "pro": "q="
+    },
+    {
+      "id": "Q46",
+      "role": "C_ACK",
+      "ex": "J0K(Q46)K(Q45)J(Q9)K(Q46)",
+      "pro": "q="
+    },
+    {
+      "id": "Q47",
+      "role": "READY",
+      "ex": "J0K(Q45)K(Q46)",
+      "pro": "q="
+    },
+    {
+      "id": "Q48",
+      "role": "MODE",
+      "ex": "J0K(Q84)",
+      "pro": "q="
+    },
+    {
+      "id": "Q49",
+      "role": "ACK0",
+      "ex": "J0K1K(Q9)J(Q47)",
+      "pro": "q="
+    },
+    {
+      "id": "Q50",
+      "role": "ACK1",
+      "ex": "J0K(Q9)J(Q47)",
+      "pro": "q="
+    },
+    {
+      "id": "Q51",
+      "role": "A",
+      "ex": "J0K(Q10)K(Q11)K(Q12)K(Q13)K(Q14)K(Q15)K(Q16)K(Q17)K(Q18)K(Q19)K(Q20)K(Q21)K(Q22)K(Q23)K(Q24)K(Q25)K(Q26)K(Q27)K(Q28)K(Q29)K(Q30)K(Q31)K(Q32)K(Q33)K(Q34)K(Q35)K(Q36)K(Q37)K(Q38)K(Q39)K(Q40)K(Q41)K(Q42)K(Q43)K(Q44)K(Q45)K(Q46)K(Q47)K(Q48)K(Q49)K(Q50)K(Q71)K(Q74)K(Q75)K(Q76)K(Q80)K(Q81)K(Q82)K(Q83)K(Q84)K(Q85)K(Q86)K(Q87)K(Q88)K(Q89)K(Q91)",
+      "pro": "q="
+    },
+    {
+      "id": "Q52",
+      "role": "A_READ",
+      "ex": "J0K(Q51)",
+      "pro": "q="
+    },
+    {
+      "id": "Q53",
+      "role": "R_0",
+      "ex": "J0K(Q26)J(Q85)K(Q52)K(Q52)",
+      "pro": "q="
+    },
+    {
+      "id": "Q54",
+      "role": "R_1",
+      "ex": "J0K(Q35)K(Q52)K(Q52)",
+      "pro": "q="
+    },
+    {
+      "id": "Q55",
+      "role": "R_2",
+      "ex": "J0K(Q36)K(Q52)K(Q52)",
+      "pro": "q="
+    },
+    {
+      "id": "Q56",
+      "role": "R_3",
+      "ex": "J0K(Q37)K(Q52)K(Q52)",
+      "pro": "q="
+    },
+    {
+      "id": "Q57",
+      "role": "R_4",
+      "ex": "J0K(Q38)K(Q52)K(Q52)",
+      "pro": "q="
+    },
+    {
+      "id": "Q58",
+      "role": "R_5",
+      "ex": "J0K(Q39)K(Q52)K(Q52)",
+      "pro": "q="
+    },
+    {
+      "id": "Q59",
+      "role": "R_6",
+      "ex": "J0K(Q40)K(Q52)K(Q52)",
+      "pro": "q="
+    },
+    {
+      "id": "Q60",
+      "role": "R_7",
+      "ex": "J0K(Q41)K(Q52)K(Q52)",
+      "pro": "q="
+    },
+    {
+      "id": "Q61",
+      "role": "R_FRAME",
+      "ex": "J0K(Q48)",
+      "pro": "q="
+    },
+    {
+      "id": "Q62",
+      "role": "O_0",
+      "ex": "J0K(Q53)",
+      "pro": "q=0/1"
+    },
+    {
+      "id": "Q63",
+      "role": "O_1",
+      "ex": "J0K(Q54)",
+      "pro": "q=0/1"
+    },
+    {
+      "id": "Q64",
+      "role": "O_2",
+      "ex": "J0K(Q55)",
+      "pro": "q=0/1"
+    },
+    {
+      "id": "Q65",
+      "role": "O_3",
+      "ex": "J0K(Q56)",
+      "pro": "q=0/1"
+    },
+    {
+      "id": "Q66",
+      "role": "O_4",
+      "ex": "J0K(Q57)",
+      "pro": "q=0/1"
+    },
+    {
+      "id": "Q67",
+      "role": "O_5",
+      "ex": "J0K(Q58)",
+      "pro": "q=0/1"
+    },
+    {
+      "id": "Q68",
+      "role": "O_6",
+      "ex": "J0K(Q59)",
+      "pro": "q=0/1"
+    },
+    {
+      "id": "Q69",
+      "role": "O_7",
+      "ex": "J0K(Q60)",
+      "pro": "q=0/1"
+    },
+    {
+      "id": "Q70",
+      "role": "FRAME_OUT",
+      "ex": "J0K(Q61)",
+      "pro": "q=0/1"
+    },
+    {
+      "id": "Q71",
+      "role": "GC_CHECK",
+      "ex": "J0J(Q42)K1",
+      "pro": "q="
+    },
+    {
+      "id": "Q74",
+      "role": "PRE.f1.D0",
+      "ex": "J0J(Q42)K(Q74)",
+      "pro": "q="
+    },
+    {
+      "id": "Q75",
+      "role": "PRE.f1.V",
+      "ex": "J0J(Q42)",
+      "pro": "q="
+    },
+    {
+      "id": "Q76",
+      "role": "PRE.f1.CLAIM",
+      "ex": "J0K(Q42)",
+      "pro": "q="
+    },
+    {
+      "id": "Q80",
+      "role": "POST.f1.Q8",
+      "ex": "J0J(Q42)K(Q80)",
+      "pro": "q="
+    },
+    {
+      "id": "Q81",
+      "role": "FRONTIER.f1.Q9",
+      "ex": "J0J(Q42)K(Q81)",
+      "pro": "q="
+    },
+    {
+      "id": "Q82",
+      "role": "FRONTIER.f1.READY",
+      "ex": "J0J(Q42)",
+      "pro": "q="
+    },
+    {
+      "id": "Q83",
+      "role": "POST.f1.V",
+      "ex": "J0J(Q42)",
+      "pro": "q="
+    },
+    {
+      "id": "Q84",
+      "role": "POST.p1.K",
+      "ex": "J0K(Q42)",
+      "pro": "q="
+    },
+    {
+      "id": "Q85",
+      "role": "POST.p1.SELECT",
+      "ex": "J0K(Q83)J(Q43)",
+      "pro": "q="
+    },
+    {
+      "id": "Q86",
+      "role": "PRE.f2.D0",
+      "ex": "J0J(Q42)K(Q86)",
+      "pro": "q="
+    },
+    {
+      "id": "Q87",
+      "role": "PRE.f2.V",
+      "ex": "J0J(Q42)",
+      "pro": "q="
+    },
+    {
+      "id": "Q88",
+      "role": "PRE.f2.CLAIM",
+      "ex": "J0K(Q42)",
+      "pro": "q="
+    },
+    {
+      "id": "Q89",
+      "role": "ROUND.f2.JOIN",
+      "ex": "J0K1K(Q88)J(Q87)J(Q82)",
+      "pro": "q="
+    },
+    {
+      "id": "Q90",
+      "role": "ROUND.f2.Q10_GO",
+      "ex": "J0K(Q89)",
+      "pro": "q=1"
+    },
+    {
+      "id": "Q91",
+      "role": "ROUND.f2.Q7_COMPUTE",
+      "ex": "J0K(Q86)K(Q81)J(Q90)",
+      "pro": "q="
+    }
+  ],
+  "initial_q": {
+    "0": [
+      "Q0",
+      "Q1",
+      "Q2",
+      "Q3",
+      "Q4",
+      "Q5",
+      "Q6",
+      "Q7",
+      "Q8",
+      "Q9",
+      "Q10",
+      "Q11",
+      "Q12",
+      "Q13",
+      "Q14",
+      "Q15",
+      "Q16",
+      "Q17",
+      "Q18",
+      "Q19",
+      "Q20",
+      "Q21",
+      "Q22",
+      "Q23",
+      "Q24",
+      "Q25",
+      "Q26",
+      "Q27",
+      "Q28",
+      "Q29",
+      "Q30",
+      "Q31",
+      "Q32",
+      "Q33",
+      "Q34",
+      "Q35",
+      "Q36",
+      "Q37",
+      "Q38",
+      "Q39",
+      "Q40",
+      "Q41",
+      "Q43",
+      "Q44",
+      "Q45",
+      "Q46",
+      "Q47",
+      "Q49",
+      "Q50",
+      "Q51",
+      "Q52",
+      "Q53",
+      "Q54",
+      "Q55",
+      "Q56",
+      "Q57",
+      "Q58",
+      "Q59",
+      "Q60",
+      "Q61",
+      "Q62",
+      "Q63",
+      "Q64",
+      "Q65",
+      "Q66",
+      "Q67",
+      "Q68",
+      "Q69",
+      "Q70",
+      "Q71",
+      "Q74",
+      "Q76",
+      "Q80",
+      "Q81",
+      "Q82",
+      "Q84",
+      "Q85",
+      "Q86",
+      "Q88",
+      "Q89",
+      "Q91"
+    ],
+    "1": [
+      "Q42",
+      "Q48",
+      "Q75",
+      "Q83",
+      "Q87"
+    ]
+  },
+  "q_y": [
+    {
+      "Y0": "Q62"
+    },
+    {
+      "Y1": "Q63"
+    },
+    {
+      "Y2": "Q64"
+    },
+    {
+      "Y3": "Q65"
+    },
+    {
+      "Y4": "Q66"
+    },
+    {
+      "Y5": "Q67"
+    },
+    {
+      "Y6": "Q68"
+    },
+    {
+      "Y7": "Q69"
+    },
+    {
+      "Y8": "Q70"
+    }
+  ],
+  "factory_behavior_is_not_EX": true,
+  "factory_operation_reference_counts_as_Q_consumer": false,
+  "node_behavior_bindings": [
+    {
+      "operation": "ACCEPT_PRE_AND_TRY",
+      "primary_Q_refs": [
+        "Q10",
+        "Q12",
+        "Q14",
+        "Q16",
+        "Q18",
+        "Q20",
+        "Q22",
+        "Q24"
+      ],
+      "phase": "after_primary_own_EX_before_envelope_commit"
+    },
+    {
+      "operation": "SAVE_POST_AND_ADVANCE",
+      "primary_Q_refs": [
+        "Q91"
+      ],
+      "phase": "after_primary_own_EX_before_envelope_commit"
+    },
+    {
+      "operation": "RETIRE_SCAN",
+      "primary_Q_refs": [
+        "Q71"
+      ],
+      "phase": "after_primary_own_EX_before_envelope_commit"
+    },
+    {
+      "operation": "POST_PROTOCOL",
+      "primary_Q_refs": [
+        "Q49",
+        "Q50",
+        "Q61",
+        "Q70",
+        "Q85"
+      ],
+      "phase": "after_primary_own_EX_before_envelope_commit"
+    }
+  ],
+  "reasoned_current_q_partial": {
+    "Q71": 1,
+    "Q74": 1,
+    "Q75": 0,
+    "Q76": 1,
+    "Q80": 1,
+    "Q81": 1,
+    "Q82": 0,
+    "Q83": 1,
+    "Q84": 1,
+    "Q85": 1,
+    "Q86": 0,
+    "Q87": 1,
+    "Q88": 1,
+    "Q89": 1,
+    "Q43": 1,
+    "Q48": 1,
+    "Q0": 0,
+    "Q8": 1
+  },
+  "ordinary_event_task": {
+    "target": "Q91",
+    "queue": "RAM.FIFO",
+    "latched_parameters": {
+      "Q90": 1
+    },
+    "cause": "Q90新publication；不是重播f1完成"
+  },
+  "structure_metadata": {
+    "PRE": {
+      "block": "PRE.B1",
+      "generation": 1,
+      "accepted": 2,
+      "head": "f2",
+      "slots": [
+        {
+          "frame": "f1",
+          "data": [
+            "Q74"
+          ],
+          "V": "Q75",
+          "CLAIM": "Q76"
+        },
+        {
+          "frame": "f2",
+          "data": [
+            "Q86"
+          ],
+          "V": "Q87",
+          "CLAIM": "Q88"
+        }
+      ]
+    },
+    "POST": {
+      "block": "POST.B1",
+      "generation": 1,
+      "accepted": 1,
+      "head": "result.f1",
+      "slots": [
+        {
+          "frame": "result.f1",
+          "data": [
+            "Q80"
+          ],
+          "V": "Q83"
+        }
+      ]
+    },
+    "frontier": {
+      "state": [
+        "Q81"
+      ],
+      "READY": "Q82"
+    },
+    "output_request": {
+      "id": "post.p1",
+      "kind_node": "Q84",
+      "selector": "Q85"
+    },
+    "retired_physical_Q_ids": [
+      "Q72",
+      "Q73",
+      "Q77",
+      "Q78",
+      "Q79"
+    ],
+    "phase": "P4_late_f2_dispatch"
+  },
+  "reference_policy": "A仅引用有状态动态Q，排除GO90；已删除72/73/77/78/79，不保留伪节点或失效EX引用。",
+  "membership_design": {
+    "factory": "RAM.FACTORY",
+    "members": [
+      "Q0",
+      "Q1",
+      "Q2",
+      "Q3",
+      "Q4",
+      "Q5",
+      "Q6",
+      "Q7",
+      "Q8",
+      "Q9",
+      "Q10",
+      "Q11",
+      "Q12",
+      "Q13",
+      "Q14",
+      "Q15",
+      "Q16",
+      "Q17",
+      "Q18",
+      "Q19",
+      "Q20",
+      "Q21",
+      "Q22",
+      "Q23",
+      "Q24",
+      "Q25",
+      "Q26",
+      "Q27",
+      "Q28",
+      "Q29",
+      "Q30",
+      "Q31",
+      "Q32",
+      "Q33",
+      "Q34",
+      "Q35",
+      "Q36",
+      "Q37",
+      "Q38",
+      "Q39",
+      "Q40",
+      "Q41",
+      "Q42",
+      "Q43",
+      "Q44",
+      "Q45",
+      "Q46",
+      "Q47",
+      "Q48",
+      "Q49",
+      "Q50",
+      "Q51",
+      "Q52",
+      "Q53",
+      "Q54",
+      "Q55",
+      "Q56",
+      "Q57",
+      "Q58",
+      "Q59",
+      "Q60",
+      "Q61",
+      "Q62",
+      "Q63",
+      "Q64",
+      "Q65",
+      "Q66",
+      "Q67",
+      "Q68",
+      "Q69",
+      "Q70",
+      "Q71",
+      "Q74",
+      "Q75",
+      "Q76",
+      "Q80",
+      "Q81",
+      "Q82",
+      "Q83",
+      "Q84",
+      "Q85",
+      "Q86",
+      "Q87",
+      "Q88",
+      "Q89",
+      "Q90",
+      "Q91"
+    ],
+    "input_copy_priority": 1,
+    "other_member_priority": 2,
+    "ordinary_nonmember_priority": 5,
+    "dag_queue_enabled": false
+  },
+  "readiness_supersession": {
+    "status": "historical-candidate-for-comparison",
+    "current_design": [
+      "a03-readiness-business.json",
+      "a03-readiness-output.json",
+      "a03-readiness-ack.json"
+    ],
+    "complete_checkpoints": "../v5-snapshot-design/a03-dynamic/checkpoint-contract.json",
+    "reason": "Old internally dependent transaction stages are replaced; old structures/counts are not the current all-ready A03 contract."
+  }
+}

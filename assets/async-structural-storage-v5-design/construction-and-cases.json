@@ -1,0 +1,144 @@
+{
+  "artifact_kind": "declarative_construction_and_reasoning_cases",
+  "status": "design_proposal_not_runtime_trace",
+  "base_structure": "storage-structure.json",
+  "notice": "字段用于说明设计，不是已批准的工厂 API、事务序列化或快照格式。EX 是真实 JK 表达式；cause、结构动作、身份判断与 EX 引用分别描述。",
+  "active_example": {
+    "boundary": "两帧输入复制及 S/C 已完成，首发 SELECT 尚未执行；完整图由 base 的 71 节点加下列 7 节点并替换 6 个 EX 得到，共 78 节点。",
+    "example_inputs_only": [
+      {"frame_id":"f1", "width":2, "bits":[1,0]},
+      {"frame_id":"f2", "width":1, "bits":[0]}
+    ],
+    "add_nodes": [
+      {"id":"Q71", "role":"f1.D0", "ex":"J0J(Q0)K(Q71)", "pro":"q="},
+      {"id":"Q72", "role":"f1.D1", "ex":"J0J(Q1)K(Q72)", "pro":"q="},
+      {"id":"Q73", "role":"f1.V", "ex":"J0J(Q42)", "pro":"q="},
+      {"id":"Q74", "role":"p1.K", "ex":"J0K(Q42)", "pro":"q="},
+      {"id":"Q75", "role":"p1.SELECT", "ex":"J0K(Q73)J(Q43)", "pro":"q="},
+      {"id":"Q76", "role":"f2.D0", "ex":"J0J(Q0)K(Q76)", "pro":"q="},
+      {"id":"Q77", "role":"f2.V", "ex":"J0J(Q42)", "pro":"q="}
+    ],
+    "add_initial_q_at_creation": {"0":["Q71","Q72","Q74","Q75","Q76"], "1":["Q73","Q77"]},
+    "add_factory_members": ["Q71","Q72","Q73","Q74","Q75","Q76","Q77"],
+    "replace_ex": [
+      {"id":"Q26", "ex":"J0K(Q71)"},
+      {"id":"Q27", "ex":"J0K(Q72)"},
+      {"id":"Q48", "ex":"J0K(Q74)"},
+      {"id":"Q51", "ex":"J0K(Q10)K(Q11)K(Q12)K(Q13)K(Q14)K(Q15)K(Q16)K(Q17)K(Q18)K(Q19)K(Q20)K(Q21)K(Q22)K(Q23)K(Q24)K(Q25)K(Q26)K(Q27)K(Q28)K(Q29)K(Q30)K(Q31)K(Q32)K(Q33)K(Q34)K(Q35)K(Q36)K(Q37)K(Q38)K(Q39)K(Q40)K(Q41)K(Q42)K(Q43)K(Q44)K(Q45)K(Q46)K(Q47)K(Q48)K(Q49)K(Q50)K(Q71)K(Q72)K(Q73)K(Q74)K(Q75)K(Q76)K(Q77)"},
+      {"id":"Q53", "ex":"J0K(Q26)J(Q75)K(Q52)K(Q52)"},
+      {"id":"Q54", "ex":"J0K(Q27)J(Q75)K(Q52)K(Q52)"}
+    ],
+    "structure_metadata": {
+      "block": {"id":"B1", "generation":1, "accepted_this_generation":2, "capacity":8, "slot_order":["s1","s2"]},
+      "slots": [
+        {"id":"s1", "frame_id":"f1", "sequence":1, "width":2, "data_nodes":["Q71","Q72"], "valid_node":"Q73"},
+        {"id":"s2", "frame_id":"f2", "sequence":2, "width":1, "data_nodes":["Q76"], "valid_node":"Q77"}
+      ],
+      "head":"s1",
+      "requests_in_order":[{"id":"p1", "frame_id":"f1", "kind_node":"Q74", "selector":"Q75"}],
+      "dynamic_node_generation":1,
+      "business_bits_are_stored_only_in_q":true,
+      "unused_six_slots_have_no_Q_nodes":true
+    },
+    "reasoned_q_overrides_from_base_initial": {"Q0":0,"Q1":0,"Q8":1,"Q10":0,"Q11":0,"Q12":1,"Q13":1,"Q43":1,"Q48":1,"Q51":1,"Q52":1,"Q71":1,"Q72":0,"Q73":1,"Q74":1,"Q75":0,"Q76":0,"Q77":1},
+    "reasoned_remaining_RAM_targets": ["Q75"],
+    "construct_f1_transaction": {
+      "primary":"Q12",
+      "locked_event_parameters":{"Q0":1,"Q1":0,"Q8":1},
+      "read_latest_q":["Q13"],
+      "primary_result":1,
+      "new_data_EX_in_order":[
+        {"target":"Q71", "ex":"J0K(Q0)", "locked_event_parameters":{"Q0":1}, "result":1},
+        {"target":"Q72", "ex":"J0K(Q1)", "locked_event_parameters":{"Q1":0}, "result":0}
+      ],
+      "followed_by_actual_EX_targets":["Q74","Q43","Q48","Q51","Q52"],
+      "structural_commit":"创建 Q71 至 Q75、登记成员/槽/请求；D 装载后安装保持 EX；改接 B/MODE/R/A；完整提交才可见。",
+      "next":"Q13 是此前与 Q12 相邻入队的 C 任务；A/A_READ 在本准备启动事务内已执行完，才将只执行 SELECT 的 Q75 追加到 RAM 队尾，不插在 S/C 之间。"
+    },
+    "construct_f2_transaction": {
+      "primary":"Q10",
+      "locked_event_parameters":{"Q0":0,"Q8":1},
+      "read_latest_q":["Q11"],
+      "new_data_EX":{"target":"Q76", "ex":"J0K(Q0)", "locked_event_parameters":{"Q0":0}, "result":0},
+      "structural_commit":"创建 Q76/Q77 并原子扩展 A 的来源。队首仍为 f1，不再生成 f2 首发请求。",
+      "next":"Q11 携带 f2 独立参数执行 C。"
+    },
+    "dag_certificate_order": ["Q0","Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q11","Q13","Q15","Q17","Q19","Q21","Q23","Q25","Q10","Q12","Q14","Q16","Q18","Q20","Q22","Q24","Q42","Q43","Q44","Q71","Q72","Q73","Q74","Q75","Q76","Q77","Q26","Q27","Q28","Q29","Q30","Q31","Q32","Q33","Q34","Q35","Q36","Q37","Q38","Q39","Q40","Q41","Q45","Q46","Q47","Q48","Q49","Q50","Q51","Q52","Q53","Q54","Q55","Q56","Q57","Q58","Q59","Q60","Q61","Q62","Q63","Q64","Q65","Q66","Q67","Q68","Q69","Q70"],
+    "A_distinct_sources":48
+  },
+  "first_output_of_active_example": {
+    "selector_transaction": {
+      "primary":"Q75",
+      "actual_EX_order":["Q75"],
+      "parameter_mode":"V 与 BUSY 是普通有状态来源；SELECT 开始时固定最新 q。A/A_READ 已在准备启动事务内执行，不作为 SELECT 的待执行附带 EX。",
+      "selector_result":1,
+      "enqueue_separate_RAM_targets":["Q26","Q27","Q53","Q54","Q61"]
+    },
+    "read_and_transfer": [
+      {"target":"Q26", "result":1}, {"target":"Q27", "result":0},
+      {"target":"Q53", "derivation":"(1 AND 1) XOR a XOR a = 1", "result":1},
+      {"target":"Q54", "derivation":"(0 AND 1) XOR a XOR a = 0", "result":0}
+    ],
+    "marker_transfer_transaction": {
+      "primary":"Q61", "result":1,
+      "before_output_task_binding_replace_ex":[
+        {"id":"Q26", "ex":"J0K(Q0)"}, {"id":"Q27", "ex":"J0K(Q1)"},
+        {"id":"Q48", "ex":"J0K(Q42)"},
+        {"id":"Q53", "ex":"J0K(Q34)K(Q52)K(Q52)"},
+        {"id":"Q54", "ex":"J0K(Q35)K(Q52)K(Q52)"},
+        {"id":"Q51", "ex":"J0K(Q10)K(Q11)K(Q12)K(Q13)K(Q14)K(Q15)K(Q16)K(Q17)K(Q18)K(Q19)K(Q20)K(Q21)K(Q22)K(Q23)K(Q24)K(Q25)K(Q26)K(Q27)K(Q28)K(Q29)K(Q30)K(Q31)K(Q32)K(Q33)K(Q34)K(Q35)K(Q36)K(Q37)K(Q38)K(Q39)K(Q40)K(Q41)K(Q42)K(Q43)K(Q44)K(Q45)K(Q46)K(Q47)K(Q48)K(Q49)K(Q50)K(Q71)K(Q72)K(Q73)K(Q76)K(Q77)"}
+      ],
+      "delete_after_dependencies_clear":["Q74","Q75"],
+      "enqueue_outputs_with_independent_parameters":[
+        {"target":"Q62", "locked_output_parameters":{"Q53":1}, "expected_event":{"Y0":1}},
+        {"target":"Q63", "locked_output_parameters":{"Q54":0}, "expected_event":{"Y1":0}},
+        {"target":"Q70", "locked_output_parameters":{"Q61":1}, "expected_event":{"Y8":1}}
+      ],
+      "other_actual_EX":["Q43"],
+      "BUSY_after":0,
+      "note":"恢复 B/R/MODE 的 EX 不执行它们、不改变其 q；恢复后才记录输出事务的依赖版本。"
+    },
+    "first_frame_out_transaction": {
+      "primary":"Q70",
+      "guard":"Q70 本次结果为 1，批次身份是未消费的当前队首 f1，且它的 W 个数据任务已完成。",
+      "actual_EX_order":["Q70","Q34","Q35","Q44","Q45","Q47"],
+      "parameter_modes":{"Q70":"只使用自己的锁存输出参数 Q61=1", "Q34/Q35":"读取 B0/B1 当前 q", "Q44/Q45":"读取 T1 当前 q=1", "Q47":"读取已更新 F 与 C_ACK 的当前 q"},
+      "result":{"H":[1,0],"CACHE_VALID":1,"F":1,"C_ACK":0,"READY":1},
+      "protected_auxiliary_targets":["Q34","Q35","Q44","Q45","Q47"],
+      "protected_unlatched_sources":["Q26","Q27","Q42","Q45","Q46"],
+      "identity_protection":"每个主/附带目标及未锁存来源均登记世代、EX 版本和实际依赖；不能只保护 Q70。",
+      "visibility":"H 捕获和 READY 更新与 FRAME_OUT 位于同一不可插入的任务边界；下一任务只能看到完整提交。"
+    }
+  },
+  "task_contracts": [
+    {"kind":"conditional_factory_binding_proposal", "status":"待确认的具体事务绑定选择", "scope":"已排队 S、ACK、Q61 的准备启动分支", "rule":"主任务入队时保护自身及已确定的附带 EX；执行时才选中的结构分支，在当前原子事务内解析 A/A_READ 等实际对象，绑定当时世代与 EX 版本并立即执行，不留下跨任务等待的附带 EX。", "restriction":"不能改写已有待执行 EX 保护的对象；首发 FRAME_OUT 已确定的 H/F/READY 等附带 EX 仍须在入队时完整保护。不能一边声称 A 已预绑定，一边允许等待期间改变 A.EX。", "reason":"准备请求取决于执行时队首和 BUSY，采用与 ACK 执行时解析对象相一致的模块设计；这里不把它提升为所有事务的通用规范。"},
+    {"kind":"input_copy", "cause":"每次实际 Xi 到达", "queue":"Xi.FIFO", "parameters":"该次 Xi 独立锁存；W 路数据加控制，不为未使用通道补任务。", "release":"本帧复制交接完整后移交 S/C 独立任务；FRAME_IN=0 不销毁旧任务。"},
+    {"kind":"S_then_C", "cause":"本帧复制完成后的显式整帧交接", "queue":"RAM.FIFO", "parameters":"两任务各持同帧 W 个数据与 Q8=1；S 另读旧 C 的当前 q。", "ordering":"S/C 同时相邻追加；它们之间允许更高优先级 Xi 任务执行。", "release":"S 已装入 D.q 后释放自己的载荷，C 独立载荷到它执行后才释放。"},
+    {"kind":"prepare", "cause":"队列空转非空、有效 ACK0，或有效 ACK1 后有下一帧", "queue":"RAM.FIFO", "business_state":"每请求 K.q 保留类型；序号/帧身份为结构元数据。BUSY.q 保证只有一个准备批次。", "ordering":"原请求先于后续请求；前批完成中转到输出参数锁存后再准备下一批。", "binding":"形成请求的实际 RAM 事务创建并执行 K；空闲时在同一事务执行 BUSY、MODE，建立 SELECT 和完整连接后执行 A、A_READ，再排入 SELECT。若忙，K 留在请求表和 A 引用中；当前 Q61 事务先完成旧批移交，再为最早请求开始准备。", "A_lifetime":"A/A_READ 没有跨任务等待的附带 EX；A 是最近准备启动时的状态校验。后续存储事务可安全扩展 A 来源，不改固定 A_READ EX；R 的成对 XOR 对任意 A_READ 值都抵消。"},
+    {"kind":"replay_kind", "cause":"ACK0 译码结果为 1", "queue":"RAM.FIFO", "EX":"J0K(Q9)", "parameters":"把该次 ACK0 任务已锁存的 Q9=0 移交给新 K 节点的真实 EX；不读之后的 ACK 输入。"},
+    {"kind":"replay_selection", "cause":"轮到已接受的重发请求", "queue":"RAM.FIFO", "EX":"J0K(Q44)J(Q43)", "data":"R 直接读独立 H，不重新读原槽；CACHE_VALID 仅表示有缓存，接受 ACK 仍必须检查 READY 与当前帧身份。", "ordering":"接受旧帧重发的请求在消费后新队首首发之前准备；旧请求全部读完 H 并锁存输出后，新首发才能完成并替换 H。"},
+    {"kind":"ack_decode", "cause":"Q9 输入复制完成后的显式交接", "queue":"RAM.FIFO", "targets_in_order":["Q49","Q50"], "parameters":"两任务独立携带同次 Q9 值，各自执行时读 Q47 最新 q。", "guard":"只与本次 ACK 值匹配且译码结果为 1 的任务执行业务动作；执行时解析队首，不预绑到达时队首。"},
+    {"kind":"consume", "cause":"Q50 本次译码为 1", "queue":"RAM.FIFO", "actual_EX_order_for_f1":["Q50","Q73","Q46","Q47"], "parameters":"Q46 使用同次锁存 Q9=1；读 F 与自身旧 q。", "result_for_first_f1":{"V_slot":0,"F":1,"C_ACK":1,"READY":0}, "structural_action":"原子推进队首，随后为 f2 形成首发请求；即刻撤销 f1 资格。"},
+    {"kind":"replay_or_stale_frame_out", "cause":"重发输出批次的 Q70 任务", "queue":"RAM.FIFO", "actual_EX_order":["Q70"], "forbidden_auxiliary_EX":["Q34","Q35","Q36","Q37","Q38","Q39","Q40","Q41","Q44","Q45","Q47"], "effect":"仅发布自己锁存的标记 0；不更新 H/F/READY，不复活旧帧。"},
+    {"kind":"reclaim", "cause":"当前真实 RAM 事务已解除最后依赖", "queue":"RAM.FIFO", "predicate":"accepted_this_generation=8 AND all V=0 AND no unfinished dependencies", "commit":"原子移除 A 的可管理观察引用及已无其他使用者的整块 Q；固定输出目标仍受保护。容量元数据可留，复用时 generation 加一。", "boundary":"未满 8 的空块仍保留本世代与剩余槽；不会删除/复用其中已用槽来提前回填。"}
+  ],
+  "reasoned_cases": [
+    {"id":"A02-W1-repeat-zero", "premise":"连续三帧 [0]；C1 初值 0", "expected":"三个独立槽各存 0，S/C 均可为 0；不能按校验结果或 bit 值丢帧。"},
+    {"id":"A02-W8", "premise":"[1,0,1,0,1,0,1,0]；C8 初值 0", "expected":"8 个 D 恰按位序存储，parity=0，S8=0/C8=0；输出 Y0..Y7 依序后 Y8=1。"},
+    {"id":"A02-independent-frames", "premise":"active_example 的 f1=[1,0]、f2=[0] 全部 Xi 先执行", "expected":"Q0 最新值虽为 0，f1 的 Q71 仍通过任务锁存值写成 1；f2 为独立 Q76=0。"},
+    {"id":"A02-clear", "premise":"旧帧 S/C 已入队，之后 Q8 复制 FRAME_IN=0", "expected":"旧 S/C 的 Q8 参数仍为 1，D 写入与输出继续；仅清理未提交的输入暂态。"},
+    {"id":"A05-early-ack", "premise":"当前队首第一次 FRAME_OUT 尚未完成，ACK 任务已经执行", "expected":"F=C_ACK，READY=0，ACK0/ACK1 均无业务动作；之后不补执行被忽略的命令。"},
+    {"id":"A05-arrival-before-execution-after", "premise":"ACK 外部到达较早，但译码任务位于当前首发 FRAME_OUT 之后", "expected":"按执行时 READY 和队首正常处理，不能按到达时点提前忽略。"},
+    {"id":"A05-ready-parity", "premise":"初始 → f1 首发完成 → ACK0 → ACK1 → f2 首发完成", "expected_states":[{"F":0,"C_ACK":0,"READY":0},{"F":1,"C_ACK":0,"READY":1},{"F":1,"C_ACK":0,"READY":1},{"F":1,"C_ACK":1,"READY":0},{"F":0,"C_ACK":1,"READY":1}]},
+    {"id":"A05-replay-consume", "premise":"f1 有资格，接受重发 r1，再接受 ACK1，f2 首发请求随后排入", "expected":"r1 先完成 H→输出任务锁存，f2 才准备；r1 待输出任务保留 [1,0] 和标记 0。旧完成不捕获 H，不改变 F/C_ACK；f2 的新 H 仅在它自身首发完成时建立。"},
+    {"id":"A05-captured-output", "premise":"Q62 已持参数 Q53=1，此后 Q53 改为 0", "expected":"旧 Q62 任务仍输出 1；这是已确认的输出锁存协议，不能推广成普通 Qi_q 一律锁存。"},
+    {"id":"A04-ninth-frame", "premise":"B1 本世代已接纳 8 帧且至少一帧未消费，接纳第 9 帧", "expected":"第 9 帧使用 B2 的首槽，不覆盖 B1，不要求调用方等待。"},
+    {"id":"A04-partial-empty", "premise":"B1 本世代仅接纳 2 帧，均已消费且无任务依赖", "expected":"不回收不增世代；下一帧使用第三槽，尚余五槽。"},
+    {"id":"A04-full-but-protected", "premise":"B1 已接纳 8 帧且全消费，但仍有一个任务或到达集合依赖其中 Q", "expected":"不能删除、改 EX 或换世代；输出锁存只解除对应已锁存的数据来源依赖，不解除输出目标保护。"},
+    {"id":"A04-reuse", "premise":"B1 满 8、全消费、无依赖；generation=1", "expected":"原子断开 A 并删除旧块 Q；复用容量为 generation=2，按新 W 重新创建 D/V；旧 generation=1 任务不得命中新对象。"},
+    {"id":"A04-auxiliary-protection", "premise":"f1 首发 Q70 尚待执行，有人尝试改 Q34 的 EX 或重用 Q26", "expected":"拒绝该结构改动；Q34 是绑定的事务附带目标，Q26 是未锁存 H 来源，不能只检查主目标 Q70。"},
+    {"id":"A01-reject-counterexamples", "premise":"移除 A_READ 的全部使用者；给 S/C 加反向引用；仅用自引满足 D 的来源；删除仍被 B 引用的 D", "expected":"分别拒绝零被引用、真实 Q 环、自引凑来源、悬空引用；静默或 RAM 身份不改变结论。"}
+  ],
+  "not_verified_by_execution": ["任意输入/ACK 交错的完整运行轨迹", "资源不足、回滚、失败保存与重试", "通用业务前后等待区的自动安装与回收", "正式快照、恢复、指纹", "浏览器动画与当前模型一致性"],
+  "approval_boundary": "没有引入节点豁免、反馈环或新 J/K 运算。上述具体结构、透明引用及事务绑定为可审阅设计；确认后才实现执行器。"
+}

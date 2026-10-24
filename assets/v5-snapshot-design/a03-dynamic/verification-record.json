@@ -1,0 +1,101 @@
+{
+  "status": "static-verification-of-rederived-draft-not-runtime-execution",
+  "checks": [
+    {
+      "file": "01-input-copy-midway.json",
+      "live_nodes": 76,
+      "stateful_nodes": 76,
+      "pending_tasks": 2,
+      "incomplete_arrival_groups": 0,
+      "static_graph": "full-nonself-DAG-with-source-and-consumer-for-every-Q",
+      "format_md5": "a114bd014124ec49abef75bdf46b2e9b",
+      "md5": "74b5ad0b89e11aad5b3064634394292b",
+      "openssl_md5_agrees": true
+    },
+    {
+      "file": "02-pre-post-overlap.json",
+      "live_nodes": 111,
+      "stateful_nodes": 99,
+      "pending_tasks": 3,
+      "incomplete_arrival_groups": 1,
+      "static_graph": "full-nonself-DAG-with-source-and-consumer-for-every-Q",
+      "format_md5": "867881b81dfd59f2be01583f7aa5b4dd",
+      "md5": "69ddc8748e17648721d57cc8631d3786",
+      "openssl_md5_agrees": true
+    },
+    {
+      "file": "03-partial-first-output.json",
+      "live_nodes": 99,
+      "stateful_nodes": 95,
+      "pending_tasks": 3,
+      "incomplete_arrival_groups": 0,
+      "static_graph": "full-nonself-DAG-with-source-and-consumer-for-every-Q",
+      "format_md5": "3342ba63be4c7edb8c93243bb9830f28",
+      "md5": "7b9a5115ad1350ab3769bae28ea78ffb",
+      "openssl_md5_agrees": true
+    },
+    {
+      "file": "04-ack-pair-and-retired-rounds.json",
+      "live_nodes": 98,
+      "stateful_nodes": 94,
+      "pending_tasks": 2,
+      "incomplete_arrival_groups": 0,
+      "static_graph": "full-nonself-DAG-with-source-and-consumer-for-every-Q",
+      "format_md5": "6cb3b83b1827f4599e25bfb521d36bb1",
+      "md5": "6ec135494dd8ad54d2f647796c84ddb3",
+      "openssl_md5_agrees": true
+    },
+    {
+      "file": "05-old-replay-and-next-preparation.json",
+      "live_nodes": 102,
+      "stateful_nodes": 94,
+      "pending_tasks": 4,
+      "incomplete_arrival_groups": 0,
+      "static_graph": "full-nonself-DAG-with-source-and-consumer-for-every-Q",
+      "format_md5": "eda69563a8a2f431d97fd42f67bf3e24",
+      "md5": "40a93a24fe5cf22696f514778a18bc98",
+      "openssl_md5_agrees": true
+    },
+    {
+      "file": "06-next-frame-complete.json",
+      "live_nodes": 90,
+      "stateful_nodes": 90,
+      "pending_tasks": 0,
+      "incomplete_arrival_groups": 0,
+      "static_graph": "full-nonself-DAG-with-source-and-consumer-for-every-Q",
+      "format_md5": "20a390f0523ff003ac6b00c564357851",
+      "md5": "6706a575b67fc764a30a54dcd445636f",
+      "openssl_md5_agrees": true
+    }
+  ],
+  "verified": [
+    "JSON syntax",
+    "Every source exists, every Q has nonself source and Q/Y consumer",
+    "Full nonself DAG, including quiet/transparent reads",
+    "State/initial separation",
+    "Every saved task/bound-EX parameter is present; exact ordinary protected-source union",
+    "Task queue ownership and target versions",
+    "Incomplete arrival partitions match real EX event sources",
+    "Embedded contract hash and both document fingerprints",
+    "Python/OpenSSL digest agreement",
+    "75 unique manually listed task identities; all six FIFO cuts agree with the stated trace",
+    "Reserved/live/retired id partitions are disjoint; first-round retired ids cannot be recreated",
+    "CP4 contains two actual frame1-bound actions and explicit creation/load plans; original ACK0=0 remains locked while Q9.q=1"
+  ],
+  "not_verified": [
+    "EX execution",
+    "Scheduler execution",
+    "Runtime restore or continuation equivalence",
+    "Arbitrary interleavings",
+    "Full8 generation reuse",
+    "Failures/resource exhaustion",
+    "Browser animation"
+  ],
+  "protected_files_unchanged": [
+    "README.md",
+    "docs/JKRD.md",
+    "web/async-structural-storage/engine.mjs",
+    "web/async-structural-storage/engine.test.mjs",
+    "web/async-structural-storage/app.mjs"
+  ]
+}

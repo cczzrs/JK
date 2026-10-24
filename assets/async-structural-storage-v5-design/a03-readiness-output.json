@@ -1,0 +1,1805 @@
+{
+  "artifact_kind": "A03_output_readiness_structure_design",
+  "status": "candidate_design_not_executor_or_approved_complete_protocol",
+  "date": "2026-10-21",
+  "sources": [
+    "../../docs/JKRD.md",
+    "../../docs/logic_units/async-structural-storage-draft.md#transaction-ready-before-enqueue",
+    "../../docs/drafts/JKRD-V5.0.0-notes.md#transaction-ready-before-enqueue"
+  ],
+  "scope": "W=2 output preparation, real JK completion joins, batch output locking and first FRAME_OUT qualification. ACK transaction admission is designed separately; this file does not reinstate execution-time retargeting of ACK.",
+  "new_user_rule": "Every actual parameter needed by every node and operation in a transaction must already be available before that transaction is enqueued. Missing current-batch results wait outside FIFO. A zero bit and a repeated bit are both available data.",
+  "authority_limits": {
+    "JKRD_changed": false,
+    "executor_written": false,
+    "old_generator_used": false,
+    "complete_runtime_checkpoint": false,
+    "specification_extension": "This artifact declares a candidate binding of independent auxiliary JK EX to one atomic RAM task. It is not a new instruction language or an executable factory contract."
+  },
+  "fixed_kernel": {
+    "nodes": [
+      {
+        "id": "Q0",
+        "role": "INPUT_0",
+        "ex": "J0K(X0)",
+        "pro": "q="
+      },
+      {
+        "id": "Q1",
+        "role": "INPUT_1",
+        "ex": "J0K(X1)",
+        "pro": "q="
+      },
+      {
+        "id": "Q2",
+        "role": "INPUT_2",
+        "ex": "J0K(X2)",
+        "pro": "q="
+      },
+      {
+        "id": "Q3",
+        "role": "INPUT_3",
+        "ex": "J0K(X3)",
+        "pro": "q="
+      },
+      {
+        "id": "Q4",
+        "role": "INPUT_4",
+        "ex": "J0K(X4)",
+        "pro": "q="
+      },
+      {
+        "id": "Q5",
+        "role": "INPUT_5",
+        "ex": "J0K(X5)",
+        "pro": "q="
+      },
+      {
+        "id": "Q6",
+        "role": "INPUT_6",
+        "ex": "J0K(X6)",
+        "pro": "q="
+      },
+      {
+        "id": "Q7",
+        "role": "INPUT_7",
+        "ex": "J0K(X7)",
+        "pro": "q="
+      },
+      {
+        "id": "Q8",
+        "role": "FRAME_IN",
+        "ex": "J0K(X8)",
+        "pro": "q="
+      },
+      {
+        "id": "Q9",
+        "role": "ACK_INPUT",
+        "ex": "J0K(X9)",
+        "pro": "q="
+      },
+      {
+        "id": "Q10",
+        "role": "S_1",
+        "ex": "J0K(Q0)K(Q11)J(Q8)",
+        "pro": "q="
+      },
+      {
+        "id": "Q11",
+        "role": "C_1",
+        "ex": "J0K(Q0)J(Q8)",
+        "pro": "q="
+      },
+      {
+        "id": "Q12",
+        "role": "S_2",
+        "ex": "J0K(Q0)K(Q1)K(Q13)J(Q8)",
+        "pro": "q="
+      },
+      {
+        "id": "Q13",
+        "role": "C_2",
+        "ex": "J0K(Q0)K(Q1)J(Q8)",
+        "pro": "q="
+      },
+      {
+        "id": "Q14",
+        "role": "S_3",
+        "ex": "J0K(Q0)K(Q1)K(Q2)K(Q15)J(Q8)",
+        "pro": "q="
+      },
+      {
+        "id": "Q15",
+        "role": "C_3",
+        "ex": "J0K(Q0)K(Q1)K(Q2)J(Q8)",
+        "pro": "q="
+      },
+      {
+        "id": "Q16",
+        "role": "S_4",
+        "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)K(Q17)J(Q8)",
+        "pro": "q="
+      },
+      {
+        "id": "Q17",
+        "role": "C_4",
+        "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)J(Q8)",
+        "pro": "q="
+      },
+      {
+        "id": "Q18",
+        "role": "S_5",
+        "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)K(Q4)K(Q19)J(Q8)",
+        "pro": "q="
+      },
+      {
+        "id": "Q19",
+        "role": "C_5",
+        "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)K(Q4)J(Q8)",
+        "pro": "q="
+      },
+      {
+        "id": "Q20",
+        "role": "S_6",
+        "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)K(Q4)K(Q5)K(Q21)J(Q8)",
+        "pro": "q="
+      },
+      {
+        "id": "Q21",
+        "role": "C_6",
+        "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)K(Q4)K(Q5)J(Q8)",
+        "pro": "q="
+      },
+      {
+        "id": "Q22",
+        "role": "S_7",
+        "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)K(Q4)K(Q5)K(Q6)K(Q23)J(Q8)",
+        "pro": "q="
+      },
+      {
+        "id": "Q23",
+        "role": "C_7",
+        "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)K(Q4)K(Q5)K(Q6)J(Q8)",
+        "pro": "q="
+      },
+      {
+        "id": "Q24",
+        "role": "S_8",
+        "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)K(Q4)K(Q5)K(Q6)K(Q7)K(Q25)J(Q8)",
+        "pro": "q="
+      },
+      {
+        "id": "Q25",
+        "role": "C_8",
+        "ex": "J0K(Q0)K(Q1)K(Q2)K(Q3)K(Q4)K(Q5)K(Q6)K(Q7)J(Q8)",
+        "pro": "q="
+      },
+      {
+        "id": "Q26",
+        "role": "B_0",
+        "ex": "J0K(Q0)",
+        "pro": "q="
+      },
+      {
+        "id": "Q27",
+        "role": "B_1",
+        "ex": "J0K(Q1)",
+        "pro": "q="
+      },
+      {
+        "id": "Q28",
+        "role": "B_2",
+        "ex": "J0K(Q2)",
+        "pro": "q="
+      },
+      {
+        "id": "Q29",
+        "role": "B_3",
+        "ex": "J0K(Q3)",
+        "pro": "q="
+      },
+      {
+        "id": "Q30",
+        "role": "B_4",
+        "ex": "J0K(Q4)",
+        "pro": "q="
+      },
+      {
+        "id": "Q31",
+        "role": "B_5",
+        "ex": "J0K(Q5)",
+        "pro": "q="
+      },
+      {
+        "id": "Q32",
+        "role": "B_6",
+        "ex": "J0K(Q6)",
+        "pro": "q="
+      },
+      {
+        "id": "Q33",
+        "role": "B_7",
+        "ex": "J0K(Q7)",
+        "pro": "q="
+      },
+      {
+        "id": "Q34",
+        "role": "H_0",
+        "ex": "J0K(Q26)",
+        "pro": "q="
+      },
+      {
+        "id": "Q35",
+        "role": "H_1",
+        "ex": "J0K(Q27)",
+        "pro": "q="
+      },
+      {
+        "id": "Q36",
+        "role": "H_2",
+        "ex": "J0K(Q28)",
+        "pro": "q="
+      },
+      {
+        "id": "Q37",
+        "role": "H_3",
+        "ex": "J0K(Q29)",
+        "pro": "q="
+      },
+      {
+        "id": "Q38",
+        "role": "H_4",
+        "ex": "J0K(Q30)",
+        "pro": "q="
+      },
+      {
+        "id": "Q39",
+        "role": "H_5",
+        "ex": "J0K(Q31)",
+        "pro": "q="
+      },
+      {
+        "id": "Q40",
+        "role": "H_6",
+        "ex": "J0K(Q32)",
+        "pro": "q="
+      },
+      {
+        "id": "Q41",
+        "role": "H_7",
+        "ex": "J0K(Q33)",
+        "pro": "q="
+      },
+      {
+        "id": "Q42",
+        "role": "T1",
+        "ex": "J0J(Q8)K1",
+        "pro": "q="
+      },
+      {
+        "id": "Q43",
+        "role": "BUSY",
+        "ex": "K(Q42)",
+        "pro": "q="
+      },
+      {
+        "id": "Q44",
+        "role": "CACHE_VALID",
+        "ex": "J0K(Q42)",
+        "pro": "q="
+      },
+      {
+        "id": "Q45",
+        "role": "F",
+        "ex": "K(Q42)",
+        "pro": "q="
+      },
+      {
+        "id": "Q46",
+        "role": "C_ACK",
+        "ex": "J0K(Q45)",
+        "pro": "q="
+      },
+      {
+        "id": "Q47",
+        "role": "READY",
+        "ex": "J0K1K(Q45)K(Q46)",
+        "pro": "q="
+      },
+      {
+        "id": "Q48",
+        "role": "MODE",
+        "ex": "J0K(Q42)",
+        "pro": "q="
+      },
+      {
+        "id": "Q49",
+        "role": "ACK_DISPATCH",
+        "ex": "J0K(Q9)",
+        "pro": "q="
+      },
+      {
+        "id": "Q50",
+        "role": "ACK1",
+        "ex": "J0K(Q9)J(Q47)",
+        "pro": "q="
+      },
+      {
+        "id": "Q51",
+        "role": "QUIET_REFERENCE_ANCHOR",
+        "ex": "J0K(Q10)K(Q11)K(Q12)K(Q13)K(Q14)K(Q15)K(Q16)K(Q17)K(Q18)K(Q19)K(Q20)K(Q21)K(Q22)K(Q23)K(Q24)K(Q25)K(Q26)K(Q27)K(Q28)K(Q29)K(Q30)K(Q31)K(Q32)K(Q33)K(Q34)K(Q35)K(Q36)K(Q37)K(Q38)K(Q39)K(Q40)K(Q41)K(Q42)K(Q43)K(Q44)K(Q45)K(Q46)K(Q47)K(Q48)K(Q49)K(Q50)",
+        "pro": "q="
+      },
+      {
+        "id": "Q52",
+        "role": "QUIET_REFERENCE_ANCHOR_READ",
+        "ex": "J0K(Q51)",
+        "pro": "q="
+      },
+      {
+        "id": "Q53",
+        "role": "R_0",
+        "ex": "J0K(Q34)K(Q52)K(Q52)",
+        "pro": "q="
+      },
+      {
+        "id": "Q54",
+        "role": "R_1",
+        "ex": "J0K(Q35)K(Q52)K(Q52)",
+        "pro": "q="
+      },
+      {
+        "id": "Q55",
+        "role": "R_2",
+        "ex": "J0K(Q36)K(Q52)K(Q52)",
+        "pro": "q="
+      },
+      {
+        "id": "Q56",
+        "role": "R_3",
+        "ex": "J0K(Q37)K(Q52)K(Q52)",
+        "pro": "q="
+      },
+      {
+        "id": "Q57",
+        "role": "R_4",
+        "ex": "J0K(Q38)K(Q52)K(Q52)",
+        "pro": "q="
+      },
+      {
+        "id": "Q58",
+        "role": "R_5",
+        "ex": "J0K(Q39)K(Q52)K(Q52)",
+        "pro": "q="
+      },
+      {
+        "id": "Q59",
+        "role": "R_6",
+        "ex": "J0K(Q40)K(Q52)K(Q52)",
+        "pro": "q="
+      },
+      {
+        "id": "Q60",
+        "role": "R_7",
+        "ex": "J0K(Q41)K(Q52)K(Q52)",
+        "pro": "q="
+      },
+      {
+        "id": "Q61",
+        "role": "R_FRAME",
+        "ex": "J0K(Q48)",
+        "pro": "q="
+      },
+      {
+        "id": "Q62",
+        "role": "O_0",
+        "ex": "J0K(Q53)",
+        "pro": "q=0/1"
+      },
+      {
+        "id": "Q63",
+        "role": "O_1",
+        "ex": "J0K(Q54)",
+        "pro": "q=0/1"
+      },
+      {
+        "id": "Q64",
+        "role": "O_2",
+        "ex": "J0K(Q55)",
+        "pro": "q=0/1"
+      },
+      {
+        "id": "Q65",
+        "role": "O_3",
+        "ex": "J0K(Q56)",
+        "pro": "q=0/1"
+      },
+      {
+        "id": "Q66",
+        "role": "O_4",
+        "ex": "J0K(Q57)",
+        "pro": "q=0/1"
+      },
+      {
+        "id": "Q67",
+        "role": "O_5",
+        "ex": "J0K(Q58)",
+        "pro": "q=0/1"
+      },
+      {
+        "id": "Q68",
+        "role": "O_6",
+        "ex": "J0K(Q59)",
+        "pro": "q=0/1"
+      },
+      {
+        "id": "Q69",
+        "role": "O_7",
+        "ex": "J0K(Q60)",
+        "pro": "q=0/1"
+      },
+      {
+        "id": "Q70",
+        "role": "FRAME_OUT",
+        "ex": "J0K(Q61)",
+        "pro": "q=0/1"
+      }
+    ],
+    "initial_q": {
+      "0": [
+        "Q0",
+        "Q1",
+        "Q2",
+        "Q3",
+        "Q4",
+        "Q5",
+        "Q6",
+        "Q7",
+        "Q8",
+        "Q9",
+        "Q10",
+        "Q11",
+        "Q12",
+        "Q13",
+        "Q14",
+        "Q15",
+        "Q16",
+        "Q17",
+        "Q18",
+        "Q19",
+        "Q20",
+        "Q21",
+        "Q22",
+        "Q23",
+        "Q24",
+        "Q25",
+        "Q26",
+        "Q27",
+        "Q28",
+        "Q29",
+        "Q30",
+        "Q31",
+        "Q32",
+        "Q33",
+        "Q34",
+        "Q35",
+        "Q36",
+        "Q37",
+        "Q38",
+        "Q39",
+        "Q40",
+        "Q41",
+        "Q43",
+        "Q44",
+        "Q45",
+        "Q46",
+        "Q47",
+        "Q49",
+        "Q50",
+        "Q51",
+        "Q52",
+        "Q53",
+        "Q54",
+        "Q55",
+        "Q56",
+        "Q57",
+        "Q58",
+        "Q59",
+        "Q60",
+        "Q61",
+        "Q62",
+        "Q63",
+        "Q64",
+        "Q65",
+        "Q66",
+        "Q67",
+        "Q68",
+        "Q69",
+        "Q70"
+      ],
+      "1": [
+        "Q42",
+        "Q48"
+      ]
+    },
+    "q_y": [
+      {
+        "Y0": "Q62"
+      },
+      {
+        "Y1": "Q63"
+      },
+      {
+        "Y2": "Q64"
+      },
+      {
+        "Y3": "Q65"
+      },
+      {
+        "Y4": "Q66"
+      },
+      {
+        "Y5": "Q67"
+      },
+      {
+        "Y6": "Q68"
+      },
+      {
+        "Y7": "Q69"
+      },
+      {
+        "Y8": "Q70"
+      }
+    ],
+    "preserved": "Q0..Q70 identities, the eight R data nodes Q53..Q60, marker Q61, output EX Q62..Q70 and all q_y bindings remain fixed as declared. Active preparation EX overrides are explicitly listed per request.",
+    "changes_from_old_candidate": {
+      "Q47": "J0K1K(Q45)K(Q46): evaluate BEFORE F or C_ACK updates, so no same-transaction new result is consumed.",
+      "Q51_Q52": "Their initialized q remains 0. Both are quiet and are never evaluated in this specimen. The A→A_READ→R double-XOR path is an explicit reference anchor, not a computed checksum.",
+      "Q43": "Retain K(Q42). START requires current BUSY=0 and toggles to 1; LATCH requires current BUSY=1 and toggles to 0. The BUSY input and its own old q exist before enqueue.",
+      "Q46": "J0K(Q45): only a successful separately admitted ACK1 action evaluates this quiet C_ACK node. It no longer requires the original ACK input as an additional auxiliary EX parameter.",
+      "Q49": "J0K(Q9): quiet dispatcher retains the independently locked ACK input for the separately approved per-input decoder/action structure; this is not the old qualification decoder."
+    }
+  },
+  "readiness_construction": {
+    "completion_token_EX": "J0K(S)K(S)K1 is a real stateless JK EX. The two reads of the same already-ready S cancel, so both S=0 and S=1 produce event 1.",
+    "independent_same_transaction": "B and E_B both read existing D. R and E_R both read existing B or H. R_FRAME and E_M both read existing MODE. No completion token reads the primary node result. Commit atomically completes both EX before publishing the token through ordinary pro.",
+    "not_a_fabricated_event": "Only the registered real EX evaluation publishes its own result. RAM.FACTORY never synthesizes a Q event or writes an existing q. An aborted transaction publishes no completion event.",
+    "no_duplicate_aux_tasks": "E_B does not reference ESTART, E_R does not reference G_B or ESTART, and E_M does not reference R_FRAME. Those sources would cause unintended ordinary tasks or create new dependencies. Their actual ordinary sources stay quiet.",
+    "join": "Each target waits for all distinct stateless token events, locks their data and clears that arrival group on task formation under the existing Qi_J0 rule.",
+    "LATCH_reference": "LATCH is quiet stateful and has a genuine A consumer from creation until cleanup. Its EX additionally consumes ESTART and, for first requests, G_B; thus dormant pipeline stateless tails already have real consumers before the fixed nodes are connected. Active R_FRAME also contains K(LATCH) twice; this initialized q is transparent and is never presented as a completion flag.",
+    "zero_is_not_missing": "All completion tokens publish 1 for either data value. Eligibility is based on completion events, not truthiness of data bits.",
+    "quiet_primary_reason": "B must not publish: H and A would otherwise receive ordinary triggers. R must not publish: fixed O would otherwise enqueue before the batch lock. The explicit auxiliary token EX publish while these primary nodes stay quiet.",
+    "admission": "The real stateless ADMIT_GATE reads BUSY and CLAIM. Only the existing business request head can be attempted. G and its independent CLAIM EX commit atomically. A q=1 event forms START through ordinary Qi_J0 triggering; the claim makes duplicate attempts harmless without a hidden Boolean.",
+    "LATCH_arrival_state": "ESTART may be recorded before any B/R task completes; G_B may be recorded before any R task completes. Snapshots must retain these partial target-specific arrivals with the actual source identity and data. The extra inputs do not add task executions.",
+    "admission_truth_table": [
+      {
+        "busy": 0,
+        "old_claim": 0,
+        "gate_result": 1,
+        "new_claim": 1
+      },
+      {
+        "busy": 0,
+        "old_claim": 1,
+        "gate_result": 0,
+        "new_claim": 1
+      },
+      {
+        "busy": 1,
+        "old_claim": 0,
+        "gate_result": 0,
+        "new_claim": 0
+      },
+      {
+        "busy": 1,
+        "old_claim": 1,
+        "gate_result": 0,
+        "new_claim": 1
+      }
+    ]
+  },
+  "requests": [
+    {
+      "request_id": "R1",
+      "kind": "first",
+      "width": 2,
+      "post_data_nodes": [
+        "Q84",
+        "Q85"
+      ],
+      "post_valid_node": "Q89",
+      "output_data_sources": [
+        "Q26",
+        "Q27"
+      ],
+      "dynamic_nodes": [
+        {
+          "id": "Q90",
+          "role": "REQUEST_KIND",
+          "ex": "J0K(Q42)",
+          "pro": "q=",
+          "classification": "stateful",
+          "creation_initial_q": 0
+        },
+        {
+          "id": "Q91",
+          "role": "START",
+          "ex": "J0K(Q90)J(Q104)",
+          "pro": "q=",
+          "classification": "stateful",
+          "creation_initial_q": 0
+        },
+        {
+          "id": "Q92",
+          "role": "START_COMPLETE",
+          "ex": "J0K(Q90)K(Q90)K1",
+          "pro": "q=0/1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q93",
+          "role": "READ_COMPLETE_0",
+          "ex": "J0K(Q84)K(Q84)K1",
+          "pro": "q=0/1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q94",
+          "role": "READ_COMPLETE_1",
+          "ex": "J0K(Q85)K(Q85)K1",
+          "pro": "q=0/1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q95",
+          "role": "ALL_READS_COMPLETE",
+          "ex": "J0K1J(Q93)J(Q94)",
+          "pro": "q=0/1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q96",
+          "role": "RELAY_COMPLETE_0",
+          "ex": "J0K(Q26)K(Q26)K1",
+          "pro": "q=0/1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q97",
+          "role": "RELAY_COMPLETE_1",
+          "ex": "J0K(Q27)K(Q27)K1",
+          "pro": "q=0/1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q98",
+          "role": "MARKER_COMPLETE",
+          "ex": "J0K(Q48)K(Q48)K1",
+          "pro": "q=0/1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q99",
+          "role": "ALL_PARAMETERS_READY_AND_LATCH",
+          "ex": "J0K1J(Q92)J(Q95)J(Q96)J(Q97)J(Q98)",
+          "pro": "q=",
+          "classification": "stateful",
+          "creation_initial_q": 0
+        },
+        {
+          "id": "Q104",
+          "role": "ADMIT_GATE",
+          "ex": "J0K1K(Q43)J(Q105)K1K(Q43)",
+          "pro": "q=1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q105",
+          "role": "ADMISSION_CLAIM",
+          "ex": "K1J(Q43)K1",
+          "pro": "q=",
+          "classification": "stateful",
+          "creation_initial_q": 0
+        }
+      ],
+      "fixed_node_EX_overrides_while_active": {
+        "Q48": "J0K(Q90)",
+        "Q61": "J0K(Q48)J(Q92)K(Q99)K(Q99)",
+        "Q51": "J0K(Q10)K(Q11)K(Q12)K(Q13)K(Q14)K(Q15)K(Q16)K(Q17)K(Q18)K(Q19)K(Q20)K(Q21)K(Q22)K(Q23)K(Q24)K(Q25)K(Q26)K(Q27)K(Q28)K(Q29)K(Q30)K(Q31)K(Q32)K(Q33)K(Q34)K(Q35)K(Q36)K(Q37)K(Q38)K(Q39)K(Q40)K(Q41)K(Q42)K(Q43)K(Q44)K(Q45)K(Q46)K(Q47)K(Q48)K(Q49)K(Q50)K(Q90)K(Q91)K(Q99)K(Q105)",
+        "Q26": "J0K(Q84)J(Q92)",
+        "Q27": "J0K(Q85)J(Q92)",
+        "Q53": "J0K(Q26)J(Q95)K(Q52)K(Q52)",
+        "Q54": "J0K(Q27)J(Q95)K(Q52)K(Q52)"
+      },
+      "creation_state": {
+        "zero": [
+          "Q90",
+          "Q91",
+          "Q99",
+          "Q105"
+        ],
+        "stateless": [
+          "Q92",
+          "Q93",
+          "Q94",
+          "Q95",
+          "Q96",
+          "Q97",
+          "Q98",
+          "Q104"
+        ]
+      },
+      "prepared_kind_before_START": 1,
+      "independent_auxiliary_EX_by_primary": {
+        "Q91": [
+          {
+            "node": "Q48",
+            "parameters_ready_before_enqueue": [
+              "Q90"
+            ]
+          },
+          {
+            "node": "Q43",
+            "parameters_ready_before_enqueue": [
+              "Q42",
+              "Q43.self_old_q"
+            ]
+          },
+          {
+            "node": "Q92",
+            "parameters_ready_before_enqueue": [
+              "Q90"
+            ]
+          }
+        ],
+        "Q26": [
+          {
+            "node": "Q93",
+            "parameters_ready_before_enqueue": [
+              "Q84"
+            ]
+          }
+        ],
+        "Q27": [
+          {
+            "node": "Q94",
+            "parameters_ready_before_enqueue": [
+              "Q85"
+            ]
+          }
+        ],
+        "Q53": [
+          {
+            "node": "Q96",
+            "parameters_ready_before_enqueue": [
+              "Q26"
+            ]
+          }
+        ],
+        "Q54": [
+          {
+            "node": "Q97",
+            "parameters_ready_before_enqueue": [
+              "Q27"
+            ]
+          }
+        ],
+        "Q61": [
+          {
+            "node": "Q98",
+            "parameters_ready_before_enqueue": [
+              "Q48"
+            ]
+          }
+        ],
+        "Q104": [
+          {
+            "node": "Q105",
+            "parameters_ready_before_enqueue": [
+              "Q43",
+              "Q105.self_old_q"
+            ]
+          }
+        ]
+      },
+      "completion_producer_primary": {
+        "Q92": "Q91",
+        "Q98": "Q61",
+        "Q96": "Q53",
+        "Q97": "Q54",
+        "Q93": "Q26",
+        "Q94": "Q27"
+      },
+      "ordinary_publication_edges": [
+        {
+          "source": "Q104",
+          "targets": [
+            "Q91"
+          ]
+        },
+        {
+          "source": "Q92",
+          "targets": [
+            "Q26",
+            "Q27",
+            "Q61",
+            "Q99"
+          ]
+        },
+        {
+          "source": "Q93",
+          "targets": [
+            "Q95"
+          ]
+        },
+        {
+          "source": "Q94",
+          "targets": [
+            "Q95"
+          ]
+        },
+        {
+          "source": "Q95",
+          "targets": [
+            "Q53",
+            "Q54",
+            "Q99"
+          ]
+        },
+        {
+          "source": "Q96",
+          "targets": [
+            "Q99"
+          ]
+        },
+        {
+          "source": "Q97",
+          "targets": [
+            "Q99"
+          ]
+        },
+        {
+          "source": "Q98",
+          "targets": [
+            "Q99"
+          ]
+        }
+      ],
+      "arrival_groups": [
+        {
+          "target": "Q95",
+          "sources": [
+            "Q93",
+            "Q94"
+          ]
+        },
+        {
+          "target": "Q99",
+          "sources": [
+            "Q92",
+            "Q95",
+            "Q96",
+            "Q97",
+            "Q98"
+          ]
+        }
+      ],
+      "local_task_order_when_no_other_work_or_inputs": [
+        "Q104",
+        "Q91",
+        "Q26",
+        "Q27",
+        "Q61",
+        "Q95",
+        "Q53",
+        "Q54",
+        "Q99",
+        "Q62",
+        "Q63",
+        "Q70"
+      ],
+      "local_order_scope": "Manually derived local suffix beginning with an eligible request-head admission attempt. Existing RAM tasks and higher-priority Xi tasks can interleave. Auxiliary EX are not separate FIFO tasks. Failed or duplicate G attempts emit no START event.",
+      "all_dynamic_members": "RAM0",
+      "cleanup_delete": [
+        "Q90",
+        "Q91",
+        "Q92",
+        "Q93",
+        "Q94",
+        "Q95",
+        "Q96",
+        "Q97",
+        "Q98",
+        "Q99",
+        "Q104",
+        "Q105"
+      ],
+      "no_new_FIFO": true,
+      "pending_reference_anchor_additions": [
+        "Q90",
+        "Q91",
+        "Q99",
+        "Q105"
+      ],
+      "pending_creation_rule": "Create all listed dynamic nodes and add the quiet stateful anchor additions to A. Do not install this request fixed MODE/B/R/R_FRAME EX until its admitted START task executes. All new stateless sources already have real dynamic consumers while pending.",
+      "admission": {
+        "gate": "Q104",
+        "claim": "Q105",
+        "eligible_request": "Only the first request in the existing business request list may have an admission attempt requested. This list records business identities/order, not an execution FIFO.",
+        "primary_formula": "G = NOT BUSY AND NOT old CLAIM",
+        "auxiliary_formula": "CLAIM_next = old CLAIM OR NOT BUSY",
+        "order": "Evaluate G using old CLAIM; then independently evaluate CLAIM from its own old q and unchanged BUSY. BUSY is not changed in this transaction.",
+        "all_parameters_ready_before_enqueue": [
+          "current BUSY q",
+          "current CLAIM q",
+          "complete K and selected D/H actual data already present",
+          "complete precreated pipeline and identities",
+          "current request still occupies the permitted preparation position"
+        ],
+        "publication": "G pro=q=1 publishes only on the first successful admission. START has G as a stateless source and is formed by the ordinary event rule.",
+        "duplicate_attempt": "A later attempt observes CLAIM=1 and publishes nothing, even if BUSY remains 0 between G and START. Another request cannot be attempted during that gap because the request-list head has not been removed.",
+        "busy_attempt": "If BUSY=1, G=0 and CLAIM remains unchanged; no START task is enqueued. A later legitimate predecessor-completion boundary may request another G attempt."
+      }
+    },
+    {
+      "request_id": "R2",
+      "kind": "replay",
+      "width": 2,
+      "post_data_nodes": null,
+      "post_valid_node": null,
+      "output_data_sources": [
+        "Q34",
+        "Q35"
+      ],
+      "dynamic_nodes": [
+        {
+          "id": "Q130",
+          "role": "REQUEST_KIND",
+          "ex": "J0K(Q9)",
+          "pro": "q=",
+          "classification": "stateful",
+          "creation_initial_q": 0
+        },
+        {
+          "id": "Q131",
+          "role": "START",
+          "ex": "J0K(Q130)J(Q144)",
+          "pro": "q=",
+          "classification": "stateful",
+          "creation_initial_q": 0
+        },
+        {
+          "id": "Q132",
+          "role": "START_COMPLETE",
+          "ex": "J0K(Q130)K(Q130)K1",
+          "pro": "q=0/1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q136",
+          "role": "RELAY_COMPLETE_0",
+          "ex": "J0K(Q34)K(Q34)K1",
+          "pro": "q=0/1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q137",
+          "role": "RELAY_COMPLETE_1",
+          "ex": "J0K(Q35)K(Q35)K1",
+          "pro": "q=0/1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q138",
+          "role": "MARKER_COMPLETE",
+          "ex": "J0K(Q48)K(Q48)K1",
+          "pro": "q=0/1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q139",
+          "role": "ALL_PARAMETERS_READY_AND_LATCH",
+          "ex": "J0K1J(Q132)J(Q136)J(Q137)J(Q138)",
+          "pro": "q=",
+          "classification": "stateful",
+          "creation_initial_q": 0
+        },
+        {
+          "id": "Q144",
+          "role": "ADMIT_GATE",
+          "ex": "J0K1K(Q43)J(Q145)K1K(Q43)",
+          "pro": "q=1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q145",
+          "role": "ADMISSION_CLAIM",
+          "ex": "K1J(Q43)K1",
+          "pro": "q=",
+          "classification": "stateful",
+          "creation_initial_q": 0
+        }
+      ],
+      "fixed_node_EX_overrides_while_active": {
+        "Q48": "J0K(Q130)",
+        "Q61": "J0K(Q48)J(Q132)K(Q139)K(Q139)",
+        "Q51": "J0K(Q10)K(Q11)K(Q12)K(Q13)K(Q14)K(Q15)K(Q16)K(Q17)K(Q18)K(Q19)K(Q20)K(Q21)K(Q22)K(Q23)K(Q24)K(Q25)K(Q26)K(Q27)K(Q28)K(Q29)K(Q30)K(Q31)K(Q32)K(Q33)K(Q34)K(Q35)K(Q36)K(Q37)K(Q38)K(Q39)K(Q40)K(Q41)K(Q42)K(Q43)K(Q44)K(Q45)K(Q46)K(Q47)K(Q48)K(Q49)K(Q50)K(Q130)K(Q131)K(Q139)K(Q145)",
+        "Q53": "J0K(Q34)J(Q132)K(Q52)K(Q52)",
+        "Q54": "J0K(Q35)J(Q132)K(Q52)K(Q52)"
+      },
+      "creation_state": {
+        "zero": [
+          "Q130",
+          "Q131",
+          "Q139",
+          "Q145"
+        ],
+        "stateless": [
+          "Q132",
+          "Q136",
+          "Q137",
+          "Q138",
+          "Q144"
+        ]
+      },
+      "prepared_kind_before_START": 0,
+      "independent_auxiliary_EX_by_primary": {
+        "Q131": [
+          {
+            "node": "Q48",
+            "parameters_ready_before_enqueue": [
+              "Q130"
+            ]
+          },
+          {
+            "node": "Q43",
+            "parameters_ready_before_enqueue": [
+              "Q42",
+              "Q43.self_old_q"
+            ]
+          },
+          {
+            "node": "Q132",
+            "parameters_ready_before_enqueue": [
+              "Q130"
+            ]
+          }
+        ],
+        "Q53": [
+          {
+            "node": "Q136",
+            "parameters_ready_before_enqueue": [
+              "Q34"
+            ]
+          }
+        ],
+        "Q54": [
+          {
+            "node": "Q137",
+            "parameters_ready_before_enqueue": [
+              "Q35"
+            ]
+          }
+        ],
+        "Q61": [
+          {
+            "node": "Q138",
+            "parameters_ready_before_enqueue": [
+              "Q48"
+            ]
+          }
+        ],
+        "Q144": [
+          {
+            "node": "Q145",
+            "parameters_ready_before_enqueue": [
+              "Q43",
+              "Q145.self_old_q"
+            ]
+          }
+        ]
+      },
+      "completion_producer_primary": {
+        "Q132": "Q131",
+        "Q138": "Q61",
+        "Q136": "Q53",
+        "Q137": "Q54"
+      },
+      "ordinary_publication_edges": [
+        {
+          "source": "Q144",
+          "targets": [
+            "Q131"
+          ]
+        },
+        {
+          "source": "Q132",
+          "targets": [
+            "Q53",
+            "Q54",
+            "Q61",
+            "Q139"
+          ]
+        },
+        {
+          "source": "Q136",
+          "targets": [
+            "Q139"
+          ]
+        },
+        {
+          "source": "Q137",
+          "targets": [
+            "Q139"
+          ]
+        },
+        {
+          "source": "Q138",
+          "targets": [
+            "Q139"
+          ]
+        }
+      ],
+      "arrival_groups": [
+        {
+          "target": "Q139",
+          "sources": [
+            "Q132",
+            "Q136",
+            "Q137",
+            "Q138"
+          ]
+        }
+      ],
+      "local_task_order_when_no_other_work_or_inputs": [
+        "Q144",
+        "Q131",
+        "Q53",
+        "Q54",
+        "Q61",
+        "Q139",
+        "Q62",
+        "Q63",
+        "Q70"
+      ],
+      "local_order_scope": "Manually derived local suffix beginning with an eligible request-head admission attempt. Existing RAM tasks and higher-priority Xi tasks can interleave. Auxiliary EX are not separate FIFO tasks. Failed or duplicate G attempts emit no START event.",
+      "all_dynamic_members": "RAM0",
+      "cleanup_delete": [
+        "Q130",
+        "Q131",
+        "Q132",
+        "Q136",
+        "Q137",
+        "Q138",
+        "Q139",
+        "Q144",
+        "Q145"
+      ],
+      "no_new_FIFO": true,
+      "pending_reference_anchor_additions": [
+        "Q130",
+        "Q131",
+        "Q139",
+        "Q145"
+      ],
+      "pending_creation_rule": "Create all listed dynamic nodes and add the quiet stateful anchor additions to A. Do not install this request fixed MODE/B/R/R_FRAME EX until its admitted START task executes. All new stateless sources already have real dynamic consumers while pending.",
+      "admission": {
+        "gate": "Q144",
+        "claim": "Q145",
+        "eligible_request": "Only the first request in the existing business request list may have an admission attempt requested. This list records business identities/order, not an execution FIFO.",
+        "primary_formula": "G = NOT BUSY AND NOT old CLAIM",
+        "auxiliary_formula": "CLAIM_next = old CLAIM OR NOT BUSY",
+        "order": "Evaluate G using old CLAIM; then independently evaluate CLAIM from its own old q and unchanged BUSY. BUSY is not changed in this transaction.",
+        "all_parameters_ready_before_enqueue": [
+          "current BUSY q",
+          "current CLAIM q",
+          "complete K and selected D/H actual data already present",
+          "complete precreated pipeline and identities",
+          "current request still occupies the permitted preparation position"
+        ],
+        "publication": "G pro=q=1 publishes only on the first successful admission. START has G as a stateless source and is formed by the ordinary event rule.",
+        "duplicate_attempt": "A later attempt observes CLAIM=1 and publishes nothing, even if BUSY remains 0 between G and START. Another request cannot be attempted during that gap because the request-list head has not been removed.",
+        "busy_attempt": "If BUSY=1, G=0 and CLAIM remains unchanged; no START task is enqueued. A later legitimate predecessor-completion boundary may request another G attempt."
+      }
+    },
+    {
+      "request_id": "R3",
+      "kind": "first",
+      "width": 2,
+      "post_data_nodes": [
+        "Q119",
+        "Q120"
+      ],
+      "post_valid_node": "Q124",
+      "output_data_sources": [
+        "Q26",
+        "Q27"
+      ],
+      "dynamic_nodes": [
+        {
+          "id": "Q150",
+          "role": "REQUEST_KIND",
+          "ex": "J0K(Q42)",
+          "pro": "q=",
+          "classification": "stateful",
+          "creation_initial_q": 0
+        },
+        {
+          "id": "Q151",
+          "role": "START",
+          "ex": "J0K(Q150)J(Q194)",
+          "pro": "q=",
+          "classification": "stateful",
+          "creation_initial_q": 0
+        },
+        {
+          "id": "Q152",
+          "role": "START_COMPLETE",
+          "ex": "J0K(Q150)K(Q150)K1",
+          "pro": "q=0/1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q153",
+          "role": "READ_COMPLETE_0",
+          "ex": "J0K(Q119)K(Q119)K1",
+          "pro": "q=0/1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q154",
+          "role": "READ_COMPLETE_1",
+          "ex": "J0K(Q120)K(Q120)K1",
+          "pro": "q=0/1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q155",
+          "role": "ALL_READS_COMPLETE",
+          "ex": "J0K1J(Q153)J(Q154)",
+          "pro": "q=0/1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q156",
+          "role": "RELAY_COMPLETE_0",
+          "ex": "J0K(Q26)K(Q26)K1",
+          "pro": "q=0/1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q157",
+          "role": "RELAY_COMPLETE_1",
+          "ex": "J0K(Q27)K(Q27)K1",
+          "pro": "q=0/1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q158",
+          "role": "MARKER_COMPLETE",
+          "ex": "J0K(Q48)K(Q48)K1",
+          "pro": "q=0/1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q159",
+          "role": "ALL_PARAMETERS_READY_AND_LATCH",
+          "ex": "J0K1J(Q152)J(Q155)J(Q156)J(Q157)J(Q158)",
+          "pro": "q=",
+          "classification": "stateful",
+          "creation_initial_q": 0
+        },
+        {
+          "id": "Q194",
+          "role": "ADMIT_GATE",
+          "ex": "J0K1K(Q43)J(Q195)K1K(Q43)",
+          "pro": "q=1",
+          "classification": "stateless"
+        },
+        {
+          "id": "Q195",
+          "role": "ADMISSION_CLAIM",
+          "ex": "K1J(Q43)K1",
+          "pro": "q=",
+          "classification": "stateful",
+          "creation_initial_q": 0
+        }
+      ],
+      "fixed_node_EX_overrides_while_active": {
+        "Q48": "J0K(Q150)",
+        "Q61": "J0K(Q48)J(Q152)K(Q159)K(Q159)",
+        "Q51": "J0K(Q10)K(Q11)K(Q12)K(Q13)K(Q14)K(Q15)K(Q16)K(Q17)K(Q18)K(Q19)K(Q20)K(Q21)K(Q22)K(Q23)K(Q24)K(Q25)K(Q26)K(Q27)K(Q28)K(Q29)K(Q30)K(Q31)K(Q32)K(Q33)K(Q34)K(Q35)K(Q36)K(Q37)K(Q38)K(Q39)K(Q40)K(Q41)K(Q42)K(Q43)K(Q44)K(Q45)K(Q46)K(Q47)K(Q48)K(Q49)K(Q50)K(Q150)K(Q151)K(Q159)K(Q195)",
+        "Q26": "J0K(Q119)J(Q152)",
+        "Q27": "J0K(Q120)J(Q152)",
+        "Q53": "J0K(Q26)J(Q155)K(Q52)K(Q52)",
+        "Q54": "J0K(Q27)J(Q155)K(Q52)K(Q52)"
+      },
+      "creation_state": {
+        "zero": [
+          "Q150",
+          "Q151",
+          "Q159",
+          "Q195"
+        ],
+        "stateless": [
+          "Q152",
+          "Q153",
+          "Q154",
+          "Q155",
+          "Q156",
+          "Q157",
+          "Q158",
+          "Q194"
+        ]
+      },
+      "prepared_kind_before_START": 1,
+      "independent_auxiliary_EX_by_primary": {
+        "Q151": [
+          {
+            "node": "Q48",
+            "parameters_ready_before_enqueue": [
+              "Q150"
+            ]
+          },
+          {
+            "node": "Q43",
+            "parameters_ready_before_enqueue": [
+              "Q42",
+              "Q43.self_old_q"
+            ]
+          },
+          {
+            "node": "Q152",
+            "parameters_ready_before_enqueue": [
+              "Q150"
+            ]
+          }
+        ],
+        "Q26": [
+          {
+            "node": "Q153",
+            "parameters_ready_before_enqueue": [
+              "Q119"
+            ]
+          }
+        ],
+        "Q27": [
+          {
+            "node": "Q154",
+            "parameters_ready_before_enqueue": [
+              "Q120"
+            ]
+          }
+        ],
+        "Q53": [
+          {
+            "node": "Q156",
+            "parameters_ready_before_enqueue": [
+              "Q26"
+            ]
+          }
+        ],
+        "Q54": [
+          {
+            "node": "Q157",
+            "parameters_ready_before_enqueue": [
+              "Q27"
+            ]
+          }
+        ],
+        "Q61": [
+          {
+            "node": "Q158",
+            "parameters_ready_before_enqueue": [
+              "Q48"
+            ]
+          }
+        ],
+        "Q194": [
+          {
+            "node": "Q195",
+            "parameters_ready_before_enqueue": [
+              "Q43",
+              "Q195.self_old_q"
+            ]
+          }
+        ]
+      },
+      "completion_producer_primary": {
+        "Q152": "Q151",
+        "Q158": "Q61",
+        "Q156": "Q53",
+        "Q157": "Q54",
+        "Q153": "Q26",
+        "Q154": "Q27"
+      },
+      "ordinary_publication_edges": [
+        {
+          "source": "Q194",
+          "targets": [
+            "Q151"
+          ]
+        },
+        {
+          "source": "Q152",
+          "targets": [
+            "Q26",
+            "Q27",
+            "Q61",
+            "Q159"
+          ]
+        },
+        {
+          "source": "Q153",
+          "targets": [
+            "Q155"
+          ]
+        },
+        {
+          "source": "Q154",
+          "targets": [
+            "Q155"
+          ]
+        },
+        {
+          "source": "Q155",
+          "targets": [
+            "Q53",
+            "Q54",
+            "Q159"
+          ]
+        },
+        {
+          "source": "Q156",
+          "targets": [
+            "Q159"
+          ]
+        },
+        {
+          "source": "Q157",
+          "targets": [
+            "Q159"
+          ]
+        },
+        {
+          "source": "Q158",
+          "targets": [
+            "Q159"
+          ]
+        }
+      ],
+      "arrival_groups": [
+        {
+          "target": "Q155",
+          "sources": [
+            "Q153",
+            "Q154"
+          ]
+        },
+        {
+          "target": "Q159",
+          "sources": [
+            "Q152",
+            "Q155",
+            "Q156",
+            "Q157",
+            "Q158"
+          ]
+        }
+      ],
+      "local_task_order_when_no_other_work_or_inputs": [
+        "Q194",
+        "Q151",
+        "Q26",
+        "Q27",
+        "Q61",
+        "Q155",
+        "Q53",
+        "Q54",
+        "Q159",
+        "Q62",
+        "Q63",
+        "Q70"
+      ],
+      "local_order_scope": "Manually derived local suffix beginning with an eligible request-head admission attempt. Existing RAM tasks and higher-priority Xi tasks can interleave. Auxiliary EX are not separate FIFO tasks. Failed or duplicate G attempts emit no START event.",
+      "all_dynamic_members": "RAM0",
+      "cleanup_delete": [
+        "Q150",
+        "Q151",
+        "Q152",
+        "Q153",
+        "Q154",
+        "Q155",
+        "Q156",
+        "Q157",
+        "Q158",
+        "Q159",
+        "Q194",
+        "Q195"
+      ],
+      "no_new_FIFO": true,
+      "pending_reference_anchor_additions": [
+        "Q150",
+        "Q151",
+        "Q159",
+        "Q195"
+      ],
+      "pending_creation_rule": "Create all listed dynamic nodes and add the quiet stateful anchor additions to A. Do not install this request fixed MODE/B/R/R_FRAME EX until its admitted START task executes. All new stateless sources already have real dynamic consumers while pending.",
+      "admission": {
+        "gate": "Q194",
+        "claim": "Q195",
+        "eligible_request": "Only the first request in the existing business request list may have an admission attempt requested. This list records business identities/order, not an execution FIFO.",
+        "primary_formula": "G = NOT BUSY AND NOT old CLAIM",
+        "auxiliary_formula": "CLAIM_next = old CLAIM OR NOT BUSY",
+        "order": "Evaluate G using old CLAIM; then independently evaluate CLAIM from its own old q and unchanged BUSY. BUSY is not changed in this transaction.",
+        "all_parameters_ready_before_enqueue": [
+          "current BUSY q",
+          "current CLAIM q",
+          "complete K and selected D/H actual data already present",
+          "complete precreated pipeline and identities",
+          "current request still occupies the permitted preparation position"
+        ],
+        "publication": "G pro=q=1 publishes only on the first successful admission. START has G as a stateless source and is formed by the ordinary event rule.",
+        "duplicate_attempt": "A later attempt observes CLAIM=1 and publishes nothing, even if BUSY remains 0 between G and START. Another request cannot be attempted during that gap because the request-list head has not been removed.",
+        "busy_attempt": "If BUSY=1, G=0 and CLAIM remains unchanged; no START task is enqueued. A later legitimate predecessor-completion boundary may request another G attempt."
+      }
+    }
+  ],
+  "operation_envelopes": {
+    "PREPARE_BEFORE_START": {
+      "status": "complete precreation and JK admission binding candidate",
+      "required_actual_parameters": [
+        "registered request identity and kind",
+        "existing initialized K q holding this request kind",
+        "existing complete D pair for first or independent H pair for replay",
+        "current BUSY and T1 q",
+        "complete pipeline node identities, EX versions and membership",
+        "no pending task or arrival protected by any EX about to change"
+      ],
+      "operations": [
+        "Create all request K/G/CLAIM/START and pipeline nodes with declared initial_q and complete real references.",
+        "Add only the quiet stateful K/START/LATCH/CLAIM nodes as genuine A sources; A/A_READ are not evaluated.",
+        "Keep every fixed MODE/B/R/R_FRAME EX attached to the current active preparation, if any. Pending requests do not install their fixed-node overrides.",
+        "For the permitted request-list head only, request its real G admission task after verifying all listed actual input parameters already exist. G itself still determines whether BUSY/CLAIM permit START.",
+        "Do not enqueue B, R, marker, or outputs here. Their completion dependencies are not yet satisfied."
+      ],
+      "scope_note": "Node creation and reference installation are structural operations. Existing business q can only change through the specified real EX."
+    },
+    "START": {
+      "primary": "request START",
+      "all_ready_before_enqueue": [
+        "this request locked G=1 event; CLAIM already equals 1",
+        "K actual q",
+        "current T1 q=1 and BUSY own old q=0",
+        "all selected current-frame input data q or H q",
+        "all registered target identities and EX versions",
+        "no predecessor batch still waiting for output parameter locking"
+      ],
+      "independent_EX_order": [
+        "START reads K",
+        "MODE independently reads the same pre-existing K",
+        "BUSY executes K(T1)",
+        "ESTART independently reads the same pre-existing K twice and produces 1"
+      ],
+      "commit": "Commit all independent q/results, then ESTART publishes. Its real references enqueue B0,B1,R_FRAME for first or R0,R1,R_FRAME for replay in numeric Q order.",
+      "primary_EX": "J0K(K)J(G): K is pre-existing and G is the locked stateless admission event.",
+      "structural_operations_before_publication": [
+        "Install this selected request fixed MODE/B/R/R_FRAME EX atomically using its already-existing K, D/H and pipeline identities.",
+        "Perform the listed independent MODE/BUSY/ESTART EX with all source parameters already present.",
+        "After complete commit publish ESTART. No other request may install fixed preparation EX until this request LATCH completes."
+      ],
+      "admission_gap": "Between G completion and START execution BUSY may remain 0, but the same request remains head and CLAIM=1; duplicate G tasks cannot publish, and no other request is eligible to be attempted."
+    },
+    "B_i": {
+      "all_ready_before_enqueue": [
+        "this request ESTART event locked as 1",
+        "this slot D_i current-batch value",
+        "B_i and E_Bi targets and source versions"
+      ],
+      "independent_EX": [
+        "B_i copies D_i gated by locked ESTART",
+        "E_Bi independently computes constant 1 from the same D_i"
+      ],
+      "commit": "B_i remains quiet; E_Bi publishes once. G_B enters FIFO only after both E_B events."
+    },
+    "R_i": {
+      "all_ready_before_enqueue": [
+        "first: locked G_B=1, all B have completed; replay: locked ESTART=1 and retained H already exists",
+        "corresponding B_i or H_i actual data",
+        "A_READ existing q",
+        "R_i and E_Ri targets and source versions"
+      ],
+      "independent_EX": [
+        "R_i copies its ready source; two A_READ operations cancel",
+        "E_Ri independently computes constant 1 from the same ready B_i or H_i"
+      ],
+      "commit": "R_i remains quiet; E_Ri publishes once. No output task exists yet merely because one R completed."
+    },
+    "R_FRAME": {
+      "all_ready_before_enqueue": [
+        "locked ESTART=1",
+        "MODE already completed in the preceding START transaction",
+        "LATCH initial or current q; this is a transparent existing parameter",
+        "R_FRAME and E_M target versions"
+      ],
+      "independent_EX": [
+        "R_FRAME copies MODE gated by ESTART; two LATCH operations cancel",
+        "E_M independently computes constant 1 from the pre-existing MODE"
+      ],
+      "commit": "R_FRAME remains quiet; E_M publishes once. This marker task may finish before the data relays, but it does not publish FRAME_OUT."
+    },
+    "LATCH": {
+      "all_ready_before_enqueue": [
+        "first: locked ESTART=1,G_B=1,E_R0=1,E_R1=1,E_M=1; replay: locked ESTART=1,E_R0=1,E_R1=1,E_M=1",
+        "Q53,Q54 current-batch relay results already produced",
+        "Q61 current-batch marker already produced",
+        "current BUSY=1,T1=1",
+        "fixed O/FRAME_OUT targets and fixed q_y",
+        "first-frame H/CACHE/F/C_ACK/READY targets and their pre-existing sources for later FRAME_OUT",
+        "request and batch identities and cleanup set"
+      ],
+      "primary_EX": "LATCH computes AND of its already-latched completion/admission-stage values; the result is not an input parameter of its operations.",
+      "operations_in_order": [
+        "Read already-produced Q53,Q54,Q61 and create independently locked output parameters.",
+        "Prepare idle EX restoration and reference detachment; deletion of transient request nodes, including this LATCH, occurs only at the final atomic commit after the completed-primary/no-publication/no-other-dependency conditions in cleanup.current_LATCH_final_commit_rule are met.",
+        "Evaluate BUSY K(T1) from existing inputs to clear BUSY.",
+        "Append Q62,Q63,Q70 tasks in that order with immutable source-indexed parameter arrays and batch identity.",
+        "After batch output locking and BUSY clear commit, remove this request from the business request list. Only then may the next request head have its real G admission task requested. That G evaluates its own ready BUSY/CLAIM parameters; no next K/MODE computation occurs inside LATCH."
+      ],
+      "no_intermediate_dependency": "Every output bit is read from a prior completed task. The marker is not taken from a new result produced inside LATCH.",
+      "deletion_boundary": "No node is removed while its own EX or a later dependent step remains unfinished. The final commit may simultaneously settle the fully evaluated quiet LATCH task and delete its now-unneeded transient target."
+    },
+    "ADMIT_GATE": {
+      "primary": "request G, pro=q=1",
+      "independent_auxiliary": "request CLAIM, pro=q=",
+      "before_enqueue": [
+        "BUSY and CLAIM actual q",
+        "already-created current request graph",
+        "K and D/H actual data",
+        "request-list head identity"
+      ],
+      "EX_order": [
+        "G = J0K1K(Q43)J(CLAIM)K1K(Q43)",
+        "CLAIM = K1J(Q43)K1, starting from its own old q"
+      ],
+      "proof": "Both EX consume pre-existing BUSY; G additionally consumes old CLAIM. CLAIM never reads G result. G is evaluated before CLAIM changes, and BUSY is unchanged.",
+      "commit": "Publish G only if its already computed result is 1. Its real START consumer creates the START task.",
+      "source_rule": "Factory only requests a real G task for the eligible request identity; it does not manufacture the G event or the START task."
+    }
+  },
+  "cleanup": {
+    "fixed_idle_EX": {
+      "Q26": "J0K(Q0)",
+      "Q27": "J0K(Q1)",
+      "Q48": "J0K(Q42)",
+      "Q53": "J0K(Q34)K(Q52)K(Q52)",
+      "Q54": "J0K(Q35)K(Q52)K(Q52)",
+      "Q61": "J0K(Q48)"
+    },
+    "q_preservation": "Restoring EX does not evaluate it and does not overwrite B, R or R_FRAME q. B retains first-frame data until guarded FRAME_OUT captures H.",
+    "A": "Remove every deleted request K/START/LATCH/CLAIM reference; do not evaluate A or A_READ. Other live upstream stateful references remain. Remove the temporary request graph only after all active target/source/arrival dependencies are gone.",
+    "deletion_preconditions": [
+      "No duplicate G admission task, queued START task or other active dependency still targets this request G/CLAIM/START. A duplicate pending G must finish (emitting nothing) before its target can be deleted; do not silently remove a queued task.",
+      "All B/R/marker tasks in this preparation have completed.",
+      "All token arrival groups used by G_B/LATCH have been consumed into completed tasks.",
+      "No remaining task target, ordinary source, bound auxiliary target, arrival group or structural consumer protects a deleted node.",
+      "Every retained Q still has legal true EX sources and at least one true EX/q_y consumer."
+    ],
+    "frozen_output_tasks": "New output tasks use their own locked Q53,Q54,Q61 values. Later changes of those sources do not alter the old tasks. Their fixed output targets remain protected.",
+    "first_FRAME_OUT_dependencies": "Bind H0/H1, CACHE, READY and F targets plus their actual ordinary sources at output enqueue after cleanup EX versions are final. Protect B sources until first FRAME_OUT completes.",
+    "current_LATCH_final_commit_rule": {
+      "allowed_boundary": "Deletion of this request LATCH is committed only at the final atomic task commit, never during an active LATCH EX or an unfinished parameter read.",
+      "must_already_be_finished": [
+        "The current LATCH primary has completed its complete EX and its final parameter read.",
+        "Its target arrival group was moved into this task and has been consumed.",
+        "LATCH is quiet, so there is no current LATCH result publication still needing its identity.",
+        "The independent bound BUSY EX has completed; it does not read LATCH.",
+        "The output parameter arrays were already independently locked from previously produced R and R_FRAME values.",
+        "All fixed EX and A references to removed nodes have been atomically detached or restored.",
+        "No other queued primary/auxiliary task, source protection, unconsumed arrival or structural consumer still needs any node being deleted."
+      ],
+      "commit": "After these checks the one complete atomic commit may remove the transient request nodes and settle the current task together. The visible checkpoint contains neither a half-executed task nor a partly removed graph.",
+      "not_an_exemption": "The currently completed primary no longer has an unfinished dependency on its target at this final commit. This does not exempt the target from source/consumer rules while it is live and does not permit deleting any still-needed current or later object.",
+      "if_still_needed": "If the current task still needs LATCH for a later EX, publication or operation, or another dependency survives, preserve LATCH and its required closed fragment for a later safe retirement transaction."
+    }
+  },
+  "FRAME_OUT_qualification": {
+    "status": "candidate independent-parameter atomic update, pending integration with the separately designed ACK admission protocol",
+    "fixed_EX": "Q70=J0K(Q61), q_y=Y8",
+    "required_before_enqueue": [
+      "own locked marker parameter",
+      "this batch frame identity, request kind and output order",
+      "B0/B1 already produced for a first batch",
+      "H0/H1,CACHE,F,C_ACK,READY targets already exist",
+      "T1,F,C_ACK actual current state and all protected EX versions"
+    ],
+    "guard": "At execution use the existing locked marker and batch identity plus current membership/consumption state. Do not treat newly evaluated Q70.q as a missing-before-enqueue operation input. Only still-current, unconsumed first completion may update H/qualification.",
+    "first_independent_EX_order": [
+      "Q70 uses own locked marker",
+      "Q47 executes J0K1K(Q45)K(Q46) BEFORE Q45 changes",
+      "Q34 executes J0K(Q26)",
+      "Q35 executes J0K(Q27)",
+      "Q44 executes J0K(Q42)",
+      "Q45 executes K(Q42) LAST"
+    ],
+    "all_sources_preexisting": "Q47 reads old F and C_ACK. H reads existing B. CACHE and F read existing T1. No auxiliary consumes a new result of another auxiliary.",
+    "publication_boundary": "The complete atomic commit publishes FRAME_OUT and exposes the completed H/qualification state together; ACK cannot observe a half-captured frame. W data outputs precede this marker task.",
+    "replay_or_stale_completion": "Execute only fixed marker output; do not capture H or update CACHE/F/READY. Locked old output tasks continue, but old completion never revives consumed-frame qualification.",
+    "algebra_at_complete_boundaries": [
+      {
+        "before": {
+          "F": 0,
+          "C_ACK": 0,
+          "READY": 0
+        },
+        "operation": "first completion: READY=XNOR(oldF,oldC), then F toggles",
+        "after": {
+          "F": 1,
+          "C_ACK": 0,
+          "READY": 1
+        }
+      },
+      {
+        "before": {
+          "F": 1,
+          "C_ACK": 1,
+          "READY": 0
+        },
+        "operation": "next first completion: READY=XNOR(oldF,oldC), then F toggles",
+        "after": {
+          "F": 0,
+          "C_ACK": 1,
+          "READY": 1
+        }
+      }
+    ],
+    "ACK_scope": "User-approved separate ACK decoding/readiness and pinned-frame atomic action belongs in its dedicated design. This file defines no ACK task sequence and does not authorize retargeting an older ACK to a newer head."
+  },
+  "static_graph_reasoning": {
+    "first_paths": [
+      "D→B→R→O→Yi",
+      "D→E_B→G_B→R",
+      "B→E_R→LATCH→R_FRAME→FRAME_OUT→Y8",
+      "K→MODE→E_M→LATCH",
+      "K→ESTART→B/R_FRAME",
+      "K→START→A→A_READ→R",
+      "B→H→replay R→O",
+      "BUSY→G→START→A→A_READ→R",
+      "BUSY→CLAIM→G",
+      "ESTART→LATCH→A→A_READ→R",
+      "G_B→LATCH→A→A_READ→R"
+    ],
+    "replay_paths": [
+      "H→R→O→Yi",
+      "H→E_R→LATCH→R_FRAME→FRAME_OUT→Y8",
+      "K→MODE→E_M→LATCH",
+      "K→ESTART→R/R_FRAME",
+      "K→START→A→A_READ→R",
+      "BUSY→G→START→A→A_READ→R",
+      "BUSY→CLAIM→G",
+      "ESTART→LATCH→A→A_READ→R"
+    ],
+    "not_EX_edges": [
+      "B primary shares a transaction with E_B",
+      "R primary shares a transaction with E_R",
+      "R_FRAME primary shares a transaction with E_M",
+      "RAM.FACTORY control/ownership and request causes"
+    ],
+    "no_cycle_argument": "There is no R→E_R or R_FRAME→E_M EX edge. E_R reads B/H and E_M reads MODE, so E_R/E_M→LATCH→A→A_READ→R has no return edge. LATCH also feeds R_FRAME transparently. Pending pipeline ESTART/G_B/ER/EM already feed LATCH, and quiet LATCH feeds A. G feeds START, CLAIM feeds G, and START feeds A. BUSY only reads T1. Thus both pending and active graphs have genuine consumers without a multi-node EX cycle.",
+    "forbidden_shortcuts": [
+      "Do not create done events without evaluating the corresponding completion EX.",
+      "Do not enqueue R before current-batch B completion tokens.",
+      "Do not lock the outputs inside the transaction that first creates R_FRAME.q.",
+      "Do not add E_B/E_R/E_M/ESTART/G_B to A; stateless publication must not inadvertently create A tasks.",
+      "Do not give B/R default pro merely to obtain a completion event."
+    ]
+  },
+  "verification_scope": {
+    "performed": "Direct symbolic JK algebra, four-case admission truth table, and source/consumer/DAG reasoning. JSON/EX syntax and pending/active local graph coverage are checked statically; no EX or task engine is run.",
+    "not_performed": [
+      "No scheduler or EX executor was written or run.",
+      "No assertion of general ACK correctness, admission fairness, failure/retry handling or complete checkpoint validity follows from this output fragment.",
+      "The global task sequence depends on integration with separately redesigned input/business/ACK/GC tasks."
+    ]
+  }
+}

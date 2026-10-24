@@ -1,0 +1,300 @@
+{
+  "format": "jk-logic-runtime-V5.0.0",
+  "schema_revision": "draft-1",
+  "rule_profile": "JKRD-V5-DAG-1-2-5",
+  "canonicalization": "jk-json-v5-draft-1",
+  "structure": {
+    "nodes": [
+      {
+        "id": "Q0",
+        "generation": "1",
+        "ex_version": "1",
+        "ex": "J0K(X0)"
+      },
+      {
+        "id": "Q1",
+        "generation": "1",
+        "ex_version": "1",
+        "ex": "J0K(X1)"
+      },
+      {
+        "id": "Q2",
+        "generation": "1",
+        "ex_version": "1",
+        "ex": "K(Q0)K(Q1)"
+      }
+    ],
+    "initial_q": {
+      "0": [
+        "Q0",
+        "Q1",
+        "Q2"
+      ],
+      "1": []
+    },
+    "inputs": [
+      {
+        "id": "X0",
+        "external": "X0"
+      },
+      {
+        "id": "X1",
+        "external": "X1"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "Y0",
+        "external": "Y0"
+      }
+    ],
+    "q_y": [
+      {
+        "output": "Y0",
+        "node": {
+          "id": "Q2",
+          "generation": "1"
+        }
+      }
+    ],
+    "capacity": {
+      "max_live_nodes": null
+    },
+    "contracts": [],
+    "factories": [],
+    "modules": []
+  },
+  "runtime": {
+    "boundary": {
+      "kind": "after-complete-task",
+      "revision": "6",
+      "last_completed_task_id": "T7",
+      "accepted_input_sequence": "8",
+      "published_output_sequence": "1",
+      "input_handoff_complete": true,
+      "propagation_complete": true,
+      "active_task": null,
+      "active_transaction": null
+    },
+    "q": [
+      {
+        "node": {
+          "id": "Q0",
+          "generation": "1"
+        },
+        "value": 0
+      },
+      {
+        "node": {
+          "id": "Q1",
+          "generation": "1"
+        },
+        "value": 1
+      },
+      {
+        "node": {
+          "id": "Q2",
+          "generation": "1"
+        },
+        "value": 1
+      }
+    ],
+    "fifos": {
+      "Xi.FIFO": [
+        {
+          "id": "T8",
+          "kind": "input-copy",
+          "target": {
+            "id": "Q0",
+            "generation": "1",
+            "ex_version": "1"
+          },
+          "parameter_policy": "event",
+          "parameters": {
+            "bits": [
+              1
+            ],
+            "sources": [
+              {
+                "source": {
+                  "kind": "X",
+                  "id": "X0"
+                },
+                "index": 0
+              }
+            ],
+            "frames": []
+          },
+          "behavior_id": null,
+          "bound_ex": [],
+          "context": null,
+          "cause": [
+            {
+              "kind": "input",
+              "identity": "I6"
+            }
+          ],
+          "protected_reads": []
+        },
+        {
+          "id": "T9",
+          "kind": "input-copy",
+          "target": {
+            "id": "Q0",
+            "generation": "1",
+            "ex_version": "1"
+          },
+          "parameter_policy": "event",
+          "parameters": {
+            "bits": [
+              0
+            ],
+            "sources": [
+              {
+                "source": {
+                  "kind": "X",
+                  "id": "X0"
+                },
+                "index": 0
+              }
+            ],
+            "frames": []
+          },
+          "behavior_id": null,
+          "bound_ex": [],
+          "context": null,
+          "cause": [
+            {
+              "kind": "input",
+              "identity": "I7"
+            }
+          ],
+          "protected_reads": []
+        },
+        {
+          "id": "T10",
+          "kind": "input-copy",
+          "target": {
+            "id": "Q1",
+            "generation": "1",
+            "ex_version": "1"
+          },
+          "parameter_policy": "event",
+          "parameters": {
+            "bits": [
+              1
+            ],
+            "sources": [
+              {
+                "source": {
+                  "kind": "X",
+                  "id": "X1"
+                },
+                "index": 0
+              }
+            ],
+            "frames": []
+          },
+          "behavior_id": null,
+          "bound_ex": [],
+          "context": null,
+          "cause": [
+            {
+              "kind": "input",
+              "identity": "I8"
+            }
+          ],
+          "protected_reads": []
+        }
+      ],
+      "RAM.FIFO": [],
+      "Qi.FIFO": [
+        {
+          "id": "T6",
+          "kind": "node-ex",
+          "target": {
+            "id": "Q2",
+            "generation": "1",
+            "ex_version": "1"
+          },
+          "parameter_policy": "event",
+          "parameters": {
+            "bits": [
+              1,
+              1
+            ],
+            "sources": [
+              {
+                "source": {
+                  "kind": "Q",
+                  "id": "Q0",
+                  "generation": "1"
+                },
+                "index": 0
+              },
+              {
+                "source": {
+                  "kind": "Q",
+                  "id": "Q1",
+                  "generation": "1"
+                },
+                "index": 1
+              }
+            ],
+            "frames": []
+          },
+          "behavior_id": null,
+          "bound_ex": [],
+          "context": null,
+          "cause": [
+            {
+              "kind": "arrival-group",
+              "identity": "Q2.group2"
+            }
+          ],
+          "protected_reads": []
+        }
+      ]
+    },
+    "arrivals": [
+      {
+        "target": {
+          "id": "Q2",
+          "generation": "1",
+          "ex_version": "1"
+        },
+        "values": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q0",
+              "generation": "1"
+            },
+            "value": 0
+          }
+        ]
+      }
+    ],
+    "modules": [],
+    "allocators": {
+      "next_node": "3",
+      "next_task": "11",
+      "next_input": "9",
+      "next_output": "2"
+    }
+  },
+  "metadata": {
+    "name": "旧任务与下一组未齐数据共存：运行检查点设计例",
+    "created_unix_ns": "0",
+    "display": {},
+    "provenance": {
+      "status": "directly-reasoned-not-restored",
+      "reasoning_file": "continuation-example-notes.json",
+      "timestamp_notice": "0 is a fixture value"
+    }
+  },
+  "fingerprints": {
+    "format_md5": "51a1ef11e72009f4b0cfcebdad51822f",
+    "md5": "e6e30387f62e62102cb0672e413ae351"
+  }
+}

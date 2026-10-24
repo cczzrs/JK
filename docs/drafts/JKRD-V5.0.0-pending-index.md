@@ -2,15 +2,18 @@
 
 > 2026-10-19。依据用户“再核对一遍，并整理所有需要待处理的模块或内容”的要求建立。本清单覆盖当前 JKRD、异步结构存储模块、环与快照待处理稿、原稿 E01–E67、46 条补充及本地实验；记录 31 项待设计、待实现或待验证工作。它是工作索引，不新增计算规则，也不把已确认行为重新列作待批准。
 
+> **2026-10-21 最新进展：** 已按全部实际参数就绪后入队重构 A03/F02 的 JK 结构及事务，并更新75任务人工推导与6份动态检查点；ACK采用用户批准的“译码确定帧和资格、后续独立原子动作、陈旧动作不转投下一帧”。已完成设计数据及本例静态核对，未实现执行器或实际恢复验证。旧49任务只保留历史文字。见[当前设计](../logic_units/async-structural-storage-draft.md#a03-readiness-redesign)。
+
+
 异步结构存储仍由 **JK 节点组合的异步处理结构、FIFO 队列组、RAM.FACTORY** 三部分协作。下表的八类是工作范围，不是八个新的运行模块。
 
 | 工作范围 | 清单 | 当前状态 |
 | --- | --- | --- |
-| JK 节点结构与业务接入 | A01–A05 | 完整合法拓扑及计算接入待补；输入/输出/ACK 等行为已确认，仍需完整实现与验证 |
-| RAM.FACTORY 操作与事务 | F01–F02 | 原子边界已确认；通用操作、权限和 EX 绑定待补 |
+| JK 节点结构与业务接入 | A01–A05 | A03就绪结构、事务重划、75任务和6检查点已推导；运行、通用交错与更多宽度未验证 |
+| RAM.FACTORY 操作与事务 | F01–F02 | 工厂只执行操作事务已确认；F02已补真实JK就绪及完整参数绑定候选，通用实现/失败协议待做 |
 | 失败、回滚与重试 | F03–F04 | 完整协议待设计与实现 |
 | 环判定、DAG.CARE、定时队列 | R01–R07 | 明确延后，未启用 |
-| 快照、恢复、校验与指纹 | S01–S09 | 明确延后，格式与完整恢复未定稿 |
+| 快照、恢复、校验与指纹 | S01–S09 | 通用字段、75任务与6份更新后现场已设计；本例静态/摘要核对，实际保存恢复等价未做 |
 | 消费者与模型验证 | V01–V04 | 已有局部证据；通用验证、迁移状态及旧模型 V5 复核待做 |
 | 交互页面 | U01 | 已有页面和画框操作代码；完整界面验收待做 |
 | 文档与证据引用 | D01 | 本轮发现的旧专题引用待修整 |
@@ -19,17 +22,25 @@
 
 详细设计入口：[异步结构存储模块](../logic_units/async-structural-storage-draft.md)、[环监督待处理稿](JKRD-V5.0.0-ring-supervision-pending.md)、[快照恢复待处理稿](JKRD-V5.0.0-snapshot-recovery-pending.md)。
 
+2026-10-21：A01–A05 已整理 [合法拓扑候选](../logic_units/async-structural-storage-draft.md#topology-proposal)与[模型 JSON、直接验证及来源对应表](../logic_units/async-structural-storage-draft.md#model-design-evidence)。本次新增设计数据，未编写执行器；此前提前产生的代码修改已撤回。下表分别显示已处理的设计、尚待确认的选择及未完成的执行验证，不把候选模型当作现有演示状态。
+
+2026-10-21 续补：[A03 与 RAM.FACTORY 通用动态接入](../logic_units/async-structural-storage-draft.md#dynamic-integration)。依据用户新确认，将 JK 求值和工厂操作事务明确分工；新增完整 80/87 节点 JSON、动态构造、GC 与晚到/早到案例。A03/F01/F02 的设计缺口已补齐到可审阅方案，运行实现和失败重试没有提前关闭。
+
+2026-10-21 续补第四模块：[快照格式与恢复契约](JKRD-V5.0.0-snapshot-recovery-pending.md#snapshot-format-design)。S01–S08 已形成当前无环范围的候选；S09 已有完整核心JSON、动态片段、独立续算预期及指纹实算。仅设计与静态/字节核对，未写执行器；监督/失败扩展、实际动态续算和消费者支持仍待处理。
+
+2026-10-21 历史续补曾给出49任务/6检查点；本次已由[75任务及六份更新后检查点](JKRD-V5.0.0-snapshot-recovery-pending.md#a03-readiness-checkpoints)替代。新CP2包含真实非空到达集合，CP3保存已锁定未执行的SAVE，CP5区分待执行领取门与active准备。运行恢复尚未验证。
+
 <a id="storage"></a>
 
 ## 一、异步结构存储：JK 节点结构与业务接入
 
 | 编号 | 内容 | 状态与剩余工作 | 来源与验证出口 |
 | --- | --- | --- | --- |
-| <a id="a01"></a>A01 | 完整合法拓扑 | **待设计；现有实验有明确偏差**。为输入、S/C、存储保持、控制、输出与 ACK 给出逐节点合法图；维持全部引用约束及当前 DAG 要求。 | [模块实现边界](../logic_units/async-structural-storage-draft.md#implementation-boundary)、[JKRD 节点规则](../JKRD.md)。验收逐节点检查真实 EX、引用及事件序列；不能用 pro=q= 或成员身份豁免。 |
-| <a id="a02"></a>A02 | 整帧接力、输入及参数生命周期 | **规则已确认；待完整实现核验**。核对 Xi → 第一个 RAM 任务 → W 个 JK q 的独立接力；身份、宽度、顺序、任务参数和移交释放时机全部保持。Xi 与帧参数使用 Qi_J0 的锁存方式。 | [input-handoff](JKRD-V5.0.0-notes.md#input-handoff)、[模块输入设计](../logic_units/async-structural-storage-draft.md)。验收连续输入、重复 bit、0、W=1/8、FRAME_IN 清除与迟到任务，且不从最新输入重拼旧帧。 |
-| <a id="a03"></a>A03 | 计算前后接入及 Q7/Q8/Q9/Q10i | **角色与目标已确认；动态连接待构造**。计算前保存原始输入、计算后保存每次结果；明确 Q9 回写完成与下一轮释放、首轮启动及同时安装两处等待区的连接。 | [锁存与动态等待区](../logic_units/latch-dynamic-waiting.md)。验收相同结果也产生完成确认，连续计算读到正确的上一轮状态，逐项结果不被覆盖。 |
-| <a id="a04"></a>A04 | 节点生命周期、块槽回收和链式展开 | **回收条件与无豁免已确认；通用构造及验证待补**。补齐创建初值、可见时刻、连接/登记、编号/容量维护、链式展开、依赖保护、世代及删除/复用方案；既有实验只覆盖指定流程。 | [模块工厂及生命周期](../logic_units/async-structural-storage-draft.md#factory)、[task-identity](JKRD-V5.0.0-notes.md#task-identity)。验收满 8 帧且全消费、无依赖才复用；部分使用空块继续剩余槽；旧任务不命中新世代且无零引用池 Q。 |
-| <a id="a05"></a>A05 | 输出、FRAME_OUT 与 ACK 全链路 | **规则已确认；已有定向实验，待合法拓扑下完整验收**。保留固定中转与输出 EX/q_y、按序准备、任务锁存、独立 ACK 保留 q、执行时队首以及旧批次完成的身份检查。 | [输出与 ACK](../logic_units/async-structural-storage-draft.md#output-ack)。验收完成前执行的 ACK0/1 忽略；消费后新队首重新等待 FRAME_OUT；重发/消费交错不混帧、不覆盖旧输出、不复活已消费帧。 |
+| <a id="a01"></a>A01 | 完整合法拓扑 | **新候选完整图及静态核对已补；运行未实现**。固定输出与中转保留，A/A_READ改为不执行校验的真实引用锚；PRE.V由CLAIM保持EX引用闭合，READY由真实观察节点闭合。历史71节点/78节点构造仍保留，不再混用旧A求值顺序。 | [当前结构及来源表](../logic_units/async-structural-storage-draft.md#a03-readiness-redesign)、[六份全图](JKRD-V5.0.0-snapshot-recovery-pending.md#a03-readiness-checkpoints)。静态图合法不证明任意动态轨迹。 |
+| <a id="a02"></a>A02 | 整帧接力、输入及参数生命周期 | **接力设计及独立预期已推导；待确认后实现**。给出每帧 Xi→S/C→D 的真实 EX、锁存参数与释放边界；连续两帧实例不从最新输入重拼旧帧。W=1/8、重复0、校验0、FRAME_IN 清除已有直接案例，尚非运行验收。 | [input-handoff](JKRD-V5.0.0-notes.md#input-handoff)、[构造与案例 JSON](../../assets/async-structural-storage-v5-design/construction-and-cases.json)中的 `construct_f1_transaction/task_contracts/reasoned_cases`。待验证实际队列交错与载荷生命周期。 |
+| <a id="a03"></a>A03 | 计算前后接入及 Q7/Q8/Q9/Q10i | **按最新就绪规则完成结构、EX、JSON和人工序列推导；执行与通用验证待做**。JOIN/CLAIM按编号独立运行，GO锁存成功事件；各无状态COMP独立计算，COMMIT收齐实际结果后保存POST/下一前沿。预分配初0前沿支持早到/晚到接入，0不当缺值；观察节点及旧轮依赖完整列出。 | [业务结构](../../assets/async-structural-storage-v5-design/a03-readiness-business.json)、[当前设计](../logic_units/async-structural-storage-draft.md#a03-readiness-redesign)、[75任务/6检查点](JKRD-V5.0.0-snapshot-recovery-pending.md#a03-readiness-checkpoints)。旧80/87节点与49任务仅历史候选；不声称通用全部已验证。 |
+| <a id="a04"></a>A04 | 节点生命周期、块槽回收和链式展开 | **旧轮回收、部分块保留及LATCH结束边界已补候选；运行待验**。旧业务计算轮仍由后续Q71 GC删除。临时LATCH只在主/附带EX、最后读取、静默无待发布及全部外部依赖结束后的最终原子提交删除；活动EX内不删，有依赖则转GC。这是结束边界细化，不是节点豁免。 | [当前生命周期细化](../logic_units/async-structural-storage-draft.md#a03-readiness-redesign)、[6断面](JKRD-V5.0.0-snapshot-recovery-pending.md#a03-readiness-checkpoints)。满8且全部消费并解除依赖才可复用；第9帧增长、世代复用、保护拒绝及失败回滚仍待运行验证。 |
+| <a id="a05"></a>A05 | 输出、FRAME_OUT 与 ACK 全链路 | **就绪图及交错预期已重推；运行待验**。B/R/标记完成节点使LATCH等齐后才锁存输出；FRAME_OUT先用旧F/C算READY，再独立更新H/F。ACK按已批准边界拆DEC与固定帧ACT，陈旧动作忽略，不转投下一帧。 | [输出结构](../../assets/async-structural-storage-v5-design/a03-readiness-output.json)、[ACK结构](../../assets/async-structural-storage-v5-design/a03-readiness-ack.json)、[CP3–CP6](JKRD-V5.0.0-snapshot-recovery-pending.md#a03-readiness-checkpoints)。完整任意交错、旧锁存被后续覆盖的执行反例仍待验。 |
 
 <a id="factory"></a>
 
@@ -37,8 +48,8 @@
 
 | 编号 | 内容 | 状态与剩余工作 | 来源与验证出口 |
 | --- | --- | --- | --- |
-| <a id="f01"></a>F01 | 工厂操作清单与权限 | **待设计**。列明可分配/连接/登记/改 EX/pro/q_y/写 q/删除/复用的动作、参数、权限和合法前置条件；不能凭工厂身份增加 J/K 操作或引用豁免。 | [E63 原稿](JKRD-V5.0.0-diff.md)、[模块工厂](../logic_units/async-structural-storage-draft.md#factory)。验收每种动作的允许与拒绝案例、成员归属及动态引用闭合。 |
-| <a id="f02"></a>F02 | 真实节点 EX、事务提交与发布的绑定 | **原子边界已确认；通用动作绑定待补**。为每类工厂动作对应真实目标任务、求值参数和本节点 EX；明确多 q/结构提交、最终 pro 判定及来源/目标发布次序。其他节点 EX 仍各自执行。 | [JKRD 原子边界](../JKRD.md)、[transaction-commit](JKRD-V5.0.0-notes.md#transaction-commit)、[transaction-publish](JKRD-V5.0.0-notes.md#transaction-publish)。验收事务前后可见性、每步实际 EX 以及完整提交后一次发布；具体发布规则逐动作定稿。 |
+| <a id="f01"></a>F01 | 工厂操作清单与权限 | **7 类通用操作及允许/拒绝条件已设计，待确认与实现**。工厂负责完整片段分配、引用绑定/断开、成员和槽登记、请求真实Q求值、队首推进、旧轮回收、整块容量复用。没有工厂EX或直接write_q，业务变化由各Q真实EX完成；固定输出、现存依赖和节点约束均受保护。 | [原操作权限分类](../../assets/async-structural-storage-v5-design/a03-factory-transactions.json)的 `ownership/factory_operations` 保留作基线；实际 A03 事务以[当前 draft-2 完整契约](../../assets/v5-snapshot-design/a03-dynamic/checkpoint-contract.json)及[新设计说明](../logic_units/async-structural-storage-draft.md#a03-readiness-redesign)为准。操作事务本身获用户明确界定；具体原语与权限为本轮设计方案，未实现通用API。 |
+| <a id="f02"></a>F02 | 节点行为、事务整体就绪与任务绑定 | **全部实际参数就绪规则已确认；JK门、事务划分及具体绑定已补设计**。不使用事务内未来结果；独立多EX仅共享已经存在的输入。缺项留在JK/到达集合，不让未就绪任务占FIFO队首；工厂不执行EX或直接改q。 | [当前设计及对应表](../logic_units/async-structural-storage-draft.md#a03-readiness-redesign)、[内嵌契约](../../assets/v5-snapshot-design/a03-dynamic/checkpoint-contract.json)。通用操作实现、任意交错和F03/F04失败处理未完成。 |
 | <a id="f03"></a>F03 | 失败原子回滚与资源不足 | **待设计；完整协议未实现**。定义校验失败、分配失败、提交失败时，结构、q、成员、控制状态、任务载荷及待发布事件的统一处理，不能半提交或默默丢帧。 | [transaction-failure](JKRD-V5.0.0-notes.md#transaction-failure)、[模块工厂](../logic_units/async-structural-storage-draft.md#factory)。局部 EX 改写回滚不代表工厂事务回滚；验收各失败阶段的状态及事件不泄漏。 |
 | <a id="f04"></a>F04 | 失败任务保存、重试与后续推进 | **待设计；未实现**。确定失败任务放在哪里、保留哪些参数、何时允许显式重试、如何保持顺序、重复执行的效果，以及后继任务在失败期间如何推进。 | [补充待定范围](JKRD-V5.0.0-notes.md)、[模块剩余边界](../logic_units/async-structural-storage-draft.md)。验收重复重试不重复消费/发布、不乱序、不丢载荷；存放位置与推进策略不得自行定案。 |
 
@@ -62,15 +73,15 @@
 
 | 编号 | 内容 | 状态与剩余工作 | 来源与验证出口 |
 | --- | --- | --- | --- |
-| <a id="s01"></a>S01 | 快照分层与格式名称 | **明确延后；待设计/确认**。区分结构加载、有限状态快照与完整运行检查点的用途；V5 两个格式名仍为提案，文档版本批准不等于格式批准。 | [snapshot-static](JKRD-V5.0.0-snapshot-recovery-pending.md#snapshot-static)、[snapshot-format](JKRD-V5.0.0-snapshot-recovery-pending.md#snapshot-format)。为每类格式明确能恢复什么，禁止用结构加载宣称完整续算。 |
-| <a id="s02"></a>S02 | 结构、状态、元数据与监督现场 | **明确延后；字段待设计**。定义节点、initial_q/运行 q、EX/pro/q_y、成员表、块槽/帧序、容量、世代、控制 q、编号分配器以及环挂起/预算的保存范围。 | [snapshot-runtime](JKRD-V5.0.0-snapshot-recovery-pending.md#snapshot-runtime)。验收结构与状态属于同一边界、成员及引用闭合、池容量记录不冒充现存 Q。 |
-| <a id="s03"></a>S03 | 任务、Qi_J0 载荷与到达集合格式 | **明确延后；字段待设计**。定义各队任务序列与重复项、类别/序号/归属/世代/EX 版本/cause，Qi_J0 锁存参数、整帧及输出载荷和未收齐到达集合；不套用旧简单对象为完整 schema。 | [E50–E51](JKRD-V5.0.0-snapshot-recovery-pending.md#e50)、[snapshot-tasks](JKRD-V5.0.0-snapshot-recovery-pending.md#snapshot-tasks)。验收连续 Xi、相同数据的重复任务、缺来源与后续到达均能恢复。 |
-| <a id="s04"></a>S04 | 输出批次、FRAME_OUT 和 ACK 进度 | **明确延后；未实现**。保存帧/批次身份、首发/重发、W 位数据、下一位位置、完成标记、独立 ACK 保留 q 与有效状态及消费位置。 | [snapshot-progress](JKRD-V5.0.0-snapshot-recovery-pending.md#snapshot-progress)、[模块 ACK](../logic_units/async-structural-storage-draft.md#output-ack)。验收只续发未完成部分，已消费旧批次不在恢复后重新授予资格。 |
-| <a id="s05"></a>S05 | 保存请求与一致边界 | **明确延后；协议待设计**。定义 EX/RAM 事务、传播和当前外部输入交接结束后的保存时机；包括首任务前及因参数不足结束的任务；不等待未来缺少来源。 | [E13](JKRD-V5.0.0-snapshot-recovery-pending.md#e13)、[E26](JKRD-V5.0.0-snapshot-recovery-pending.md#e26)、[snapshot-boundary](JKRD-V5.0.0-snapshot-recovery-pending.md#snapshot-boundary)。验收同一时刻的状态/队列/进度，禁止拼接不同边界。 |
-| <a id="s06"></a>S06 | 加载恢复及 V4 兼容/迁移策略 | **明确延后；待设计/确认**。恢复先校验再继续原队列；不能初始化补发事件；旧版本接受/拒绝/显式迁移范围及外部 Xi/Yi 历史衔接需明确。 | [E34](JKRD-V5.0.0-snapshot-recovery-pending.md#e34)、[E48–E49](JKRD-V5.0.0-snapshot-recovery-pending.md#e48)、[snapshot-boundary](JKRD-V5.0.0-snapshot-recovery-pending.md#snapshot-boundary)。验收无外部 Xi 也使用已锁存参数，新输入独立入队，不重放已发输出。 |
-| <a id="s07"></a>S07 | 逐字段格式与完整合法性校验 | **明确延后；待设计**。明确字段集合、类型、未知字段策略、接口/统计、引用、状态、成员、队列及世代的一致性，并提供有效与无效样例。 | [E52–E54](JKRD-V5.0.0-snapshot-recovery-pending.md#e52)。验收缺队列、错误归属/世代、非法 EX/pro/q_y、悬空引用和未知字段；格式延后不取消当前节点合法性。 |
-| <a id="s08"></a>S08 | 规范 JSON 和双指纹 | **明确延后；载荷与实算待定稿**。明确 UTF-8、对象键排序、数组保序、字段参与范围、状态范围和排除字段，再定义 format_md5/md5 及独立复算。 | [snapshot-format](JKRD-V5.0.0-snapshot-recovery-pending.md#snapshot-format)、[V4 基线](JKRD-V4.0.0-snapshot-reference.md)。验收非 ASCII、默认 pro、任务顺序/重复项、状态和展示字段变化；不复用旧指纹。 |
-| <a id="s09"></a>S09 | 正式 JSON、恢复算例和续算等价验证 | **明确延后；尚未完成**。依据定稿格式建立新样例、异常样例与独立参考结果，比较恢复前后剩余任务、状态、Yi/FRAME_OUT 和消费序列。 | [E41](JKRD-V5.0.0-snapshot-recovery-pending.md#e41)、[E55–E57](JKRD-V5.0.0-snapshot-recovery-pending.md#e55)。历史 V4 算例和原稿“实算”不作为 V5 完整恢复通过记录。 |
+| <a id="s01"></a>S01 | 快照分层与格式名称 | **两层格式及候选版本已设计，待确认**。原通用核心保留 draft-1；本次 A03 使用独立 `draft-2-a03-ready` 扩展，旧消费者不得忽略新字段。structure 用于新运行；runtime 内嵌结构并保存完整边界现场。当前 profile 仅无环、Xi/RAM/Qi=1/2/5；未知监督/失败现场拒绝，不声称有限快照可完整续算。 | [本轮格式设计](JKRD-V5.0.0-snapshot-recovery-pending.md#snapshot-format-design)、[字段契约](../../assets/v5-snapshot-design/format-contract.json)。正式发布与消费者支持待完成。 |
+| <a id="s02"></a>S02 | 结构、状态、元数据与监督现场 | **新就绪图的6份完整动态现场已更新并做本例静态核对**。包含初值/当前q、预留与已完成前沿、观察节点、PRE/POST、回收与工厂契约；业务许可仍在JK q。 | [当前6检查点](JKRD-V5.0.0-snapshot-recovery-pending.md#a03-readiness-checkpoints)、[完整契约](../../assets/v5-snapshot-design/a03-dynamic/checkpoint-contract.json)。环监督、失败/重试现场和实际恢复待做。 |
+| <a id="s03"></a>S03 | 任务、Qi_J0 载荷与到达集合格式 | **任务、参数池及真实未齐现场已重推**。CP1保存独立输入handoff；CP2的LATCH只有部分来源到达，不在FIFO；CP3的SAVE2已锁定COMP `[1,1]`，尚未保存结果。普通q仍执行时读。 | [CP1–CP3及75任务](JKRD-V5.0.0-snapshot-recovery-pending.md#a03-readiness-checkpoints)、[逐任务JSON](../../assets/v5-snapshot-design/a03-dynamic/reasoned-continuations.json)。具体字段/保护静态核对不替代序列化和加载实现。 |
+| <a id="s04"></a>S04 | 输出批次、FRAME_OUT 和 ACK 进度 | **按DEC→固定帧ACT边界更新CP3–CP6及9次输出预期**。CP4现保存T46后两个实际绑定帧1且未执行的ACT47/48，包含参数、附带EX和planned_creations；不只描述契约。CP5的Q194仍只是待执行领取门。旧完成不复活，陈旧ACT不转投下一帧。 | [输出/ACK设计](../logic_units/async-structural-storage-draft.md#a03-readiness-redesign)、[完整检查点](JKRD-V5.0.0-snapshot-recovery-pending.md#a03-readiness-checkpoints)。实际续算、全部交错及输出覆盖反例未执行。 |
+| <a id="s05"></a>S05 | 保存请求与一致边界 | **一致切点协议已设计，待确认及实现**。完整EX/事务、传播、当前send交接后取值，覆盖首任务前与参数不足结束；保存输入/输出序号，不等待未来来源。半事务、失败现场不伪装为可保存检查点。 | [本轮保存协议](JKRD-V5.0.0-snapshot-recovery-pending.md#snapshot-format-design)第6节。宿主输入切点、并发保存与运行等价待验证。 |
+| <a id="s06"></a>S06 | 加载恢复及 V4 兼容/迁移策略 | **隔离校验、原子安装及V4策略已设计**。加载零EX/事件/补任务/Yi重放，初始暂停；V4不允许补字段冒充无损续算，只提出显式新运行结构导入。宿主崩溃恰好一次另需协议。 | [恢复要求](JKRD-V5.0.0-snapshot-recovery-pending.md#snapshot-format-design)第6/7节；[直接推导](../../assets/v5-snapshot-design/continuation-example-notes.json)。加载器和迁移器未写。 |
+| <a id="s07"></a>S07 | 逐字段格式与完整合法性校验 | **通用字段要求保留，最新A03契约及六图静态核对已补**。本例核对引用/DAG、状态、目标/来源版本、锁存、保护与到达集合；新增条件只能读已存在参数，不读本事务未来主结果。 | [字段契约](../../assets/v5-snapshot-design/format-contract.json)、[A03 draft-2契约](../../assets/v5-snapshot-design/a03-dynamic/checkpoint-contract.json)、[静态记录](../../assets/v5-snapshot-design/a03-dynamic/verification-record.json)。声明式契约不是通用校验器，正式格式与消费者仍待完成。 |
+| <a id="s08"></a>S08 | 规范 JSON 和双指纹 | **F/M规则保留，更新后六份动态JSON及内嵌契约摘要已复算**。format_md5覆盖结构/初值/接口/契约，md5再含runtime；metadata排除、默认pro归一化和数组保序不变。 | [本轮静态与双指纹记录](../../assets/v5-snapshot-design/a03-dynamic/verification-record.json)记录Python/OpenSSL一致性；[原字节向量](../../assets/v5-snapshot-design/validation-and-fingerprint-cases.json)保留。摘要一致不证明执行行为；正式契约及消费者校验器待做。 |
+| <a id="s09"></a>S09 | 正式 JSON、恢复算例和续算等价验证 | **已更新6份完整动态JSON及75任务条件续算人工预期；运行等价未做**。覆盖复制中途、真实非空到达集合、部分输出、DEC/ACT交错、旧轮回收和部分块保留；每份明确当前队列与未来输入计划。 | [当前检查点入口](JKRD-V5.0.0-snapshot-recovery-pending.md#a03-readiness-checkpoints)、[逐任务推导](../../assets/v5-snapshot-design/a03-dynamic/reasoned-continuations.json)。实际恢复/不中断比较、通用宽度、任意交错、满8世代复用和失败现场仍待验证。 |
 
 <a id="verification"></a>
 
@@ -108,6 +119,8 @@
 | 节点豁免 | 已否决，链尾/池/停用 Q 全部遵守既有规则；不再列为待批准选项 |
 | 链式自动延伸 | 已确认是遵守 V4 节点规则的构建用法；剩余工作是 A04 的实际构造，不是另立基础语法 |
 | 每次 Xi 独立锁存、Xi/帧参数的 Qi_J0 方式 | 已确认；A02/V01/V02 只负责实现和验证 |
+| 事务入队就绪 | 全部节点/操作参数实际准备好后才由JK结构触发；缺项不入FIFO。A03/F02与6检查点已补设计/人工推导，运行待验 |
+| ACK译码与动作边界 | 用户已批准译码时确定帧/资格，再触发固定该帧的独立原子事务；陈旧动作忽略，不转投下一帧 |
 | FRAME_OUT 后才有 ACK 资格、ACK0 复用保留 q、ACK1 撤销资格 | 已确认；A05/S04 负责实现、验证及将来的恢复现场 |
 | 满 8 帧、全部消费、无依赖才复用；部分使用空块继续使用 | 已确认；A04/V03 负责合法构造和验证 |
 | 跨队列先后依赖 | 用户已改为“这种跨队列的先后依赖是设计结构所需。”；不要求设计者回避它 |
@@ -149,11 +162,11 @@
 | [input-handoff](JKRD-V5.0.0-notes.md#input-handoff) | 整帧接力已确认 | A02、F02 |
 | [queue-priority](JKRD-V5.0.0-notes.md#queue-priority) | 当前 1/2/5 已确认；3 随环延后 | V02、R03 |
 | [queue-ram](JKRD-V5.0.0-notes.md#queue-ram) | RAM 目标归属已确认；环分支延后 | V02、R03 |
-| [schedule-boundary](JKRD-V5.0.0-notes.md#schedule-boundary) | 原子任务边界已确认；保存请求延后 | F02、V02、S05 |
-| [task-identity](JKRD-V5.0.0-notes.md#task-identity) | 模块身份保护有要求；字段格式未定 | A04、F01、S03 |
+| [schedule-boundary](JKRD-V5.0.0-notes.md#schedule-boundary) | 原子任务边界已确认；保存请求协议已补设计 | F02、V02、S05 |
+| [task-identity](JKRD-V5.0.0-notes.md#task-identity) | 模块身份保护已确认；快照身份/版本字段已补设计 | A04、F01、S03 |
 | [task-payload](JKRD-V5.0.0-notes.md#task-payload) | 独立持有已确认；Xi/帧参数按 Qi_J0 方式归并 | A02、A05、S03 |
-| [task-arrival](JKRD-V5.0.0-notes.md#task-arrival) | 目标到达集合已确认；序列化延后 | V02、S03 |
-| [storage-factory](JKRD-V5.0.0-notes.md#storage-factory) | 模块职责已确认；通用动作待设计 | F01、F02、A04 |
+| [task-arrival](JKRD-V5.0.0-notes.md#task-arrival) | 目标到达集合已确认；序列化字段已补设计 | V02、S03 |
+| [storage-factory](JKRD-V5.0.0-notes.md#storage-factory) | 模块职责已确认；通用操作与节点行为绑定已补设计，待确认及实现 | F01、F02、A04 |
 | [storage-block](JKRD-V5.0.0-notes.md#storage-block) | 8 槽为本模型配置已确认 | A04、V03 |
 | [storage-slot](JKRD-V5.0.0-notes.md#storage-slot) | W 个数据 Q 与位序已确认 | A04、V03 |
 | [storage-data](JKRD-V5.0.0-notes.md#storage-data) | 长期数据保存在 JK q 已确认 | A02、A04、V03 |
@@ -167,9 +180,9 @@
 | [output-latch](JKRD-V5.0.0-notes.md#output-latch) | 输出任务独立锁存已确认 | A05、S03、S04 |
 | [output-detach](JKRD-V5.0.0-notes.md#output-detach) | 槽与输出载荷独立、目标保护已确认 | A04、A05 |
 | [output-marker](JKRD-V5.0.0-notes.md#output-marker) | W 位后完成标记与首发/重发值已确认 | A05、S04 |
-| [transaction-validate](JKRD-V5.0.0-notes.md#transaction-validate) | 校验方向已提出；通用权限与动作待补 | F01、F02、A04 |
-| [transaction-commit](JKRD-V5.0.0-notes.md#transaction-commit) | 原子提交边界已确认；通用绑定待补 | F02、F03 |
-| [transaction-publish](JKRD-V5.0.0-notes.md#transaction-publish) | 提交后发布方向保留；逐动作次序待落实 | F02 |
+| [transaction-validate](JKRD-V5.0.0-notes.md#transaction-validate) | 通用操作权限与拒绝条件已补设计；运行校验待实现 | F01、F02、A04 |
+| [transaction-commit](JKRD-V5.0.0-notes.md#transaction-commit) | 原子提交边界已确认；通用绑定已补设计，失败细节待处理 | F02、F03 |
+| [transaction-publish](JKRD-V5.0.0-notes.md#transaction-publish) | 提交后发布方向保留；显式请求与发布次序已列候选，待确认及验证 | F02 |
 | [transaction-generation](JKRD-V5.0.0-notes.md#transaction-generation) | 世代隔离要求保留；动态与恢复须完整化 | A04、S02、S03 |
 | [transaction-failure](JKRD-V5.0.0-notes.md#transaction-failure) | 整体回滚/保留/重试为待定方案 | F03、F04 |
 | [ring-classify](JKRD-V5.0.0-notes.md#ring-classify) | 明确延后 | R01、R02 |
@@ -177,12 +190,12 @@
 | [ring-budget](JKRD-V5.0.0-notes.md#ring-budget) | 明确延后，6 非通用规则 | R04 |
 | [ring-suspend](JKRD-V5.0.0-notes.md#ring-suspend) | 明确延后 | R05、S02 |
 | [ring-resume](JKRD-V5.0.0-notes.md#ring-resume) | 明确延后 | R05、S06 |
-| [snapshot-static](JKRD-V5.0.0-notes.md#snapshot-static) | 明确延后 | S01 |
-| [snapshot-runtime](JKRD-V5.0.0-notes.md#snapshot-runtime) | 明确延后 | S02、S03、S04、S06 |
-| [snapshot-tasks](JKRD-V5.0.0-notes.md#snapshot-tasks) | 明确延后 | S03 |
-| [snapshot-progress](JKRD-V5.0.0-notes.md#snapshot-progress) | 明确延后 | S04 |
-| [snapshot-boundary](JKRD-V5.0.0-notes.md#snapshot-boundary) | 明确延后 | S05、S06、S09 |
-| [snapshot-format](JKRD-V5.0.0-notes.md#snapshot-format) | 明确延后，格式名与载荷未定稿 | S01、S07、S08、S09 |
+| [snapshot-static](JKRD-V5.0.0-notes.md#snapshot-static) | 两层格式已补设计，待确认 | S01 |
+| [snapshot-runtime](JKRD-V5.0.0-notes.md#snapshot-runtime) | 无环现场字段已设计；监督/失败扩展仍延后 | S02、S03、S04、S06 |
+| [snapshot-tasks](JKRD-V5.0.0-notes.md#snapshot-tasks) | 统一参数池、任务与到达集合已设计 | S03 |
+| [snapshot-progress](JKRD-V5.0.0-notes.md#snapshot-progress) | 输出/ACK字段与局部案例已设计 | S04 |
+| [snapshot-boundary](JKRD-V5.0.0-notes.md#snapshot-boundary) | 一致保存/恢复协议已设计，运行待验 | S05、S06、S09 |
+| [snapshot-format](JKRD-V5.0.0-notes.md#snapshot-format) | draft-1格式与载荷已给候选并实算，待定稿 | S01、S07、S08、S09 |
 
 <a id="broken-links"></a>
 
@@ -209,4 +222,4 @@
 
 ## 工作次序（整理建议）
 
-先补 A01、F01/F02 及 A04 的合法结构与动态动作，再落实 F03/F04、A02/A03/A05 与 V/U 验收。环和快照继续分别在对应待处理稿中设计；S02–S04 需要引用模块最终的数据生命周期，监督现场又与 R04/R05 衔接。此顺序是整理建议，不改变已确认的队列优先级、跨队先后依赖或业务规则。
+本轮已完成 A03/F02 的就绪结构与事务重划、六份动态检查点和75任务人工推导。下一步审阅具体候选，继续设计 F03/F04 失败协议；设计确认后再实现 A02/A03/A05 与保存/加载，并比较恢复和不中断运行的实际轨迹。更多帧宽、任意交错与满8世代复用分别验收。环监督及其现场继续延后；不改变已确认的队列优先级与跨队先后依赖。

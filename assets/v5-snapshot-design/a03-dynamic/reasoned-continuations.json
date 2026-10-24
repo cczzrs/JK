@@ -1,0 +1,5095 @@
+{
+  "status": "rederived-candidate-manual-reasoning-not-runtime-verified",
+  "contract": {
+    "id": "a03-w2-ready-checkpoint",
+    "revision": "draft-2",
+    "definition_md5": "15694d9c5f38ae5fee8e471f634c75b5"
+  },
+  "arithmetic_derivation": [
+    "State seed=[0,0]",
+    "F1=[1,0] XOR seed=[1,0]",
+    "F2=[0,1] XOR state1=[1,1]",
+    "Observation COMMIT2=1 XOR 1=0 does not suppress storage."
+  ],
+  "scenario_inputs": [
+    {
+      "at": "before T1",
+      "accept": [
+        "X0=1",
+        "X1=0",
+        "X8=1"
+      ],
+      "copy_tasks": [
+        "T1",
+        "T2",
+        "T3"
+      ]
+    },
+    {
+      "at": "after T15 before T16",
+      "accept": [
+        "X0=0",
+        "X1=1",
+        "X8=1"
+      ],
+      "copy_tasks": [
+        "T19",
+        "T20",
+        "T21"
+      ]
+    },
+    {
+      "at": "after T38 before T39",
+      "accept": [
+        "X9=0",
+        "X9=1"
+      ],
+      "copy_tasks": [
+        "T39",
+        "T40"
+      ]
+    },
+    {
+      "at": "after T56 before T57",
+      "accept": [
+        "X9=0"
+      ],
+      "copy_tasks": [
+        "T60"
+      ]
+    }
+  ],
+  "trace": [
+    {
+      "step": 1,
+      "task_id": "T1",
+      "queue": "Xi.FIFO",
+      "target": {
+        "id": "Q0",
+        "generation": "1"
+      },
+      "operation": "COPY_F1_X0",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0K(X0)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "X",
+              "id": "X0"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 2,
+      "task_id": "T2",
+      "queue": "Xi.FIFO",
+      "target": {
+        "id": "Q1",
+        "generation": "1"
+      },
+      "operation": "COPY_F1_X1",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0K(X1)",
+      "primary_event_parameters": {
+        "bits": [
+          0
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "X",
+              "id": "X1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 3,
+      "task_id": "T3",
+      "queue": "Xi.FIFO",
+      "target": {
+        "id": "Q8",
+        "generation": "1"
+      },
+      "operation": "COPY_F1_FRAME",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [
+        "T4",
+        "T5"
+      ],
+      "output": null,
+      "primary_expression": "J0K(X8)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "X",
+              "id": "X8"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 4,
+      "task_id": "T4",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q12",
+        "generation": "1"
+      },
+      "operation": "ACCEPT_PRE1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q75",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q76",
+            "generation": "1"
+          },
+          "value": 0
+        },
+        {
+          "node": {
+            "id": "Q77",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [
+        "T6",
+        "T7"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q0)K(Q1)K(Q13)J(Q8)",
+      "primary_event_parameters": {
+        "bits": [
+          1,
+          0,
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q0",
+              "generation": "1"
+            },
+            "index": 0
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q1",
+              "generation": "1"
+            },
+            "index": 1
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q8",
+              "generation": "1"
+            },
+            "index": 2
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q75",
+            "generation": "1"
+          },
+          "expression": "J0K(Q0)",
+          "event_parameters": {
+            "bits": [
+              1
+            ],
+            "sources": [
+              {
+                "source": {
+                  "kind": "Q",
+                  "id": "Q0",
+                  "generation": "1"
+                },
+                "index": 0
+              }
+            ],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q76",
+            "generation": "1"
+          },
+          "expression": "J0K(Q1)",
+          "event_parameters": {
+            "bits": [
+              0
+            ],
+            "sources": [
+              {
+                "source": {
+                  "kind": "Q",
+                  "id": "Q1",
+                  "generation": "1"
+                },
+                "index": 0
+              }
+            ],
+            "frames": []
+          },
+          "expected_result": 0,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q77",
+            "generation": "1"
+          },
+          "expression": "J0K(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 5,
+      "task_id": "T5",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q13",
+        "generation": "1"
+      },
+      "operation": "CHECK_F1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0K(Q0)K(Q1)J(Q8)",
+      "primary_event_parameters": {
+        "bits": [
+          1,
+          0,
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q0",
+              "generation": "1"
+            },
+            "index": 0
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q1",
+              "generation": "1"
+            },
+            "index": 1
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q8",
+              "generation": "1"
+            },
+            "index": 2
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 6,
+      "task_id": "T6",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q78",
+        "generation": "1"
+      },
+      "operation": "JOIN1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [
+        "T8"
+      ],
+      "output": null,
+      "primary_expression": "J0K1K(Q79)J(Q77)J(Q74)",
+      "primary_event_parameters": {
+        "bits": [],
+        "sources": [],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 7,
+      "task_id": "T7",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q79",
+        "generation": "1"
+      },
+      "operation": "CLAIM1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "K1J(Q77)J(Q74)K(Q79)",
+      "primary_event_parameters": {
+        "bits": [],
+        "sources": [],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 8,
+      "task_id": "T8",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q80",
+        "generation": "1"
+      },
+      "operation": "GO1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [
+        "T9",
+        "T10"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q78)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q78",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 9,
+      "task_id": "T9",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q81",
+        "generation": "1"
+      },
+      "operation": "COMP1_0",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0K(Q75)K(Q72)J(Q80)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q80",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 10,
+      "task_id": "T10",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q82",
+        "generation": "1"
+      },
+      "operation": "COMP1_1",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [
+        "T11"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q76)K(Q73)J(Q80)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q80",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 11,
+      "task_id": "T11",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q83",
+        "generation": "1"
+      },
+      "operation": "SAVE1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q84",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q85",
+            "generation": "1"
+          },
+          "value": 0
+        },
+        {
+          "node": {
+            "id": "Q86",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q87",
+            "generation": "1"
+          },
+          "value": 0
+        },
+        {
+          "node": {
+            "id": "Q88",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q89",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q77",
+            "generation": "1"
+          },
+          "value": 0
+        },
+        {
+          "node": {
+            "id": "Q90",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [
+        "T12",
+        "T13",
+        "T14"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q81)K(Q82)",
+      "primary_event_parameters": {
+        "bits": [
+          1,
+          0
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q81",
+              "generation": "1"
+            },
+            "index": 0
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q82",
+              "generation": "1"
+            },
+            "index": 1
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q84",
+            "generation": "1"
+          },
+          "expression": "J0K(Q81)",
+          "event_parameters": {
+            "bits": [
+              1
+            ],
+            "sources": [
+              {
+                "source": {
+                  "kind": "Q",
+                  "id": "Q81",
+                  "generation": "1"
+                },
+                "index": 0
+              }
+            ],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q85",
+            "generation": "1"
+          },
+          "expression": "J0K(Q82)",
+          "event_parameters": {
+            "bits": [
+              0
+            ],
+            "sources": [
+              {
+                "source": {
+                  "kind": "Q",
+                  "id": "Q82",
+                  "generation": "1"
+                },
+                "index": 0
+              }
+            ],
+            "frames": []
+          },
+          "expected_result": 0,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q86",
+            "generation": "1"
+          },
+          "expression": "J0K(Q81)",
+          "event_parameters": {
+            "bits": [
+              1
+            ],
+            "sources": [
+              {
+                "source": {
+                  "kind": "Q",
+                  "id": "Q81",
+                  "generation": "1"
+                },
+                "index": 0
+              }
+            ],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q87",
+            "generation": "1"
+          },
+          "expression": "J0K(Q82)",
+          "event_parameters": {
+            "bits": [
+              0
+            ],
+            "sources": [
+              {
+                "source": {
+                  "kind": "Q",
+                  "id": "Q82",
+                  "generation": "1"
+                },
+                "index": 0
+              }
+            ],
+            "frames": []
+          },
+          "expected_result": 0,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q88",
+            "generation": "1"
+          },
+          "expression": "J0K(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q89",
+            "generation": "1"
+          },
+          "expression": "J0K(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q77",
+            "generation": "1"
+          },
+          "expression": "J0J(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 0,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q90",
+            "generation": "1"
+          },
+          "expression": "J0K(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 12,
+      "task_id": "T12",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q71",
+        "generation": "1"
+      },
+      "operation": "GC_ROUND1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0J(Q42)K1",
+      "primary_event_parameters": {
+        "bits": [],
+        "sources": [],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 13,
+      "task_id": "T13",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q104",
+        "generation": "1"
+      },
+      "operation": "ADMIT_R1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q105",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [
+        "T15"
+      ],
+      "output": null,
+      "primary_expression": "J0K1K(Q43)J(Q105)K1K(Q43)",
+      "primary_event_parameters": {
+        "bits": [],
+        "sources": [],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q105",
+            "generation": "1"
+          },
+          "expression": "K1J(Q43)K1",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 14,
+      "task_id": "T14",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q100",
+        "generation": "1"
+      },
+      "operation": "OBSERVE_READY1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0J(Q88)K1",
+      "primary_event_parameters": {
+        "bits": [],
+        "sources": [],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 15,
+      "task_id": "T15",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q91",
+        "generation": "1"
+      },
+      "operation": "START_R1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q48",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q43",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q92",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [
+        "T16",
+        "T17",
+        "T18"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q90)J(Q104)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q104",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q48",
+            "generation": "1"
+          },
+          "expression": "J0K(Q90)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q43",
+            "generation": "1"
+          },
+          "expression": "K(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q92",
+            "generation": "1"
+          },
+          "expression": "J0K(Q90)K(Q90)K1",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 16,
+      "task_id": "T19",
+      "queue": "Xi.FIFO",
+      "target": {
+        "id": "Q0",
+        "generation": "1"
+      },
+      "operation": "COPY_F2_X0",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0K(X0)",
+      "primary_event_parameters": {
+        "bits": [
+          0
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "X",
+              "id": "X0"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 17,
+      "task_id": "T20",
+      "queue": "Xi.FIFO",
+      "target": {
+        "id": "Q1",
+        "generation": "1"
+      },
+      "operation": "COPY_F2_X1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0K(X1)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "X",
+              "id": "X1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 18,
+      "task_id": "T21",
+      "queue": "Xi.FIFO",
+      "target": {
+        "id": "Q8",
+        "generation": "1"
+      },
+      "operation": "COPY_F2_FRAME",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [
+        "T22",
+        "T23"
+      ],
+      "output": null,
+      "primary_expression": "J0K(X8)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "X",
+              "id": "X8"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 19,
+      "task_id": "T16",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q26",
+        "generation": "1"
+      },
+      "operation": "READ_R1_0",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q93",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0K(Q84)J(Q92)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q92",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q93",
+            "generation": "1"
+          },
+          "expression": "J0K(Q84)K(Q84)K1",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 20,
+      "task_id": "T17",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q27",
+        "generation": "1"
+      },
+      "operation": "READ_R1_1",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q94",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [
+        "T24"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q85)J(Q92)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q92",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q94",
+            "generation": "1"
+          },
+          "expression": "J0K(Q85)K(Q85)K1",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 21,
+      "task_id": "T18",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q61",
+        "generation": "1"
+      },
+      "operation": "MARK_R1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q98",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0K(Q48)J(Q92)K(Q99)K(Q99)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q92",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q98",
+            "generation": "1"
+          },
+          "expression": "J0K(Q48)K(Q48)K1",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 22,
+      "task_id": "T22",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q12",
+        "generation": "1"
+      },
+      "operation": "ACCEPT_PRE2",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q110",
+            "generation": "1"
+          },
+          "value": 0
+        },
+        {
+          "node": {
+            "id": "Q111",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q112",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [
+        "T25",
+        "T26"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q0)K(Q1)K(Q13)J(Q8)",
+      "primary_event_parameters": {
+        "bits": [
+          0,
+          1,
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q0",
+              "generation": "1"
+            },
+            "index": 0
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q1",
+              "generation": "1"
+            },
+            "index": 1
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q8",
+              "generation": "1"
+            },
+            "index": 2
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q110",
+            "generation": "1"
+          },
+          "expression": "J0K(Q0)",
+          "event_parameters": {
+            "bits": [
+              0
+            ],
+            "sources": [
+              {
+                "source": {
+                  "kind": "Q",
+                  "id": "Q0",
+                  "generation": "1"
+                },
+                "index": 0
+              }
+            ],
+            "frames": []
+          },
+          "expected_result": 0,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q111",
+            "generation": "1"
+          },
+          "expression": "J0K(Q1)",
+          "event_parameters": {
+            "bits": [
+              1
+            ],
+            "sources": [
+              {
+                "source": {
+                  "kind": "Q",
+                  "id": "Q1",
+                  "generation": "1"
+                },
+                "index": 0
+              }
+            ],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q112",
+            "generation": "1"
+          },
+          "expression": "J0K(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 23,
+      "task_id": "T23",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q13",
+        "generation": "1"
+      },
+      "operation": "CHECK_F2",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0K(Q0)K(Q1)J(Q8)",
+      "primary_event_parameters": {
+        "bits": [
+          0,
+          1,
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q0",
+              "generation": "1"
+            },
+            "index": 0
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q1",
+              "generation": "1"
+            },
+            "index": 1
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q8",
+              "generation": "1"
+            },
+            "index": 2
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 24,
+      "task_id": "T24",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q95",
+        "generation": "1"
+      },
+      "operation": "READ_GATE_R1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [
+        "T27",
+        "T28"
+      ],
+      "output": null,
+      "primary_expression": "J0K1J(Q93)J(Q94)",
+      "primary_event_parameters": {
+        "bits": [
+          1,
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q93",
+              "generation": "1"
+            },
+            "index": 0
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q94",
+              "generation": "1"
+            },
+            "index": 1
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 25,
+      "task_id": "T25",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q113",
+        "generation": "1"
+      },
+      "operation": "JOIN2",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [
+        "T29"
+      ],
+      "output": null,
+      "primary_expression": "J0K1K(Q114)J(Q112)J(Q88)",
+      "primary_event_parameters": {
+        "bits": [],
+        "sources": [],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 26,
+      "task_id": "T26",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q114",
+        "generation": "1"
+      },
+      "operation": "CLAIM2",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "K1J(Q112)J(Q88)K(Q114)",
+      "primary_event_parameters": {
+        "bits": [],
+        "sources": [],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 27,
+      "task_id": "T27",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q53",
+        "generation": "1"
+      },
+      "operation": "RELAY_R1_0",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q96",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0K(Q26)J(Q95)K(Q52)K(Q52)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q95",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q96",
+            "generation": "1"
+          },
+          "expression": "J0K(Q26)K(Q26)K1",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 28,
+      "task_id": "T28",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q54",
+        "generation": "1"
+      },
+      "operation": "RELAY_R1_1",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q97",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [
+        "T30"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q27)J(Q95)K(Q52)K(Q52)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q95",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q97",
+            "generation": "1"
+          },
+          "expression": "J0K(Q27)K(Q27)K1",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 29,
+      "task_id": "T29",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q115",
+        "generation": "1"
+      },
+      "operation": "GO2",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [
+        "T31",
+        "T32"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q113)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q113",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 30,
+      "task_id": "T30",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q99",
+        "generation": "1"
+      },
+      "operation": "LATCH_R1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q43",
+            "generation": "1"
+          },
+          "value": 0
+        }
+      ],
+      "enqueues_in_order": [
+        "T33",
+        "T34",
+        "T35"
+      ],
+      "output": null,
+      "primary_expression": "J0K1J(Q92)J(Q95)J(Q96)J(Q97)J(Q98)",
+      "primary_event_parameters": {
+        "bits": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q92",
+              "generation": "1"
+            },
+            "index": 0
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q95",
+              "generation": "1"
+            },
+            "index": 1
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q96",
+              "generation": "1"
+            },
+            "index": 2
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q97",
+              "generation": "1"
+            },
+            "index": 3
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q98",
+              "generation": "1"
+            },
+            "index": 4
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q43",
+            "generation": "1"
+          },
+          "expression": "K(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 0,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 31,
+      "task_id": "T31",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q116",
+        "generation": "1"
+      },
+      "operation": "COMP2_0",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0K(Q110)K(Q86)J(Q115)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q115",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 32,
+      "task_id": "T32",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q117",
+        "generation": "1"
+      },
+      "operation": "COMP2_1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [
+        "T36"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q111)K(Q87)J(Q115)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q115",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 33,
+      "task_id": "T33",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q62",
+        "generation": "1"
+      },
+      "operation": "EMIT_F1_0",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": {
+        "frame": {
+          "module_id": "RAM0",
+          "sequence": "1"
+        },
+        "batch": "B1",
+        "channel": "Y0",
+        "bit": 1
+      },
+      "primary_expression": "J0K(Q53)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q53",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": [
+          {
+            "frame": {
+              "module_id": "RAM0",
+              "sequence": "1"
+            },
+            "indices": [
+              0
+            ],
+            "channels": [
+              {
+                "kind": "Q",
+                "id": "Q53",
+                "generation": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 34,
+      "task_id": "T34",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q63",
+        "generation": "1"
+      },
+      "operation": "EMIT_F1_1",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": {
+        "frame": {
+          "module_id": "RAM0",
+          "sequence": "1"
+        },
+        "batch": "B1",
+        "channel": "Y1",
+        "bit": 0
+      },
+      "primary_expression": "J0K(Q54)",
+      "primary_event_parameters": {
+        "bits": [
+          0
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q54",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": [
+          {
+            "frame": {
+              "module_id": "RAM0",
+              "sequence": "1"
+            },
+            "indices": [
+              0
+            ],
+            "channels": [
+              {
+                "kind": "Q",
+                "id": "Q54",
+                "generation": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 35,
+      "task_id": "T35",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q70",
+        "generation": "1"
+      },
+      "operation": "FINISH_F1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q47",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q34",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q35",
+            "generation": "1"
+          },
+          "value": 0
+        },
+        {
+          "node": {
+            "id": "Q44",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q45",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [],
+      "output": {
+        "frame": {
+          "module_id": "RAM0",
+          "sequence": "1"
+        },
+        "batch": "B1",
+        "channel": "Y8",
+        "bit": 1
+      },
+      "primary_expression": "J0K(Q61)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q61",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": [
+          {
+            "frame": {
+              "module_id": "RAM0",
+              "sequence": "1"
+            },
+            "indices": [
+              0
+            ],
+            "channels": [
+              {
+                "kind": "Q",
+                "id": "Q61",
+                "generation": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q47",
+            "generation": "1"
+          },
+          "expression": "J0K1K(Q45)K(Q46)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q34",
+            "generation": "1"
+          },
+          "expression": "J0K(Q26)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q35",
+            "generation": "1"
+          },
+          "expression": "J0K(Q27)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 0,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q44",
+            "generation": "1"
+          },
+          "expression": "J0K(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q45",
+            "generation": "1"
+          },
+          "expression": "K(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ],
+      "qualification_order": "Guard uses already locked marker and existing frame/batch/consume identity before any q update; execute READY before H/CACHE/F. No guard uses newly computed FRAME_OUT.q."
+    },
+    {
+      "step": 36,
+      "task_id": "T36",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q118",
+        "generation": "1"
+      },
+      "operation": "SAVE2",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q119",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q120",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q121",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q122",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q124",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q123",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q112",
+            "generation": "1"
+          },
+          "value": 0
+        }
+      ],
+      "enqueues_in_order": [
+        "T37",
+        "T38"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q116)K(Q117)",
+      "primary_event_parameters": {
+        "bits": [
+          1,
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q116",
+              "generation": "1"
+            },
+            "index": 0
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q117",
+              "generation": "1"
+            },
+            "index": 1
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q119",
+            "generation": "1"
+          },
+          "expression": "J0K(Q116)",
+          "event_parameters": {
+            "bits": [
+              1
+            ],
+            "sources": [
+              {
+                "source": {
+                  "kind": "Q",
+                  "id": "Q116",
+                  "generation": "1"
+                },
+                "index": 0
+              }
+            ],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q120",
+            "generation": "1"
+          },
+          "expression": "J0K(Q117)",
+          "event_parameters": {
+            "bits": [
+              1
+            ],
+            "sources": [
+              {
+                "source": {
+                  "kind": "Q",
+                  "id": "Q117",
+                  "generation": "1"
+                },
+                "index": 0
+              }
+            ],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q121",
+            "generation": "1"
+          },
+          "expression": "J0K(Q116)",
+          "event_parameters": {
+            "bits": [
+              1
+            ],
+            "sources": [
+              {
+                "source": {
+                  "kind": "Q",
+                  "id": "Q116",
+                  "generation": "1"
+                },
+                "index": 0
+              }
+            ],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q122",
+            "generation": "1"
+          },
+          "expression": "J0K(Q117)",
+          "event_parameters": {
+            "bits": [
+              1
+            ],
+            "sources": [
+              {
+                "source": {
+                  "kind": "Q",
+                  "id": "Q117",
+                  "generation": "1"
+                },
+                "index": 0
+              }
+            ],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q124",
+            "generation": "1"
+          },
+          "expression": "J0K(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q123",
+            "generation": "1"
+          },
+          "expression": "J0K(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q112",
+            "generation": "1"
+          },
+          "expression": "J0J(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 0,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 37,
+      "task_id": "T37",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q71",
+        "generation": "1"
+      },
+      "operation": "GC_ROUND2",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0J(Q42)K1",
+      "primary_event_parameters": {
+        "bits": [],
+        "sources": [],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 38,
+      "task_id": "T38",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q125",
+        "generation": "1"
+      },
+      "operation": "OBSERVE_READY2",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0J(Q123)K1",
+      "primary_event_parameters": {
+        "bits": [],
+        "sources": [],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 39,
+      "task_id": "T39",
+      "queue": "Xi.FIFO",
+      "target": {
+        "id": "Q9",
+        "generation": "1"
+      },
+      "operation": "COPY_ACK0",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [
+        "T41"
+      ],
+      "output": null,
+      "primary_expression": "J0K(X9)",
+      "primary_event_parameters": {
+        "bits": [
+          0
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "X",
+              "id": "X9"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 40,
+      "task_id": "T40",
+      "queue": "Xi.FIFO",
+      "target": {
+        "id": "Q9",
+        "generation": "1"
+      },
+      "operation": "COPY_ACK1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [
+        "T42"
+      ],
+      "output": null,
+      "primary_expression": "J0K(X9)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "X",
+              "id": "X9"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 41,
+      "task_id": "T41",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q49",
+        "generation": "1"
+      },
+      "operation": "DISPATCH_ACK0",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [
+        "T43",
+        "T44"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q9)",
+      "primary_event_parameters": {
+        "bits": [
+          0
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q9",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 42,
+      "task_id": "T42",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q49",
+        "generation": "1"
+      },
+      "operation": "DISPATCH_ACK1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [
+        "T45",
+        "T46"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q9)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q9",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 43,
+      "task_id": "T43",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q161",
+        "generation": "1"
+      },
+      "operation": "DECODE_G1_0",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [
+        "T47"
+      ],
+      "output": null,
+      "primary_expression": "J0K1K(Q9)J(Q47)",
+      "primary_event_parameters": {
+        "bits": [
+          0
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q9",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [],
+      "qualified_frame_binding": {
+        "module_id": "RAM0",
+        "sequence": "1"
+      }
+    },
+    {
+      "step": 44,
+      "task_id": "T44",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q162",
+        "generation": "1"
+      },
+      "operation": "DECODE_G1_1",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0K(Q9)J(Q47)",
+      "primary_event_parameters": {
+        "bits": [
+          0
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q9",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 45,
+      "task_id": "T45",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q171",
+        "generation": "1"
+      },
+      "operation": "DECODE_G2_0",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0K1K(Q9)J(Q47)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q9",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 46,
+      "task_id": "T46",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q172",
+        "generation": "1"
+      },
+      "operation": "DECODE_G2_1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [
+        "T48"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q9)J(Q47)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q9",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [],
+      "qualified_frame_binding": {
+        "module_id": "RAM0",
+        "sequence": "1"
+      }
+    },
+    {
+      "step": 47,
+      "task_id": "T47",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q163",
+        "generation": "1"
+      },
+      "operation": "REPLAY_BOUND_F1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q130",
+            "generation": "1"
+          },
+          "value": 0
+        }
+      ],
+      "enqueues_in_order": [
+        "T49"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q161)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q161",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q130",
+            "generation": "1"
+          },
+          "expression": "J0K(Q9)",
+          "event_parameters": {
+            "bits": [
+              0
+            ],
+            "sources": [
+              {
+                "source": {
+                  "kind": "Q",
+                  "id": "Q9",
+                  "generation": "1"
+                },
+                "index": 0
+              }
+            ],
+            "frames": []
+          },
+          "expected_result": 0,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ],
+      "action_frame_binding": {
+        "module_id": "RAM0",
+        "sequence": "1"
+      },
+      "stale_rule": "Guard at action start: same bound frame remains eligible/current. If false, skip all business effects without choosing another frame."
+    },
+    {
+      "step": 48,
+      "task_id": "T48",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q174",
+        "generation": "1"
+      },
+      "operation": "CONSUME_BOUND_F1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q47",
+            "generation": "1"
+          },
+          "value": 0
+        },
+        {
+          "node": {
+            "id": "Q89",
+            "generation": "1"
+          },
+          "value": 0
+        },
+        {
+          "node": {
+            "id": "Q46",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q150",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [
+        "T50"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q172)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q172",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q47",
+            "generation": "1"
+          },
+          "expression": "J0K1K(Q45)K(Q46)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 0,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q89",
+            "generation": "1"
+          },
+          "expression": "J0J(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 0,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q46",
+            "generation": "1"
+          },
+          "expression": "J0K(Q45)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q150",
+            "generation": "1"
+          },
+          "expression": "J0K(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ],
+      "action_frame_binding": {
+        "module_id": "RAM0",
+        "sequence": "1"
+      },
+      "stale_rule": "Guard at action start: same bound frame remains eligible/current. If false, skip all business effects without choosing another frame."
+    },
+    {
+      "step": 49,
+      "task_id": "T49",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q144",
+        "generation": "1"
+      },
+      "operation": "ADMIT_R2",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q145",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [
+        "T51"
+      ],
+      "output": null,
+      "primary_expression": "J0K1K(Q43)J(Q145)K1K(Q43)",
+      "primary_event_parameters": {
+        "bits": [],
+        "sources": [],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q145",
+            "generation": "1"
+          },
+          "expression": "K1J(Q43)K1",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 50,
+      "task_id": "T50",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q71",
+        "generation": "1"
+      },
+      "operation": "GC_ACK12",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0J(Q42)K1",
+      "primary_event_parameters": {
+        "bits": [],
+        "sources": [],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 51,
+      "task_id": "T51",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q131",
+        "generation": "1"
+      },
+      "operation": "START_R2",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q48",
+            "generation": "1"
+          },
+          "value": 0
+        },
+        {
+          "node": {
+            "id": "Q43",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q132",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [
+        "T52",
+        "T53",
+        "T54"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q130)J(Q144)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q144",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q48",
+            "generation": "1"
+          },
+          "expression": "J0K(Q130)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 0,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q43",
+            "generation": "1"
+          },
+          "expression": "K(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q132",
+            "generation": "1"
+          },
+          "expression": "J0K(Q130)K(Q130)K1",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 52,
+      "task_id": "T52",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q53",
+        "generation": "1"
+      },
+      "operation": "RELAY_R2_0",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q136",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0K(Q34)J(Q132)K(Q52)K(Q52)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q132",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q136",
+            "generation": "1"
+          },
+          "expression": "J0K(Q34)K(Q34)K1",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 53,
+      "task_id": "T53",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q54",
+        "generation": "1"
+      },
+      "operation": "RELAY_R2_1",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q137",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0K(Q35)J(Q132)K(Q52)K(Q52)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q132",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q137",
+            "generation": "1"
+          },
+          "expression": "J0K(Q35)K(Q35)K1",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 54,
+      "task_id": "T54",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q61",
+        "generation": "1"
+      },
+      "operation": "MARK_R2",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q138",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [
+        "T55"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q48)J(Q132)K(Q139)K(Q139)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q132",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q138",
+            "generation": "1"
+          },
+          "expression": "J0K(Q48)K(Q48)K1",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 55,
+      "task_id": "T55",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q139",
+        "generation": "1"
+      },
+      "operation": "LATCH_R2",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q43",
+            "generation": "1"
+          },
+          "value": 0
+        }
+      ],
+      "enqueues_in_order": [
+        "T56",
+        "T57",
+        "T58",
+        "T59"
+      ],
+      "output": null,
+      "primary_expression": "J0K1J(Q132)J(Q136)J(Q137)J(Q138)",
+      "primary_event_parameters": {
+        "bits": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q132",
+              "generation": "1"
+            },
+            "index": 0
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q136",
+              "generation": "1"
+            },
+            "index": 1
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q137",
+              "generation": "1"
+            },
+            "index": 2
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q138",
+              "generation": "1"
+            },
+            "index": 3
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q43",
+            "generation": "1"
+          },
+          "expression": "K(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 0,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 56,
+      "task_id": "T56",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q62",
+        "generation": "1"
+      },
+      "operation": "EMIT_REPLAY_0",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": {
+        "frame": {
+          "module_id": "RAM0",
+          "sequence": "1"
+        },
+        "batch": "B2",
+        "channel": "Y0",
+        "bit": 1
+      },
+      "primary_expression": "J0K(Q53)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q53",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": [
+          {
+            "frame": {
+              "module_id": "RAM0",
+              "sequence": "1"
+            },
+            "indices": [
+              0
+            ],
+            "channels": [
+              {
+                "kind": "Q",
+                "id": "Q53",
+                "generation": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 57,
+      "task_id": "T60",
+      "queue": "Xi.FIFO",
+      "target": {
+        "id": "Q9",
+        "generation": "1"
+      },
+      "operation": "COPY_EARLY_ACK0",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [
+        "T61"
+      ],
+      "output": null,
+      "primary_expression": "J0K(X9)",
+      "primary_event_parameters": {
+        "bits": [
+          0
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "X",
+              "id": "X9"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 58,
+      "task_id": "T57",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q63",
+        "generation": "1"
+      },
+      "operation": "EMIT_REPLAY_1",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": {
+        "frame": {
+          "module_id": "RAM0",
+          "sequence": "1"
+        },
+        "batch": "B2",
+        "channel": "Y1",
+        "bit": 0
+      },
+      "primary_expression": "J0K(Q54)",
+      "primary_event_parameters": {
+        "bits": [
+          0
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q54",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": [
+          {
+            "frame": {
+              "module_id": "RAM0",
+              "sequence": "1"
+            },
+            "indices": [
+              0
+            ],
+            "channels": [
+              {
+                "kind": "Q",
+                "id": "Q54",
+                "generation": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 59,
+      "task_id": "T58",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q70",
+        "generation": "1"
+      },
+      "operation": "FINISH_OLD_REPLAY",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": {
+        "frame": {
+          "module_id": "RAM0",
+          "sequence": "1"
+        },
+        "batch": "B2",
+        "channel": "Y8",
+        "bit": 0
+      },
+      "primary_expression": "J0K(Q61)",
+      "primary_event_parameters": {
+        "bits": [
+          0
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q61",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": [
+          {
+            "frame": {
+              "module_id": "RAM0",
+              "sequence": "1"
+            },
+            "indices": [
+              0
+            ],
+            "channels": [
+              {
+                "kind": "Q",
+                "id": "Q61",
+                "generation": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 60,
+      "task_id": "T59",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q194",
+        "generation": "1"
+      },
+      "operation": "ADMIT_R3",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q195",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [
+        "T62"
+      ],
+      "output": null,
+      "primary_expression": "J0K1K(Q43)J(Q195)K1K(Q43)",
+      "primary_event_parameters": {
+        "bits": [],
+        "sources": [],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q195",
+            "generation": "1"
+          },
+          "expression": "K1J(Q43)K1",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 61,
+      "task_id": "T61",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q49",
+        "generation": "1"
+      },
+      "operation": "DISPATCH_EARLY_ACK0",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [
+        "T63",
+        "T64"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q9)",
+      "primary_event_parameters": {
+        "bits": [
+          0
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q9",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 62,
+      "task_id": "T62",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q151",
+        "generation": "1"
+      },
+      "operation": "START_R3",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q48",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q43",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q152",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [
+        "T65",
+        "T66",
+        "T67"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q150)J(Q194)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q194",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q48",
+            "generation": "1"
+          },
+          "expression": "J0K(Q150)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q43",
+            "generation": "1"
+          },
+          "expression": "K(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q152",
+            "generation": "1"
+          },
+          "expression": "J0K(Q150)K(Q150)K1",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 63,
+      "task_id": "T63",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q181",
+        "generation": "1"
+      },
+      "operation": "DECODE_G3_0",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0K1K(Q9)J(Q47)",
+      "primary_event_parameters": {
+        "bits": [
+          0
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q9",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [],
+      "no_event_no_deferred_ack": true
+    },
+    {
+      "step": 64,
+      "task_id": "T64",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q182",
+        "generation": "1"
+      },
+      "operation": "DECODE_G3_1",
+      "expected_primary_result": 0,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [
+        "T68"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q9)J(Q47)",
+      "primary_event_parameters": {
+        "bits": [
+          0
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q9",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [],
+      "no_event_no_deferred_ack": true
+    },
+    {
+      "step": 65,
+      "task_id": "T65",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q26",
+        "generation": "1"
+      },
+      "operation": "READ_R3_0",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q153",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0K(Q119)J(Q152)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q152",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q153",
+            "generation": "1"
+          },
+          "expression": "J0K(Q119)K(Q119)K1",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 66,
+      "task_id": "T66",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q27",
+        "generation": "1"
+      },
+      "operation": "READ_R3_1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q154",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [
+        "T69"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q120)J(Q152)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q152",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q154",
+            "generation": "1"
+          },
+          "expression": "J0K(Q120)K(Q120)K1",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 67,
+      "task_id": "T67",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q61",
+        "generation": "1"
+      },
+      "operation": "MARK_R3",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q158",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0K(Q48)J(Q152)K(Q159)K(Q159)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q152",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q158",
+            "generation": "1"
+          },
+          "expression": "J0K(Q48)K(Q48)K1",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 68,
+      "task_id": "T68",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q71",
+        "generation": "1"
+      },
+      "operation": "GC_ACK3",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0J(Q42)K1",
+      "primary_event_parameters": {
+        "bits": [],
+        "sources": [],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 69,
+      "task_id": "T69",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q155",
+        "generation": "1"
+      },
+      "operation": "READ_GATE_R3",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [
+        "T70",
+        "T71"
+      ],
+      "output": null,
+      "primary_expression": "J0K1J(Q153)J(Q154)",
+      "primary_event_parameters": {
+        "bits": [
+          1,
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q153",
+              "generation": "1"
+            },
+            "index": 0
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q154",
+              "generation": "1"
+            },
+            "index": 1
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 70,
+      "task_id": "T70",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q53",
+        "generation": "1"
+      },
+      "operation": "RELAY_R3_0",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q156",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [],
+      "output": null,
+      "primary_expression": "J0K(Q26)J(Q155)K(Q52)K(Q52)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q155",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q156",
+            "generation": "1"
+          },
+          "expression": "J0K(Q26)K(Q26)K1",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 71,
+      "task_id": "T71",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q54",
+        "generation": "1"
+      },
+      "operation": "RELAY_R3_1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q157",
+            "generation": "1"
+          },
+          "value": 1
+        }
+      ],
+      "enqueues_in_order": [
+        "T72"
+      ],
+      "output": null,
+      "primary_expression": "J0K(Q27)J(Q155)K(Q52)K(Q52)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q155",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q157",
+            "generation": "1"
+          },
+          "expression": "J0K(Q27)K(Q27)K1",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 72,
+      "task_id": "T72",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q159",
+        "generation": "1"
+      },
+      "operation": "LATCH_R3",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q43",
+            "generation": "1"
+          },
+          "value": 0
+        }
+      ],
+      "enqueues_in_order": [
+        "T73",
+        "T74",
+        "T75"
+      ],
+      "output": null,
+      "primary_expression": "J0K1J(Q152)J(Q155)J(Q156)J(Q157)J(Q158)",
+      "primary_event_parameters": {
+        "bits": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q152",
+              "generation": "1"
+            },
+            "index": 0
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q155",
+              "generation": "1"
+            },
+            "index": 1
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q156",
+              "generation": "1"
+            },
+            "index": 2
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q157",
+              "generation": "1"
+            },
+            "index": 3
+          },
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q158",
+              "generation": "1"
+            },
+            "index": 4
+          }
+        ],
+        "frames": []
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q43",
+            "generation": "1"
+          },
+          "expression": "K(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 0,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ]
+    },
+    {
+      "step": 73,
+      "task_id": "T73",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q62",
+        "generation": "1"
+      },
+      "operation": "EMIT_F2_0",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": {
+        "frame": {
+          "module_id": "RAM0",
+          "sequence": "2"
+        },
+        "batch": "B3",
+        "channel": "Y0",
+        "bit": 1
+      },
+      "primary_expression": "J0K(Q53)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q53",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": [
+          {
+            "frame": {
+              "module_id": "RAM0",
+              "sequence": "2"
+            },
+            "indices": [
+              0
+            ],
+            "channels": [
+              {
+                "kind": "Q",
+                "id": "Q53",
+                "generation": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 74,
+      "task_id": "T74",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q63",
+        "generation": "1"
+      },
+      "operation": "EMIT_F2_1",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [],
+      "enqueues_in_order": [],
+      "output": {
+        "frame": {
+          "module_id": "RAM0",
+          "sequence": "2"
+        },
+        "batch": "B3",
+        "channel": "Y1",
+        "bit": 1
+      },
+      "primary_expression": "J0K(Q54)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q54",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": [
+          {
+            "frame": {
+              "module_id": "RAM0",
+              "sequence": "2"
+            },
+            "indices": [
+              0
+            ],
+            "channels": [
+              {
+                "kind": "Q",
+                "id": "Q54",
+                "generation": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "independent_bound_ex": []
+    },
+    {
+      "step": 75,
+      "task_id": "T75",
+      "queue": "RAM.FIFO",
+      "target": {
+        "id": "Q70",
+        "generation": "1"
+      },
+      "operation": "FINISH_F2",
+      "expected_primary_result": 1,
+      "independently_derived_bound_results": [
+        {
+          "node": {
+            "id": "Q47",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q34",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q35",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q44",
+            "generation": "1"
+          },
+          "value": 1
+        },
+        {
+          "node": {
+            "id": "Q45",
+            "generation": "1"
+          },
+          "value": 0
+        }
+      ],
+      "enqueues_in_order": [],
+      "output": {
+        "frame": {
+          "module_id": "RAM0",
+          "sequence": "2"
+        },
+        "batch": "B3",
+        "channel": "Y8",
+        "bit": 1
+      },
+      "primary_expression": "J0K(Q61)",
+      "primary_event_parameters": {
+        "bits": [
+          1
+        ],
+        "sources": [
+          {
+            "source": {
+              "kind": "Q",
+              "id": "Q61",
+              "generation": "1"
+            },
+            "index": 0
+          }
+        ],
+        "frames": [
+          {
+            "frame": {
+              "module_id": "RAM0",
+              "sequence": "2"
+            },
+            "indices": [
+              0
+            ],
+            "channels": [
+              {
+                "kind": "Q",
+                "id": "Q61",
+                "generation": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "independent_bound_ex": [
+        {
+          "target": {
+            "id": "Q47",
+            "generation": "1"
+          },
+          "expression": "J0K1K(Q45)K(Q46)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q34",
+            "generation": "1"
+          },
+          "expression": "J0K(Q26)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q35",
+            "generation": "1"
+          },
+          "expression": "J0K(Q27)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q44",
+            "generation": "1"
+          },
+          "expression": "J0K(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 1,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        },
+        {
+          "target": {
+            "id": "Q45",
+            "generation": "1"
+          },
+          "expression": "K(Q42)",
+          "event_parameters": {
+            "bits": [],
+            "sources": [],
+            "frames": []
+          },
+          "expected_result": 0,
+          "ordinary_sources": "Read their current q at this EX start; no input is a future earlier-EX result."
+        }
+      ],
+      "qualification_order": "Guard uses already locked marker and existing frame/batch/consume identity before any q update; execute READY before H/CACHE/F. No guard uses newly computed FRAME_OUT.q."
+    }
+  ],
+  "checkpoints": [
+    {
+      "checkpoint": "CP1",
+      "after_task": "T1",
+      "currently_saved_fifo_ids": {
+        "Xi.FIFO": [
+          "T2",
+          "T3"
+        ],
+        "RAM.FIFO": [],
+        "Qi.FIFO": []
+      },
+      "conditional_remaining_task_sequence": [
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8",
+        "T9",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T19",
+        "T20",
+        "T21",
+        "T16",
+        "T17",
+        "T18",
+        "T22",
+        "T23",
+        "T24",
+        "T25",
+        "T26",
+        "T27",
+        "T28",
+        "T29",
+        "T30",
+        "T31",
+        "T32",
+        "T33",
+        "T34",
+        "T35",
+        "T36",
+        "T37",
+        "T38",
+        "T39",
+        "T40",
+        "T41",
+        "T42",
+        "T43",
+        "T44",
+        "T45",
+        "T46",
+        "T47",
+        "T48",
+        "T49",
+        "T50",
+        "T51",
+        "T52",
+        "T53",
+        "T54",
+        "T55",
+        "T56",
+        "T60",
+        "T57",
+        "T58",
+        "T59",
+        "T61",
+        "T62",
+        "T63",
+        "T64",
+        "T65",
+        "T66",
+        "T67",
+        "T68",
+        "T69",
+        "T70",
+        "T71",
+        "T72",
+        "T73",
+        "T74",
+        "T75"
+      ],
+      "conditional_remaining_outputs": [
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B1",
+          "channel": "Y0",
+          "bit": 1
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B1",
+          "channel": "Y1",
+          "bit": 0
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B1",
+          "channel": "Y8",
+          "bit": 1
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B2",
+          "channel": "Y0",
+          "bit": 1
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B2",
+          "channel": "Y1",
+          "bit": 0
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B2",
+          "channel": "Y8",
+          "bit": 0
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "2"
+          },
+          "batch": "B3",
+          "channel": "Y0",
+          "bit": 1
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "2"
+          },
+          "batch": "B3",
+          "channel": "Y1",
+          "bit": 1
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "2"
+          },
+          "batch": "B3",
+          "channel": "Y8",
+          "bit": 1
+        }
+      ],
+      "future_external_inputs": "Exactly the global scenario plan below; future input tasks are NOT saved in this checkpoint before acceptance."
+    },
+    {
+      "checkpoint": "CP2",
+      "after_task": "T23",
+      "currently_saved_fifo_ids": {
+        "Xi.FIFO": [],
+        "RAM.FIFO": [
+          "T24",
+          "T25",
+          "T26"
+        ],
+        "Qi.FIFO": []
+      },
+      "conditional_remaining_task_sequence": [
+        "T24",
+        "T25",
+        "T26",
+        "T27",
+        "T28",
+        "T29",
+        "T30",
+        "T31",
+        "T32",
+        "T33",
+        "T34",
+        "T35",
+        "T36",
+        "T37",
+        "T38",
+        "T39",
+        "T40",
+        "T41",
+        "T42",
+        "T43",
+        "T44",
+        "T45",
+        "T46",
+        "T47",
+        "T48",
+        "T49",
+        "T50",
+        "T51",
+        "T52",
+        "T53",
+        "T54",
+        "T55",
+        "T56",
+        "T60",
+        "T57",
+        "T58",
+        "T59",
+        "T61",
+        "T62",
+        "T63",
+        "T64",
+        "T65",
+        "T66",
+        "T67",
+        "T68",
+        "T69",
+        "T70",
+        "T71",
+        "T72",
+        "T73",
+        "T74",
+        "T75"
+      ],
+      "conditional_remaining_outputs": [
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B1",
+          "channel": "Y0",
+          "bit": 1
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B1",
+          "channel": "Y1",
+          "bit": 0
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B1",
+          "channel": "Y8",
+          "bit": 1
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B2",
+          "channel": "Y0",
+          "bit": 1
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B2",
+          "channel": "Y1",
+          "bit": 0
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B2",
+          "channel": "Y8",
+          "bit": 0
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "2"
+          },
+          "batch": "B3",
+          "channel": "Y0",
+          "bit": 1
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "2"
+          },
+          "batch": "B3",
+          "channel": "Y1",
+          "bit": 1
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "2"
+          },
+          "batch": "B3",
+          "channel": "Y8",
+          "bit": 1
+        }
+      ],
+      "future_external_inputs": "Exactly the global scenario plan below; future input tasks are NOT saved in this checkpoint before acceptance."
+    },
+    {
+      "checkpoint": "CP3",
+      "after_task": "T33",
+      "currently_saved_fifo_ids": {
+        "Xi.FIFO": [],
+        "RAM.FIFO": [
+          "T34",
+          "T35",
+          "T36"
+        ],
+        "Qi.FIFO": []
+      },
+      "conditional_remaining_task_sequence": [
+        "T34",
+        "T35",
+        "T36",
+        "T37",
+        "T38",
+        "T39",
+        "T40",
+        "T41",
+        "T42",
+        "T43",
+        "T44",
+        "T45",
+        "T46",
+        "T47",
+        "T48",
+        "T49",
+        "T50",
+        "T51",
+        "T52",
+        "T53",
+        "T54",
+        "T55",
+        "T56",
+        "T60",
+        "T57",
+        "T58",
+        "T59",
+        "T61",
+        "T62",
+        "T63",
+        "T64",
+        "T65",
+        "T66",
+        "T67",
+        "T68",
+        "T69",
+        "T70",
+        "T71",
+        "T72",
+        "T73",
+        "T74",
+        "T75"
+      ],
+      "conditional_remaining_outputs": [
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B1",
+          "channel": "Y1",
+          "bit": 0
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B1",
+          "channel": "Y8",
+          "bit": 1
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B2",
+          "channel": "Y0",
+          "bit": 1
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B2",
+          "channel": "Y1",
+          "bit": 0
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B2",
+          "channel": "Y8",
+          "bit": 0
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "2"
+          },
+          "batch": "B3",
+          "channel": "Y0",
+          "bit": 1
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "2"
+          },
+          "batch": "B3",
+          "channel": "Y1",
+          "bit": 1
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "2"
+          },
+          "batch": "B3",
+          "channel": "Y8",
+          "bit": 1
+        }
+      ],
+      "future_external_inputs": "Exactly the global scenario plan below; future input tasks are NOT saved in this checkpoint before acceptance."
+    },
+    {
+      "checkpoint": "CP4",
+      "after_task": "T46",
+      "currently_saved_fifo_ids": {
+        "Xi.FIFO": [],
+        "RAM.FIFO": [
+          "T47",
+          "T48"
+        ],
+        "Qi.FIFO": []
+      },
+      "conditional_remaining_task_sequence": [
+        "T47",
+        "T48",
+        "T49",
+        "T50",
+        "T51",
+        "T52",
+        "T53",
+        "T54",
+        "T55",
+        "T56",
+        "T60",
+        "T57",
+        "T58",
+        "T59",
+        "T61",
+        "T62",
+        "T63",
+        "T64",
+        "T65",
+        "T66",
+        "T67",
+        "T68",
+        "T69",
+        "T70",
+        "T71",
+        "T72",
+        "T73",
+        "T74",
+        "T75"
+      ],
+      "conditional_remaining_outputs": [
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B2",
+          "channel": "Y0",
+          "bit": 1
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B2",
+          "channel": "Y1",
+          "bit": 0
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B2",
+          "channel": "Y8",
+          "bit": 0
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "2"
+          },
+          "batch": "B3",
+          "channel": "Y0",
+          "bit": 1
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "2"
+          },
+          "batch": "B3",
+          "channel": "Y1",
+          "bit": 1
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "2"
+          },
+          "batch": "B3",
+          "channel": "Y8",
+          "bit": 1
+        }
+      ],
+      "future_external_inputs": "Exactly the global scenario plan below; future input tasks are NOT saved in this checkpoint before acceptance."
+    },
+    {
+      "checkpoint": "CP5",
+      "after_task": "T56",
+      "currently_saved_fifo_ids": {
+        "Xi.FIFO": [
+          "T60"
+        ],
+        "RAM.FIFO": [
+          "T57",
+          "T58",
+          "T59"
+        ],
+        "Qi.FIFO": []
+      },
+      "conditional_remaining_task_sequence": [
+        "T60",
+        "T57",
+        "T58",
+        "T59",
+        "T61",
+        "T62",
+        "T63",
+        "T64",
+        "T65",
+        "T66",
+        "T67",
+        "T68",
+        "T69",
+        "T70",
+        "T71",
+        "T72",
+        "T73",
+        "T74",
+        "T75"
+      ],
+      "conditional_remaining_outputs": [
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B2",
+          "channel": "Y1",
+          "bit": 0
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "1"
+          },
+          "batch": "B2",
+          "channel": "Y8",
+          "bit": 0
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "2"
+          },
+          "batch": "B3",
+          "channel": "Y0",
+          "bit": 1
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "2"
+          },
+          "batch": "B3",
+          "channel": "Y1",
+          "bit": 1
+        },
+        {
+          "frame": {
+            "module_id": "RAM0",
+            "sequence": "2"
+          },
+          "batch": "B3",
+          "channel": "Y8",
+          "bit": 1
+        }
+      ],
+      "future_external_inputs": "Exactly the global scenario plan below; future input tasks are NOT saved in this checkpoint before acceptance."
+    },
+    {
+      "checkpoint": "CP6",
+      "after_task": "T75",
+      "currently_saved_fifo_ids": {
+        "Xi.FIFO": [],
+        "RAM.FIFO": [],
+        "Qi.FIFO": []
+      },
+      "conditional_remaining_task_sequence": [],
+      "conditional_remaining_outputs": [],
+      "future_external_inputs": "Exactly the global scenario plan below; future input tasks are NOT saved in this checkpoint before acceptance."
+    }
+  ],
+  "expected_complete_output_frames": [
+    [
+      1,
+      0,
+      1
+    ],
+    [
+      1,
+      0,
+      0
+    ],
+    [
+      1,
+      1,
+      1
+    ]
+  ],
+  "coverage_limits": [
+    "75 tasks are a manually stipulated scenario, not exhaustive schedules or executed evidence.",
+    "No continuous-Xi liveness promise.",
+    "This trace does not overwrite R before all old replay output tasks finish; the old-latch counterexample is separately specified, not claimed exercised here.",
+    "Early next-input and late-input relative to computation are separately reasoned in the embedded business design.",
+    "Full8 reuse and failure paths are not dynamic examples here."
+  ]
+}

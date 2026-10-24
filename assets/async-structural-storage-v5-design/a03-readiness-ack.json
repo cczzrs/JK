@@ -1,0 +1,600 @@
+{
+  "artifact_kind": "jk-a03-ack-readiness-design",
+  "status": "reasoned-design-candidate-no-executor",
+  "date": "2026-10-21",
+  "authority": {
+    "base": "docs/JKRD.md 当前V5；无节点豁免、无多节点环；普通Qi_q执行开始读取、Qi_J0事件参数锁存。",
+    "latest_readiness_rule": "事务包含的全部节点与操作参数实际产生后才入队；未来内部EX结果不算就绪。",
+    "user_confirmed_ack_boundary": "先由JK译码/就绪确定当时队首与资格，再触发具体该帧的独立原子事务；该帧已消费时后到事务忽略，不转投下一帧；FRAME_OUT前无资格的ACK仍忽略。",
+    "scope": "只定义ACK分支的构造、任务参数、EX、身份守卫和直接推导案例，不修改JKRD，不提供执行器。"
+  },
+  "changes_from_prior_candidate": [
+    {
+      "before": "Q49/Q50作为共享ACK译码节点，译码和业务操作共一个事务。",
+      "after": "Q49成为固定RAM调度节点；每个实际ACK独立分配两个DEC和两个ACT，DEC真正发布后ACT独立入队。"
+    },
+    {
+      "before": "ACK动作在共享译码任务内按执行时队首直接处理。",
+      "after": "每个DEC执行开始确定FrameRef与资格；其符合pro的真实事件只触发该DEC在EX中的唯一ACT；ACT永久针对该FrameRef。"
+    },
+    {
+      "before": "消费链可先更新C_ACK，再用新C_ACK计算READY。",
+      "after": "资格有效时先执行READY的XNOR EX读取已存在的旧F/C_ACK，再执行C_ACK复制F；全部参数在入队前已有，原子提交消费与READY=0。"
+    },
+    {
+      "before": "把工厂创建挂到Xi输入复制容易混淆队列归属。",
+      "after": "Xi只完成输入复制并交接锁存ACK参数；创建完整DEC/ACT片段发生于Q49的真实RAM任务。"
+    }
+  ],
+  "fixed_kernel_patch": {
+    "nodes": [
+      {
+        "id": "Q49",
+        "role": "ACK_DISPATCH",
+        "ex": "J0K(Q9)",
+        "pro": "q=",
+        "initial_q": 0,
+        "queue": "RAM.FIFO",
+        "actual_consumers": [
+          "Q51"
+        ]
+      },
+      {
+        "id": "Q50",
+        "role": "LEGACY_ACK1_QUIET_ANCHOR",
+        "ex": "J0K(Q9)J(Q47)",
+        "pro": "q=",
+        "initial_q": 0,
+        "queue": "RAM.FIFO",
+        "scheduled_in_this_design": false,
+        "actual_consumers": [
+          "Q51"
+        ]
+      },
+      {
+        "id": "Q46",
+        "role": "C_ACK",
+        "ex": "J0K(Q45)",
+        "pro": "q=",
+        "initial_q": 0,
+        "queue": "RAM.FIFO",
+        "execution_scope": "仅通过成功ACK1原子事务实际求值；不再依赖Q9本次输入。"
+      },
+      {
+        "id": "Q47",
+        "role": "READY",
+        "ex": "J0K1K(Q45)K(Q46)",
+        "pro": "q=",
+        "initial_q": 0,
+        "queue": "RAM.FIFO",
+        "execution_scope": "只在当前首发FRAME_OUT资格提交或成功ACK1消费中先求值，再更新F或C_ACK。"
+      }
+    ],
+    "ordinary_q_lifecycle": "Q45、Q46、Q47均静默。READY不是随来源事件自动刷新的一般组合节点；提交后的不变量为READY=F XOR C_ACK。XNOR使用提交前的旧F/C_ACK，随后恰有F或C_ACK改变。",
+    "immutable_output_bindings": "不改Q62..Q70固定EX或q_y，不更改8个R数据中转和1个R_FRAME。"
+  },
+  "input_handoff_and_dispatch": {
+    "input_copy": "每次X9更新独立生成Q9=J0K(X9)输入复制任务，Xi.FIFO；该次输入bit独立锁存，0不是缺失。",
+    "handoff_after_copy": "输入复制完整结束后，以已存在的本次Q9来源参数显式请求一个Q49任务并追加RAM.FIFO；不在Xi任务内执行工厂分配。",
+    "extension_boundary": "这是原整帧参数接力的ACK端口设计扩展，显式记录为模块行为；Q9保持q=，不借普通publication广播。不能把显示cause当真实EX来源。",
+    "dispatch_task": {
+      "target": "Q49",
+      "queue": "RAM.FIFO",
+      "parameter_policy": "event-handoff",
+      "parameters": "独立持有本次Q9事件方式的0/1参数及ack_event_id；Q49.EX真实引用Q9。",
+      "operation_parameters_ready_before_enqueue": [
+        "本次已复制的ACK bit",
+        "固定模板及4个新节点的构造要求",
+        "模块/工厂身份",
+        "实际Q9、Q47、Q51身份及当前版本要求"
+      ],
+      "factory_phase": "Q49实际执行后分配完整DEC0/DEC1/ACT0/ACT1片段与A的静默引用边；操作使用已有锁存输入和构造描述，不使用Q49新结果作为尚未产生的操作参数。",
+      "queue_requests": "在片段原子提交时，DEC0、DEC1各获得同一次ACK的独立锁存参数，按数字编号顺序追加RAM.FIFO。",
+      "future_head_not_bound": "Q49不把调度时队首预先绑定到DEC，也不以READY=0阻止两项DEC任务入队；READY=0是实际存在的普通q。"
+    }
+  },
+  "decoder_contract": {
+    "nodes": "每ACK独立DEC0与DEC1均为Qi_J0：没有initial_q，EX首位J0，pro=q=1。",
+    "inputs": "ACK bit来自该次输入接力锁存；Q47为执行开始时当前q。",
+    "frame_capture": "每个DEC执行开始与其普通q参数读取处同一不可中断边界，读取当时队首FrameRef、保留数据对应FrameRef、宽度和READY；不从ACK到达时或dispatcher执行时回填队首。",
+    "qualification": "只有READY=1且当前队首与保留数据身份一致时才有可用帧；合法模型在无有效保留时READY=0。",
+    "publish": "完整EX得到1才发布。携带该次已确定FrameRef和输入身份的事件仍只按真实EX边去往对应ACT，不能按metadata另选消费者；ACK0动作所需的原Q9锁存0作为已存在的独立操作/附带EX参数继续接力，不改变DEC发布值1。",
+    "binding_stage": "在这次真实publication形成ACT任务时，解析同一FrameRef的槽V、H数据、控制节点、宽度、世代及版本；这些均已存在，才可形成ACT具体操作参数。",
+    "not_ready": "若存在真正缺失的必需对象/参数，不形成ACT FIFO任务；保留已产生的允许事件及绑定上下文作为入队前等待现场。正常模型中FRAME_OUT资格完成后这些对象完整存在。READY=0或DEC结果0不是这种等待。",
+    "event_not_route_filter": "DEC0只被本组ACT0引用，DEC1只被本组ACT1引用。没有共享DEC广播后通过ack_event_id筛选订阅者的隐藏路由。"
+  },
+  "action_contract": {
+    "ex_and_parameter_policy": "ACT.EX仅复制本组DEC的真实Qi_J0事件值1；参数独立锁存。ACT有状态、初值0、静默，真实EX计算后保存q。",
+    "capture_at_admission": [
+      "DEC事件身份与值1、ack_event_id",
+      "decoded_frame={module_id,sequence}及其已存在的槽、块世代",
+      "同一帧V的Q引用；当时有效保留数据的W个H引用",
+      "Q45/Q46/Q47/Q42等实际控制目标/来源及版本",
+      "具体工厂操作构造描述和目标归属",
+      "ACK0动作额外保留原Q9的ACKbit=0锁存参数，供新建K_replay/Q130.EX使用；不是把DEC0发布的允许值1当成重发类型。"
+    ],
+    "identity_and_lifecycle_recheck_at_execution": [
+      "全部目标和来源身份、世代、EX版本仍匹配；待执行ACT保护其目标及需保留的对象。",
+      "decoded_frame仍是当前队首，保留数据仍属于decoded_frame，READY当前q为1，decoded_frame的V当前q为1。",
+      "已消费或身份不再匹配则本次ACT仅完成自己的EX，业务操作为空；不推进下一帧，不重新绑定FrameRef。"
+    ],
+    "guard_parameter_boundary": "这些是已存在的生命周期身份和JK状态参数在操作前重新核对；不依赖本任务刚生成的ACT.q，不新增外部READY或consumed业务布尔副本。普通q仍执行开始读取，未普遍锁存值。",
+    "replay_action": {
+      "operation": "为decoded_frame建立一个重发准备请求；H数据保留在JK q，后续准备从H读取，首发/重发类型由真实K节点EX保存为0。",
+      "source_data": "本帧有效保留的实际W个H，不能改读原POST或下一帧B。",
+      "type_expression": "Q130 / K_replay.EX=J0K(Q9)，真实求值使用原ACK0到达时独立锁存的0；该参数由输入复制、dispatcher、DEC0允许事件到ACT0逐段独立接力，创建Q130前已经实际存在。不能读取此时最新Q9，后到ACK1可能已经使Q9.q=1。工厂不得以直接write_q代替。",
+      "ordering": "加入原有业务输出准备请求序列，不新建执行FIFO；输出阶段依其真实就绪结构另行入队。",
+      "on_later_consumption": "已完成中转锁存的重发输出继续使用自己的输出任务参数；旧重发FRAME_OUT不得建立或恢复ACK资格。",
+      "action_parameter_extension": {
+        "source": {
+          "kind": "Q",
+          "id": "Q9",
+          "generation": "1"
+        },
+        "value": 0,
+        "purpose": "供新建Q130真实EX的独立事件参数；不是ACT0主EX的虚假来源。ACT0主EX仍只引用其本组DEC0。",
+        "binding": "ACT0任务为该附带EX保存独立sources/bits池，继承的是本次ACK0锁存值，不是最新输入值或DEC0的允许值1。"
+      }
+    },
+    "consume_action": {
+      "precondition": "同一decoded_frame当前仍有效且未消费。",
+      "evaluator_order": [
+        {
+          "target": "ACT1",
+          "ex": "J0K(DEC1)",
+          "parameters": "已锁存DEC1事件值1"
+        },
+        {
+          "target": "Q47",
+          "ex": "J0K1K(Q45)K(Q46)",
+          "parameters": "入队前已存在、执行开始读取的旧F与旧C_ACK；此步先于C_ACK更新"
+        },
+        {
+          "target": "Q46",
+          "ex": "J0K(Q45)",
+          "parameters": "已存在的F；同一ACK消费事务不改变F"
+        },
+        {
+          "target": "V(decoded_frame)",
+          "ex": "J0J(Q42)",
+          "parameters": "已存在Q42；本帧V由自己的EX清0"
+        }
+      ],
+      "proof": "资格成立时oldF XOR oldC=1，先算XNOR得到READY=0；再C_ACK:=oldF，提交后F XOR C_ACK=0。没有任何EX以本事务前序新结果作为必需参数。",
+      "factory_operations": "以已绑定帧身份推进POST头，立即撤销该帧资格；若有下一帧，按输出设计建立其准备请求；原子提交后外部不见半消费/半资格状态。",
+      "next_frame": "下一帧自己的首发FRAME_OUT完成前保持READY=0；不能因为该帧已有POST数据就恢复ACK。"
+    },
+    "q_meaning": "ACT.q仅记录本组已接受的DEC允许事件值，不表示业务动作成功；是否陈旧由既存帧身份/JK资格核对，不能再用ACT.q冒充consumed或READY。"
+  },
+  "shared_frame_out_rule": {
+    "first_completion_only": "只有当前队首的首发批次，W个数据输出已经结束，才允许首发FRAME_OUT绑定资格建立。",
+    "independent_parameter_order": "FRAME_OUT自己的标记锁存参数、各H复制所需B、Q47所需旧F/C_ACK、Q45翻转所需Q42均须提前实际就绪。先执行Q47的XNOR，再翻转Q45；H复制与资格更新一起原子提交。",
+    "proof": "首发之前oldF=oldC且READY=0；XNOR为1，F再翻转一次，提交后F XOR C_ACK=1。",
+    "old_batch_completion": "旧重发或者已消费帧的迟到完成不得执行资格建立分支，不能用其FRAME_OUT标记重新激活旧帧。"
+  },
+  "concrete_groups": [
+    {
+      "id": "ACK.G1",
+      "input_ack_bit": 0,
+      "scenario_position": "F1首发完成后到达的ACK0",
+      "nodes": [
+        {
+          "id": "Q161",
+          "role": "ACK_DEC0",
+          "ex": "J0K1K(Q9)J(Q47)",
+          "pro": "q=1",
+          "state": "stateless",
+          "ordinary_q_sources": [
+            "Q47"
+          ],
+          "event_sources": [
+            "Q9"
+          ],
+          "actual_consumers": [
+            "Q163"
+          ]
+        },
+        {
+          "id": "Q162",
+          "role": "ACK_DEC1",
+          "ex": "J0K(Q9)J(Q47)",
+          "pro": "q=1",
+          "state": "stateless",
+          "ordinary_q_sources": [
+            "Q47"
+          ],
+          "event_sources": [
+            "Q9"
+          ],
+          "actual_consumers": [
+            "Q164"
+          ]
+        },
+        {
+          "id": "Q163",
+          "role": "ACK_ACT0",
+          "ex": "J0K(Q161)",
+          "pro": "q=",
+          "state": "stateful",
+          "ordinary_q_sources": [],
+          "event_sources": [
+            "Q161"
+          ],
+          "actual_consumers": [
+            "Q51"
+          ]
+        },
+        {
+          "id": "Q164",
+          "role": "ACK_ACT1",
+          "ex": "J0K(Q162)",
+          "pro": "q=",
+          "state": "stateful",
+          "ordinary_q_sources": [],
+          "event_sources": [
+            "Q162"
+          ],
+          "actual_consumers": [
+            "Q51"
+          ]
+        }
+      ],
+      "initial_q": {
+        "0": [
+          "Q163",
+          "Q164"
+        ],
+        "1": []
+      },
+      "factory_members": [
+        "Q161",
+        "Q162",
+        "Q163",
+        "Q164"
+      ],
+      "dispatcher_requests_in_order": [
+        "Q161",
+        "Q162"
+      ],
+      "a_quiet_closure_additions": [
+        "Q163",
+        "Q164"
+      ],
+      "publication_bindings": [
+        {
+          "source": "Q161",
+          "actual_EX_consumer": "Q163",
+          "behavior": "ack.replay_bound_frame"
+        },
+        {
+          "source": "Q162",
+          "actual_EX_consumer": "Q164",
+          "behavior": "ack.consume_bound_frame"
+        }
+      ],
+      "conditional_expected_decoder_results": {
+        "when_qualified": [
+          1,
+          0
+        ],
+        "when_unqualified": [
+          0,
+          0
+        ]
+      },
+      "completed_without_publication_means": "本次ACK忽略；不生成ACTION任务、不保存等待未来READY=1的ACK命令。"
+    },
+    {
+      "id": "ACK.G2",
+      "input_ack_bit": 1,
+      "scenario_position": "紧接ACK.G1到达的ACK1；具体作用取决于各DEC执行开始时的资格与队首",
+      "nodes": [
+        {
+          "id": "Q171",
+          "role": "ACK_DEC0",
+          "ex": "J0K1K(Q9)J(Q47)",
+          "pro": "q=1",
+          "state": "stateless",
+          "ordinary_q_sources": [
+            "Q47"
+          ],
+          "event_sources": [
+            "Q9"
+          ],
+          "actual_consumers": [
+            "Q173"
+          ]
+        },
+        {
+          "id": "Q172",
+          "role": "ACK_DEC1",
+          "ex": "J0K(Q9)J(Q47)",
+          "pro": "q=1",
+          "state": "stateless",
+          "ordinary_q_sources": [
+            "Q47"
+          ],
+          "event_sources": [
+            "Q9"
+          ],
+          "actual_consumers": [
+            "Q174"
+          ]
+        },
+        {
+          "id": "Q173",
+          "role": "ACK_ACT0",
+          "ex": "J0K(Q171)",
+          "pro": "q=",
+          "state": "stateful",
+          "ordinary_q_sources": [],
+          "event_sources": [
+            "Q171"
+          ],
+          "actual_consumers": [
+            "Q51"
+          ]
+        },
+        {
+          "id": "Q174",
+          "role": "ACK_ACT1",
+          "ex": "J0K(Q172)",
+          "pro": "q=",
+          "state": "stateful",
+          "ordinary_q_sources": [],
+          "event_sources": [
+            "Q172"
+          ],
+          "actual_consumers": [
+            "Q51"
+          ]
+        }
+      ],
+      "initial_q": {
+        "0": [
+          "Q173",
+          "Q174"
+        ],
+        "1": []
+      },
+      "factory_members": [
+        "Q171",
+        "Q172",
+        "Q173",
+        "Q174"
+      ],
+      "dispatcher_requests_in_order": [
+        "Q171",
+        "Q172"
+      ],
+      "a_quiet_closure_additions": [
+        "Q173",
+        "Q174"
+      ],
+      "publication_bindings": [
+        {
+          "source": "Q171",
+          "actual_EX_consumer": "Q173",
+          "behavior": "ack.replay_bound_frame"
+        },
+        {
+          "source": "Q172",
+          "actual_EX_consumer": "Q174",
+          "behavior": "ack.consume_bound_frame"
+        }
+      ],
+      "conditional_expected_decoder_results": {
+        "when_qualified": [
+          0,
+          1
+        ],
+        "when_unqualified": [
+          0,
+          0
+        ]
+      },
+      "completed_without_publication_means": "本次ACK忽略；不生成ACTION任务、不保存等待未来READY=1的ACK命令。"
+    },
+    {
+      "id": "ACK.G3",
+      "input_ack_bit": 0,
+      "scenario_position": "F1已消费、F2首发FRAME_OUT尚未完成时到达的提前ACK0",
+      "nodes": [
+        {
+          "id": "Q181",
+          "role": "ACK_DEC0",
+          "ex": "J0K1K(Q9)J(Q47)",
+          "pro": "q=1",
+          "state": "stateless",
+          "ordinary_q_sources": [
+            "Q47"
+          ],
+          "event_sources": [
+            "Q9"
+          ],
+          "actual_consumers": [
+            "Q183"
+          ]
+        },
+        {
+          "id": "Q182",
+          "role": "ACK_DEC1",
+          "ex": "J0K(Q9)J(Q47)",
+          "pro": "q=1",
+          "state": "stateless",
+          "ordinary_q_sources": [
+            "Q47"
+          ],
+          "event_sources": [
+            "Q9"
+          ],
+          "actual_consumers": [
+            "Q184"
+          ]
+        },
+        {
+          "id": "Q183",
+          "role": "ACK_ACT0",
+          "ex": "J0K(Q181)",
+          "pro": "q=",
+          "state": "stateful",
+          "ordinary_q_sources": [],
+          "event_sources": [
+            "Q181"
+          ],
+          "actual_consumers": [
+            "Q51"
+          ]
+        },
+        {
+          "id": "Q184",
+          "role": "ACK_ACT1",
+          "ex": "J0K(Q182)",
+          "pro": "q=",
+          "state": "stateful",
+          "ordinary_q_sources": [],
+          "event_sources": [
+            "Q182"
+          ],
+          "actual_consumers": [
+            "Q51"
+          ]
+        }
+      ],
+      "initial_q": {
+        "0": [
+          "Q183",
+          "Q184"
+        ],
+        "1": []
+      },
+      "factory_members": [
+        "Q181",
+        "Q182",
+        "Q183",
+        "Q184"
+      ],
+      "dispatcher_requests_in_order": [
+        "Q181",
+        "Q182"
+      ],
+      "a_quiet_closure_additions": [
+        "Q183",
+        "Q184"
+      ],
+      "publication_bindings": [
+        {
+          "source": "Q181",
+          "actual_EX_consumer": "Q183",
+          "behavior": "ack.replay_bound_frame"
+        },
+        {
+          "source": "Q182",
+          "actual_EX_consumer": "Q184",
+          "behavior": "ack.consume_bound_frame"
+        }
+      ],
+      "conditional_expected_decoder_results": {
+        "when_qualified": [
+          1,
+          0
+        ],
+        "when_unqualified": [
+          0,
+          0
+        ]
+      },
+      "completed_without_publication_means": "本次ACK忽略；不生成ACTION任务、不保存等待未来READY=1的ACK命令。"
+    }
+  ],
+  "numbering_note": "使用根设计预留的161..164、171..174、181..184。160/170/180不是本文件创建的Q，也不以空壳节点参与引用计数；最终全局编号及allocators由整合后的完整检查点决定。",
+  "direct_reasoning_cases": [
+    {
+      "id": "ACK.R01",
+      "premise": "READY=0，ACKbit=0。",
+      "decoder": [
+        0,
+        0
+      ],
+      "action_tasks": [],
+      "result": "忽略；以后READY变1不补发动作。"
+    },
+    {
+      "id": "ACK.R02",
+      "premise": "READY=0，ACKbit=1。",
+      "decoder": [
+        0,
+        0
+      ],
+      "action_tasks": [],
+      "result": "忽略；以后READY变1不消费帧。"
+    },
+    {
+      "id": "ACK.R03",
+      "premise": "F1为当前有效保留帧；ACKbit=0。",
+      "decoder": [
+        1,
+        0
+      ],
+      "action_tasks": [
+        "本组ACT0，FrameRef=F1"
+      ],
+      "result": "执行时F1仍有效则只创建F1重发请求，数据来自F1的H。"
+    },
+    {
+      "id": "ACK.R04",
+      "premise": "F1为当前有效保留帧；ACKbit=1。",
+      "decoder": [
+        0,
+        1
+      ],
+      "action_tasks": [
+        "本组ACT1，FrameRef=F1"
+      ],
+      "result": "成功时READY=0、C_ACK=F、F1.V=0原子提交；下一帧暂时不合资格。"
+    },
+    {
+      "id": "ACK.R05",
+      "premise": "两个独立ACK1的DEC1均在F1合资格时求值得1，产生各自FrameRef=F1的ACT1。",
+      "result": "第一个成功消费F1；第二个执行时发现F1已消费/不再为队首，业务操作为空，绝不改为消费F2。"
+    },
+    {
+      "id": "ACK.R06",
+      "premise": "ACK0的DEC0捕获F1，ACT0尚未执行；另一事务先消费F1。",
+      "result": "该ACT0忽略，不为F2建重发，不重新获得F1资格。"
+    },
+    {
+      "id": "ACK.R07",
+      "premise": "ACK0动作已生成并锁存F1重发输出；ACK1随后消费F1。",
+      "result": "旧输出继续其锁存的F1位序与标记0；旧FRAME_OUT完成不改变READY。"
+    },
+    {
+      "id": "ACK.R08",
+      "premise": "三个ACK组同时存活，使用上述真实EX。",
+      "result": "DEC161只向ACT163传播，DEC162只向ACT164传播；其他组同理。A不引用无状态DEC，未引入跨组广播/隐藏过滤。"
+    },
+    {
+      "id": "ACK.R09",
+      "premise": "ACK先到达，但某个DEC直到F2首发完成后才真正执行。",
+      "result": "按已批准的译码时点取F2当前资格，不把到达时点的队首当作已绑定身份；只有DEC已捕获的帧才在后续ACT期间保持不变。"
+    }
+  ],
+  "reference_and_reclamation": {
+    "all_sources": "Q49/Q50引用Q9；DEC引用Q9/Q47；ACT引用各自DEC；Q46引用Q45；Q47引用Q45/Q46。无常量整节点，无无状态自引。",
+    "all_consumers": "Q49/Q50/ACT通过真实A.EX闭合；DEC各有一个真正ACT消费者；A→A_READ→R→O→Yi继续遵守完整图规则。",
+    "a_membership": "A仅加入本组两个静默有状态ACT，不能加入会publication的DEC；否则A会被事件自动入队，与静默引用锚设计冲突。",
+    "dag": "输入Q9、控制Q47→本组DEC→本组ACT→A→A_READ→R→O→Yi；ACT不反向引用C_ACK/F的更新结果，操作管理关系不计EX边。",
+    "reclaim": "两项DEC均完成且对应ACT无待执行任务、未齐事件或等待绑定后，后续真实GC任务可原子移除本组ACT的A边并删除整个4节点组；不能在当前DEC/ACT执行中删掉它自身。",
+    "protection": "待执行ACT持有的FrameRef、V及资格相关对象不能被静默删除/换世代；同一身份q可正常变化，陈旧业务动作据此忽略。"
+  },
+  "validation_scope": {
+    "performed": "节点/EX与常量布尔关系的直接推导；JSON语法及显式每组真实边的静态核对。",
+    "not_performed": [
+      "执行器实现",
+      "恢复运行等价性",
+      "任意异步交错穷举",
+      "失败/重试协议",
+      "完整全局图和六检查点校验由根设计整合执行"
+    ]
+  }
+}
