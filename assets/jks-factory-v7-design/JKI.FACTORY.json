@@ -1,0 +1,1042 @@
+{
+  "id": "F1",
+  "members": [
+    "F1.WRITE0",
+    "F1.WRITE1",
+    "F1.WRITE2",
+    "F1.WRITE3",
+    "F1.WRITE4",
+    "F1.CONTROL"
+  ],
+  "trigger": {},
+  "queue": "work",
+  "pro": {
+    "name": "JKI.FACTORY",
+    "design_status": "approved_design_7.0.0_not_runtime_implementation",
+    "ports": {
+      "inputs": {
+        "b0": {
+          "event": "F1.b0",
+          "value": "bit"
+        },
+        "b1": {
+          "event": "F1.b1",
+          "value": "bit"
+        },
+        "b2": {
+          "event": "F1.b2",
+          "value": "bit"
+        },
+        "b3": {
+          "event": "F1.b3",
+          "value": "bit"
+        },
+        "b4": {
+          "event": "F1.b4",
+          "value": "bit"
+        },
+        "b5": {
+          "event": "F1.b5",
+          "value": "bit"
+        }
+      },
+      "outputs": {
+        "generated": "JKI draft record",
+        "rejected": "control result record"
+      }
+    },
+    "context": {
+      "requester_jksid": "required caller JKS id; R1 in this design",
+      "requester_instance": "required actual caller instance",
+      "factory_instance": "one F1 state instance per requester instance",
+      "internal_nodes_owner": "F1",
+      "new_nodes_owner": "requester_jksid",
+      "request_identity": "root task_id + call path + input delivery id + operation index; never business key alone"
+    },
+    "dispatch": {
+      "F1.b0": "F1.WRITE0",
+      "F1.b1": "F1.WRITE1",
+      "F1.b2": "F1.WRITE2",
+      "F1.b3": "F1.WRITE3",
+      "F1.b4": "F1.WRITE4",
+      "F1.b5": "F1.CONTROL"
+    },
+    "scope": {
+      "shared_nodes": [
+        "Q1",
+        "Q2",
+        "Q3",
+        "Q4",
+        "Q5",
+        "Q6",
+        "Q7",
+        "Q8",
+        "Q9",
+        "Q10"
+      ],
+      "sharing": "WRITE and CONTROL resolve these ids to the same actual nodes inside this F1 instance",
+      "bindings": "inherited lexically by descendant JKS calls",
+      "actions": "only explicit full-EX action bindings below; no recursive hooks on attached EX",
+      "clone_rule": "when creating another actual F1/R1 instance, allocate fresh actual node identities via the same allocator and remap these local definition ids; source aliases resolve only within the bound owner instance"
+    },
+    "bindings": {
+      "ZERO": {
+        "const": 0
+      },
+      "EVENT_VALUE": {
+        "param": "event.v"
+      },
+      "INPUT_PRESENT": {
+        "by_source": {
+          "F1.b0": {
+            "const": 1
+          },
+          "F1.b1": {
+            "const": 1
+          },
+          "F1.b2": {
+            "const": 1
+          },
+          "F1.b3": {
+            "const": 1
+          },
+          "F1.b4": {
+            "const": 1
+          },
+          "F1.CLEAR": {
+            "const": 0
+          }
+        }
+      },
+      "Q6": {
+        "state": "Q6"
+      },
+      "Q7": {
+        "state": "Q7"
+      },
+      "Q8": {
+        "state": "Q8"
+      },
+      "Q9": {
+        "state": "Q9"
+      },
+      "Q10": {
+        "state": "Q10"
+      }
+    },
+    "bits": {
+      "state": [
+        "b0",
+        "b1"
+      ],
+      "publish": [
+        "b2",
+        "b3",
+        "b4"
+      ],
+      "control": "b5"
+    },
+    "state_map": [
+      {
+        "b": [
+          1,
+          0
+        ],
+        "state": {
+          "q": 0
+        }
+      },
+      {
+        "b": [
+          1,
+          1
+        ],
+        "state": {
+          "q": 1
+        }
+      },
+      {
+        "b": [
+          0,
+          0
+        ],
+        "state": {
+          "seed": 0
+        }
+      },
+      {
+        "b": [
+          0,
+          1
+        ],
+        "state": {
+          "seed": 1
+        }
+      }
+    ],
+    "publish_map": [
+      {
+        "b": [
+          0,
+          0,
+          0
+        ],
+        "publish": {
+          "never": []
+        }
+      },
+      {
+        "b": [
+          0,
+          0,
+          1
+        ],
+        "publish": {
+          "never": []
+        }
+      },
+      {
+        "b": [
+          1,
+          0,
+          0
+        ],
+        "publish": {
+          "zero": [
+            0
+          ]
+        }
+      },
+      {
+        "b": [
+          0,
+          1,
+          0
+        ],
+        "publish": {
+          "one": [
+            1
+          ]
+        }
+      },
+      {
+        "b": [
+          1,
+          1,
+          0
+        ],
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "b": [
+          1,
+          0,
+          1
+        ],
+        "publish": {
+          "zero_changed": [
+            0
+          ]
+        }
+      },
+      {
+        "b": [
+          0,
+          1,
+          1
+        ],
+        "publish": {
+          "one_changed": [
+            1
+          ]
+        }
+      },
+      {
+        "b": [
+          1,
+          1,
+          1
+        ],
+        "publish": {
+          "always_changed": [
+            0,
+            1
+          ]
+        }
+      }
+    ],
+    "changed_start": {
+      "q_node": "q_start fixed at each full EX entry, including valid preceding transaction candidates",
+      "seed_node": "fixed state.seed",
+      "comparison": "this EX start -> this EX result; not previous publication"
+    },
+    "input_protocol": {
+      "initial": "Q1..Q10=0 and Q12=0 from their sole state definitions; Q6..Q10 are presence flags, so input slots are absent",
+      "b5_zero": "emit F1.CLEAR=0; execute Q1..Q10 to clear values and presence; do not clear Q12 by this internal signal",
+      "b5_rising_ready": "reserve one id, generate and stage one draft, then emit F1.CLEAR=0",
+      "b5_rising_incomplete": "reject immediately, no reservation, no waiting call; Q12 remains 1 after normal commit",
+      "b5_one_again": "Q12 EX still executes; no one_changed publication, so no creation",
+      "after_success": "five values and five presence flags cleared; Q12 stays 1",
+      "reset_scope": "only this requester instance input state; never already returned drafts, queued independent calls, or RAM frames",
+      "data_updates": "each b0..b4 delivery replaces its own input slot and sets its presence q=1; this is explicitly a current configuration buffer, not ZIP or transaction-key matching",
+      "programming_order": "one serialized programming stream per actual F1 instance; concurrent independent streams use separate F1 instances; a nested RAM construction executes each complete reset/program/enable sequence before the next"
+    },
+    "allocator": {
+      "scope": "model-global shared service",
+      "prefix": "Q",
+      "initial_high_water": "maximum numeric Q id across loaded nodes and all reserved ids",
+      "reserve_key": "request_identity",
+      "allocation": "high_water + 1 under exclusive reservation",
+      "deletion": "never lowers high_water",
+      "retry": "same reservation for same operation; separate requests receive separate ids",
+      "aborted_reservation": "retained tombstone; numeric gaps allowed",
+      "physical_slot_reuse": "does not reuse logical Q identity"
+    },
+    "actions": [
+      {
+        "on": {
+          "node": "Q11",
+          "value": 0,
+          "phase": "after_full_ex"
+        },
+        "steps": [
+          {
+            "op": "emit_internal",
+            "source": "F1.CLEAR",
+            "v": 0
+          }
+        ]
+      },
+      {
+        "on": {
+          "node": "Q13",
+          "value": 0,
+          "phase": "after_full_ex"
+        },
+        "steps": [
+          {
+            "op": "stage_reply",
+            "port": "rejected",
+            "code": "INPUT_INCOMPLETE",
+            "allocate": 0
+          }
+        ]
+      },
+      {
+        "on": {
+          "node": "Q13",
+          "value": 1,
+          "phase": "after_full_ex"
+        },
+        "steps": [
+          {
+            "op": "snapshot_node_bits",
+            "nodes": [
+              "Q1",
+              "Q2",
+              "Q3",
+              "Q4",
+              "Q5"
+            ],
+            "as_name": "b0_b4"
+          },
+          {
+            "op": "reserve_node_id",
+            "allocator": "model-global",
+            "idempotency": "request_identity"
+          },
+          {
+            "op": "build_jki_draft",
+            "state_map": "pro.state_map",
+            "publish_map": "pro.publish_map",
+            "trigger": {},
+            "sources": {},
+            "owner": "requester_jksid"
+          },
+          {
+            "op": "stage_reply",
+            "port": "generated",
+            "payload": "draft"
+          },
+          {
+            "op": "emit_internal",
+            "source": "F1.CLEAR",
+            "v": 0
+          }
+        ]
+      }
+    ],
+    "commit": {
+      "domain": [
+        "Q candidates",
+        "draft record",
+        "reply outbox",
+        "input consumption"
+      ],
+      "allocator_reservations": "non-reusable ids remain reserved even if this domain aborts",
+      "draft_visibility": "internal parent can use actual draft; external caller sees committed result only",
+      "installation": "draft is not an active node and is not yet added to requester members"
+    },
+    "failure": {
+      "input_incomplete": "normal rejection with Q12=1",
+      "invalid_bit": "reject before input event admission",
+      "build_or_resource_failure": "FAULTED; preserve original call, values, candidates and reservation; explicit retry resumes same call and no new edge or id",
+      "normal_clear": "does not cancel a faulted admitted call",
+      "post_commit_reply_failure": "resume existing outbox; never rebuild"
+    },
+    "definitions": {
+      "Q1": {
+        "id": "Q1",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "F1.b0",
+            "F1.CLEAR"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "F1"
+        }
+      },
+      "Q6": {
+        "id": "Q6",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "F1.b0",
+            "F1.CLEAR"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "INPUT_PRESENT"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "F1"
+        }
+      },
+      "F1.WRITE0": {
+        "id": "F1.WRITE0",
+        "members": [
+          "Q1",
+          "Q6"
+        ],
+        "trigger": {
+          "transaction": [
+            "F1.b0"
+          ]
+        },
+        "queue": "work",
+        "pro": {
+          "complete": {
+            "executed": [
+              "Q1",
+              "Q6"
+            ],
+            "required_actions": "settled"
+          }
+        },
+        "runtime": {}
+      },
+      "Q2": {
+        "id": "Q2",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "F1.b1",
+            "F1.CLEAR"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "F1"
+        }
+      },
+      "Q7": {
+        "id": "Q7",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "F1.b1",
+            "F1.CLEAR"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "INPUT_PRESENT"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "F1"
+        }
+      },
+      "F1.WRITE1": {
+        "id": "F1.WRITE1",
+        "members": [
+          "Q2",
+          "Q7"
+        ],
+        "trigger": {
+          "transaction": [
+            "F1.b1"
+          ]
+        },
+        "queue": "work",
+        "pro": {
+          "complete": {
+            "executed": [
+              "Q2",
+              "Q7"
+            ],
+            "required_actions": "settled"
+          }
+        },
+        "runtime": {}
+      },
+      "Q3": {
+        "id": "Q3",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "F1.b2",
+            "F1.CLEAR"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "F1"
+        }
+      },
+      "Q8": {
+        "id": "Q8",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "F1.b2",
+            "F1.CLEAR"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "INPUT_PRESENT"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "F1"
+        }
+      },
+      "F1.WRITE2": {
+        "id": "F1.WRITE2",
+        "members": [
+          "Q3",
+          "Q8"
+        ],
+        "trigger": {
+          "transaction": [
+            "F1.b2"
+          ]
+        },
+        "queue": "work",
+        "pro": {
+          "complete": {
+            "executed": [
+              "Q3",
+              "Q8"
+            ],
+            "required_actions": "settled"
+          }
+        },
+        "runtime": {}
+      },
+      "Q4": {
+        "id": "Q4",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "F1.b3",
+            "F1.CLEAR"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "F1"
+        }
+      },
+      "Q9": {
+        "id": "Q9",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "F1.b3",
+            "F1.CLEAR"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "INPUT_PRESENT"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "F1"
+        }
+      },
+      "F1.WRITE3": {
+        "id": "F1.WRITE3",
+        "members": [
+          "Q4",
+          "Q9"
+        ],
+        "trigger": {
+          "transaction": [
+            "F1.b3"
+          ]
+        },
+        "queue": "work",
+        "pro": {
+          "complete": {
+            "executed": [
+              "Q4",
+              "Q9"
+            ],
+            "required_actions": "settled"
+          }
+        },
+        "runtime": {}
+      },
+      "Q5": {
+        "id": "Q5",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "F1.b4",
+            "F1.CLEAR"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "F1"
+        }
+      },
+      "Q10": {
+        "id": "Q10",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "F1.b4",
+            "F1.CLEAR"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "INPUT_PRESENT"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "F1"
+        }
+      },
+      "F1.WRITE4": {
+        "id": "F1.WRITE4",
+        "members": [
+          "Q5",
+          "Q10"
+        ],
+        "trigger": {
+          "transaction": [
+            "F1.b4"
+          ]
+        },
+        "queue": "work",
+        "pro": {
+          "complete": {
+            "executed": [
+              "Q5",
+              "Q10"
+            ],
+            "required_actions": "settled"
+          }
+        },
+        "runtime": {}
+      },
+      "Q11": {
+        "id": "Q11",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "F1.b5"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "zero": [
+            0
+          ]
+        },
+        "pro": {
+          "jksid": "F1"
+        }
+      },
+      "Q12": {
+        "id": "Q12",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "F1.b5"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "one_changed": [
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "F1"
+        }
+      },
+      "Q13": {
+        "id": "Q13",
+        "state": {
+          "seed": 1
+        },
+        "trigger": {
+          "any": [
+            "Q12"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "Q6",
+            "Q7",
+            "Q8",
+            "Q9",
+            "Q10"
+          ],
+          "ex": [
+            "J",
+            "J",
+            "J",
+            "J",
+            "J"
+          ],
+          "v": [
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "F1"
+        }
+      },
+      "F1.CONTROL": {
+        "id": "F1.CONTROL",
+        "members": [
+          "Q1",
+          "Q2",
+          "Q3",
+          "Q4",
+          "Q5",
+          "Q6",
+          "Q7",
+          "Q8",
+          "Q9",
+          "Q10",
+          "Q11",
+          "Q12",
+          "Q13"
+        ],
+        "trigger": {
+          "transaction": [
+            "F1.b5"
+          ]
+        },
+        "queue": "work",
+        "pro": {
+          "complete": {
+            "executed": [
+              "Q11",
+              "Q12"
+            ],
+            "when_rising": [
+              "Q13"
+            ],
+            "when_clear": [
+              "Q1",
+              "Q2",
+              "Q3",
+              "Q4",
+              "Q5",
+              "Q6",
+              "Q7",
+              "Q8",
+              "Q9",
+              "Q10"
+            ],
+            "when_created": [
+              "draft_in_transaction_outbox",
+              "Q1..Q10 cleared"
+            ],
+            "required_actions": "settled"
+          }
+        },
+        "runtime": {}
+      }
+    }
+  },
+  "runtime": {}
+}

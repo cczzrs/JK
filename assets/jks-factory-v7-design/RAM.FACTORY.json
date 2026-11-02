@@ -1,0 +1,3270 @@
+{
+  "id": "R1",
+  "members": [
+    "F1",
+    "RAM1"
+  ],
+  "trigger": {},
+  "queue": "work",
+  "pro": {
+    "name": "RAM.FACTORY",
+    "design_status": "approved_design_7.0.0_not_runtime_implementation",
+    "imports": {
+      "F1": "./JKI.FACTORY.json"
+    },
+    "ports": {
+      "inputs": {
+        "DATA": "ordered frame input bits, width 1..8; retained only until corresponding load EX finishes",
+        "FRAME_IN": "bit: 0 discards uncommitted ingress, 1 accepts an immutable complete frame",
+        "RESULT_IN": "control v=1 with already produced result bits, independent next-state bits and run identity; zero result data remains valid",
+        "BUSINESS_READY": "bit plus externally declared frontier/state references",
+        "ACK": "bit",
+        "OUTPUT_DONE": "control v=1 with trusted receipt after all actual data and marker outputs; replay marker=0 is not a missing completion",
+        "GC_REQUEST": "bit"
+      },
+      "outputs": {
+        "Y": "actual W bit outputs from Q66..Q73",
+        "FRAME_OUT": "actual Q74 bit: first=1, replay=0",
+        "COMP_REQUEST": "immutable locked input/state handoff to a separately declared finite business JKS",
+        "rejected": "reason record, never a replacement business bit"
+      }
+    },
+    "scope": {
+      "owner": "R1",
+      "factory_instance": "F1 bound to this R1 instance",
+      "child_state": "shared within this R1 instance; independent between distinct R1 instances",
+      "context_forwarding": "F1 always receives requester_jksid=R1 and this actual R1 instance, not the internal stage id",
+      "definition_binding": "freeze definitions for each admitted call; a retry cannot switch the definition",
+      "clone_rule": "same definition may be instantiated again, but control/state nodes are remapped to fresh model-global identities; no state sharing between R1 instances"
+    },
+    "bindings": {
+      "ZERO": {
+        "const": 0
+      },
+      "ONE": {
+        "const": 1
+      },
+      "EVENT_VALUE": {
+        "param": "event.v"
+      },
+      "ACK_VALUE": {
+        "param": "event.v"
+      },
+      "OUTPUT_VALUE": {
+        "param": "output_task.v"
+      },
+      "ACK_VALID": {
+        "state": "Q33"
+      },
+      "BUSINESS_READY": {
+        "state": "Q35"
+      },
+      "HEAD_VALID": {
+        "state_ref": "bound_head.valid",
+        "when_no_head": {
+          "const": 0
+        }
+      },
+      "CLAIMED": {
+        "state_ref": "bound_head.claimed",
+        "when_no_head": {
+          "const": 1
+        }
+      },
+      "STORED_BIT0": {
+        "state_ref": "selected_slot.data[0]",
+        "require": "i < selected_slot.width; identity and generation bound at READ admission"
+      },
+      "Q40": {
+        "state": "Q40"
+      },
+      "RELAY_BIT0": {
+        "by_batch": {
+          "first": {
+            "state": "Q40"
+          },
+          "replay": {
+            "param": "accepted_replay.H[0]"
+          }
+        },
+        "require": "actual value available before RELAY admission"
+      },
+      "STORED_BIT1": {
+        "state_ref": "selected_slot.data[1]",
+        "require": "i < selected_slot.width; identity and generation bound at READ admission"
+      },
+      "Q41": {
+        "state": "Q41"
+      },
+      "RELAY_BIT1": {
+        "by_batch": {
+          "first": {
+            "state": "Q41"
+          },
+          "replay": {
+            "param": "accepted_replay.H[1]"
+          }
+        },
+        "require": "actual value available before RELAY admission"
+      },
+      "STORED_BIT2": {
+        "state_ref": "selected_slot.data[2]",
+        "require": "i < selected_slot.width; identity and generation bound at READ admission"
+      },
+      "Q42": {
+        "state": "Q42"
+      },
+      "RELAY_BIT2": {
+        "by_batch": {
+          "first": {
+            "state": "Q42"
+          },
+          "replay": {
+            "param": "accepted_replay.H[2]"
+          }
+        },
+        "require": "actual value available before RELAY admission"
+      },
+      "STORED_BIT3": {
+        "state_ref": "selected_slot.data[3]",
+        "require": "i < selected_slot.width; identity and generation bound at READ admission"
+      },
+      "Q43": {
+        "state": "Q43"
+      },
+      "RELAY_BIT3": {
+        "by_batch": {
+          "first": {
+            "state": "Q43"
+          },
+          "replay": {
+            "param": "accepted_replay.H[3]"
+          }
+        },
+        "require": "actual value available before RELAY admission"
+      },
+      "STORED_BIT4": {
+        "state_ref": "selected_slot.data[4]",
+        "require": "i < selected_slot.width; identity and generation bound at READ admission"
+      },
+      "Q44": {
+        "state": "Q44"
+      },
+      "RELAY_BIT4": {
+        "by_batch": {
+          "first": {
+            "state": "Q44"
+          },
+          "replay": {
+            "param": "accepted_replay.H[4]"
+          }
+        },
+        "require": "actual value available before RELAY admission"
+      },
+      "STORED_BIT5": {
+        "state_ref": "selected_slot.data[5]",
+        "require": "i < selected_slot.width; identity and generation bound at READ admission"
+      },
+      "Q45": {
+        "state": "Q45"
+      },
+      "RELAY_BIT5": {
+        "by_batch": {
+          "first": {
+            "state": "Q45"
+          },
+          "replay": {
+            "param": "accepted_replay.H[5]"
+          }
+        },
+        "require": "actual value available before RELAY admission"
+      },
+      "STORED_BIT6": {
+        "state_ref": "selected_slot.data[6]",
+        "require": "i < selected_slot.width; identity and generation bound at READ admission"
+      },
+      "Q46": {
+        "state": "Q46"
+      },
+      "RELAY_BIT6": {
+        "by_batch": {
+          "first": {
+            "state": "Q46"
+          },
+          "replay": {
+            "param": "accepted_replay.H[6]"
+          }
+        },
+        "require": "actual value available before RELAY admission"
+      },
+      "STORED_BIT7": {
+        "state_ref": "selected_slot.data[7]",
+        "require": "i < selected_slot.width; identity and generation bound at READ admission"
+      },
+      "Q47": {
+        "state": "Q47"
+      },
+      "RELAY_BIT7": {
+        "by_batch": {
+          "first": {
+            "state": "Q47"
+          },
+          "replay": {
+            "param": "accepted_replay.H[7]"
+          }
+        },
+        "require": "actual value available before RELAY admission"
+      },
+      "Q64": {
+        "state": "Q64"
+      }
+    },
+    "dispatch": {
+      "FRAME_IN": [
+        "R1.ACCEPT"
+      ],
+      "RESULT_IN": [
+        "R1.RESULT"
+      ],
+      "BUSINESS_READY": [
+        "R1.READY"
+      ],
+      "ACK": [
+        "R1.DEC0",
+        "R1.DEC1"
+      ],
+      "OUTPUT_DONE": [
+        "R1.COMPLETE"
+      ],
+      "GC_REQUEST": [
+        "R1.GC"
+      ],
+      "internal_sources": {
+        "R1.TRY_CLAIM": "R1.CLAIM",
+        "R1.READ_REQUEST": "R1.READ",
+        "R1.READ_DONE": "R1.RELAY",
+        "R1.RELAY_DONE": "R1.SEND",
+        "R1.REPLAY_ACTION": "R1.ACT0",
+        "R1.CONSUME_ACTION": "R1.ACT1"
+      }
+    },
+    "factory_call": {
+      "target": "F1",
+      "delivery_sequence": [
+        [
+          "b5",
+          0
+        ],
+        [
+          "b0",
+          1
+        ],
+        [
+          "b1",
+          0
+        ],
+        [
+          "b2",
+          0
+        ],
+        [
+          "b3",
+          0
+        ],
+        [
+          "b4",
+          0
+        ],
+        [
+          "b5",
+          1
+        ]
+      ],
+      "result": "one q=0, never-publishing draft owned by R1; configure before active registration",
+      "repeat": "each actual requested data/control node uses a separate complete sequence",
+      "domain": "nested calls share the active RAM root; actual returned drafts may be used by later internal operations",
+      "role_overrides": "templates.roles may select another five-bit recipe; each invocation still begins b5=0 and ends b5=1"
+    },
+    "layout": {
+      "zones": [
+        "PRE",
+        "POST"
+      ],
+      "standalone": "FRAME_IN writes POST directly",
+      "business_attachment": "when a business JKS is explicitly attached, FRAME_IN writes PRE; RESULT_IN writes POST and independent NEXT state carriers",
+      "width": {
+        "min": 1,
+        "max": 8
+      },
+      "slots_per_block": 8,
+      "slot": {
+        "identity": [
+          "frame id",
+          "width",
+          "block id",
+          "slot index",
+          "generation"
+        ],
+        "data": "exactly width persistent JKI references",
+        "flags": [
+          "valid JKI",
+          "claimed JKI for PRE"
+        ],
+        "bits": "only in JKI q; metadata never holds a second long-lived bit array"
+      },
+      "append": "use each block slot once per generation; use next safe reusable block or grow",
+      "capacity": "no fixed maximum blocks; resource fault retains input/task instead of silently dropping a frame"
+    },
+    "templates": {
+      "storage_node": {
+        "id": "$reserved_id",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "$slot.load",
+            "$slot.maintain"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "SLOT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "slot_value_binding": {
+        "load": {
+          "param": "locked_frame.bits[i]"
+        },
+        "maintain": {
+          "self": "q_start"
+        },
+        "scope": "per instantiated slot; $slot.load and $slot.maintain resolve to declared real control sources; state kind is preserved"
+      },
+      "install": {
+        "steps": [
+          "reserve complete fragment identities",
+          "configure nonempty trigger and sources for each draft",
+          "emit load inputs and execute each data/flag EX from existing locked parameters",
+          "install the explicitly bound hold/read references",
+          "register membership, slot and frame order",
+          "validate expanded references and dependencies",
+          "commit entire fragment"
+        ],
+        "zero_data": "real data, not a missing input or a completion condition"
+      },
+      "copy_ex": {
+        "sources": [
+          "ZERO",
+          "VALUE"
+        ],
+        "ex": [
+          "J",
+          "K"
+        ]
+      },
+      "done_ex": {
+        "sources": [
+          "ZERO",
+          "VALUE",
+          "VALUE",
+          "ONE"
+        ],
+        "ex": [
+          "J",
+          "K",
+          "K",
+          "K"
+        ],
+        "publish": {
+          "one": [
+            1
+          ]
+        }
+      },
+      "reference_closure": {
+        "source": "current module section 13 reference-closure construction; the expanded graph is validated before installation",
+        "no_exemptions": 1,
+        "hold": "SELF is fixed q_start; required external anchor references and real readers are instantiated, not management lines",
+        "protected_sinks": "fixed output and relay targets remain present while tasks reference them",
+        "gc": "detach a validated complete fragment only after all readers/tasks/arrivals/output holders are released"
+      },
+      "dynamic_members": "actual allocated ids added by atomic registration; template placeholder ids never enter active members",
+      "roles": {
+        "data": {
+          "factory_b0_b4": [
+            1,
+            0,
+            0,
+            0,
+            0
+          ],
+          "load": "locked_frame.bits[i]",
+          "keep": "fixed SELF",
+          "read_by": "bound B/read EX and reference-closure construction"
+        },
+        "valid": {
+          "factory_b0_b4": [
+            1,
+            0,
+            0,
+            0,
+            0
+          ],
+          "load": 1,
+          "consume": 0,
+          "keep": "fixed SELF"
+        },
+        "claimed": {
+          "factory_b0_b4": [
+            1,
+            0,
+            0,
+            0,
+            0
+          ],
+          "load": 0,
+          "claim": 1,
+          "keep": "fixed SELF"
+        },
+        "next_state": {
+          "factory_b0_b4": [
+            1,
+            0,
+            0,
+            0,
+            0
+          ],
+          "load": "locked_result.next_state[i]",
+          "keep": "fixed SELF; independent from POST"
+        },
+        "request_type": {
+          "factory_b0_b4": [
+            1,
+            0,
+            0,
+            0,
+            0
+          ],
+          "load": "first=1/replay=0",
+          "keep": "fixed SELF"
+        },
+        "done": {
+          "factory_b0_b4": [
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          "ex": "done_ex from the same already-existing VALUE as the associated load EX; no dependency on a future load result",
+          "count": "one real execution per required actual width item"
+        }
+      }
+    },
+    "actions": [
+      {
+        "on": {
+          "node": "Q20",
+          "value": 0,
+          "phase": "after_full_ex"
+        },
+        "steps": [
+          {
+            "op": "clear_uncommitted_ingress",
+            "scope": "this R1 ingress only",
+            "preserve": [
+              "admitted calls",
+              "stored frames",
+              "output batches"
+            ]
+          }
+        ]
+      },
+      {
+        "on": {
+          "node": "Q20",
+          "value": 1,
+          "phase": "after_full_ex"
+        },
+        "steps": [
+          {
+            "op": "validate_frame",
+            "width": "1..8",
+            "values": "strict bits",
+            "require": "all actual input values available"
+          },
+          {
+            "op": "lock_frame",
+            "identity": "monotonic frame id",
+            "preserve_order": 1
+          },
+          {
+            "op": "construct_slot",
+            "factory": "F1",
+            "zone": "POST unless business attachment selects PRE",
+            "evaluate": "each load/valid EX from actual frame locks"
+          },
+          {
+            "op": "append_slot",
+            "commit": "same root"
+          },
+          {
+            "op": "after_commit",
+            "emit": [
+              {
+                "source": "R1.READ_REQUEST",
+                "v": 1,
+                "when": "POST queue changed from empty to nonempty"
+              },
+              {
+                "source": "R1.TRY_CLAIM",
+                "v": 1,
+                "when": "a PRE frame was accepted"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "on": {
+          "node": "Q22",
+          "value": 1,
+          "phase": "after_full_ex"
+        },
+        "steps": [
+          {
+            "op": "evaluate_bound",
+            "target": "PRE.claimed",
+            "value": 1
+          },
+          {
+            "op": "emit_and_evaluate",
+            "source": "R1.SET_BUSINESS_READY",
+            "v": 0
+          },
+          {
+            "op": "stage_business_handoff",
+            "inputs": "locked PRE data",
+            "state": "existing frontier q",
+            "identity": "new run id"
+          },
+          {
+            "op": "after_commit",
+            "emit": [
+              {
+                "source": "COMP_REQUEST",
+                "v": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "on": {
+          "node": "Q21",
+          "value": 1,
+          "phase": "after_full_ex"
+        },
+        "steps": [
+          {
+            "op": "validate_result",
+            "require": "matching run identity and all actual result/next-state bits"
+          },
+          {
+            "op": "construct_slot",
+            "factory": "F1",
+            "zone": "POST",
+            "evaluate": "load POST data and NEXT carriers independently from existing result locks"
+          },
+          {
+            "op": "consume_pre",
+            "require": "POST and NEXT independent loads completed"
+          },
+          {
+            "op": "emit_and_evaluate",
+            "source": "R1.SET_BUSINESS_READY",
+            "v": 1
+          },
+          {
+            "op": "after_commit",
+            "emit": [
+              {
+                "source": "R1.TRY_CLAIM",
+                "v": 1,
+                "when": "PRE head exists and next-state READY committed"
+              },
+              {
+                "source": "R1.READ_REQUEST",
+                "v": 1,
+                "when": "POST queue changed from empty to nonempty"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "on": {
+          "node": "Q23",
+          "value": 1,
+          "phase": "after_full_ex"
+        },
+        "steps": [
+          {
+            "op": "admit_output_request",
+            "require": "request is head and Q32 BUSY=0; all source identities locked"
+          },
+          {
+            "op": "emit_and_evaluate",
+            "source": "R1.SET_BUSY",
+            "v": 1
+          },
+          {
+            "op": "emit_and_evaluate",
+            "source": "R1.SET_MODE",
+            "v": "first=1 or replay=0"
+          },
+          {
+            "op": "load_B",
+            "for_each": "actual first-frame width only",
+            "evaluate": "Q40+i from existing stored bit; replay already has immutable H locks"
+          },
+          {
+            "op": "record_actual_stage_completion",
+            "require": "all actual load EX and companion done EX finished"
+          },
+          {
+            "op": "after_commit",
+            "emit": [
+              {
+                "source": "R1.READ_DONE",
+                "v": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "on": {
+          "node": "Q24",
+          "value": 1,
+          "phase": "after_full_ex"
+        },
+        "steps": [
+          {
+            "op": "emit_and_evaluate",
+            "source": "R1.RELAY_BIT[i]",
+            "for_each": "actual width",
+            "values": "existing B for first, accepted immutable H locks for replay"
+          },
+          {
+            "op": "emit_and_evaluate",
+            "source": "R1.RELAY_MARKER"
+          },
+          {
+            "op": "lock_output_tasks",
+            "inputs": "actual relay results and marker; preserve every zero and output index"
+          },
+          {
+            "op": "emit_and_evaluate",
+            "source": "R1.SET_BUSY",
+            "v": 0
+          },
+          {
+            "op": "after_commit",
+            "emit": [
+              {
+                "source": "R1.RELAY_DONE",
+                "v": 1
+              },
+              {
+                "source": "R1.READ_REQUEST",
+                "v": 1,
+                "when": "next preparation request exists and BUSY=0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "on": {
+          "node": "Q25",
+          "value": 1,
+          "phase": "after_full_ex"
+        },
+        "steps": [
+          {
+            "op": "emit_and_evaluate",
+            "source": "R1.OUTPUT_BIT[i]",
+            "for_each": "actual width in ascending index",
+            "params": "each independently locked output task"
+          },
+          {
+            "op": "emit_and_evaluate",
+            "source": "R1.OUTPUT_MARKER",
+            "after": "all actual data EX"
+          },
+          {
+            "op": "stage_outputs",
+            "order": "Y[0]..Y[W-1],FRAME_OUT",
+            "identity": "batch id + output index"
+          },
+          {
+            "op": "after_publication_receipts",
+            "emit": "R1.OUTPUT_DONE",
+            "require": "all W data deliveries and marker delivery acknowledged by sink"
+          }
+        ]
+      },
+      {
+        "on": {
+          "node": "Q26",
+          "value": 1,
+          "phase": "after_full_ex"
+        },
+        "steps": [
+          {
+            "op": "guard_batch",
+            "require": "first batch, current head identity/generation, not consumed; stale or replay completion is NOOP"
+          },
+          {
+            "op": "emit_and_evaluate",
+            "source": "R1.LOAD_H[i]",
+            "for_each": "actual width",
+            "value": "existing protected B[i]"
+          },
+          {
+            "op": "emit_and_evaluate",
+            "source": "R1.SET_CACHE_VALID",
+            "v": 1
+          },
+          {
+            "op": "emit_and_evaluate",
+            "source": "R1.SET_ACK_VALID",
+            "v": 1
+          },
+          {
+            "op": "commit_qualification",
+            "identity": "current head frame + generation + fresh qualification token",
+            "domain": "same commit as H and valid flags"
+          }
+        ]
+      },
+      {
+        "on": {
+          "node": "Q27",
+          "value": 1,
+          "phase": "after_full_ex"
+        },
+        "steps": [
+          {
+            "op": "stage_bound_action",
+            "port": "R1.REPLAY_ACTION",
+            "bind": [
+              "DEC-entry frame id",
+              "slot generation",
+              "qualification token",
+              "H identities"
+            ],
+            "after_commit": 1
+          }
+        ]
+      },
+      {
+        "on": {
+          "node": "Q28",
+          "value": 1,
+          "phase": "after_full_ex"
+        },
+        "steps": [
+          {
+            "op": "stage_bound_action",
+            "port": "R1.CONSUME_ACTION",
+            "bind": [
+              "DEC-entry frame id",
+              "slot generation",
+              "qualification token",
+              "H identities"
+            ],
+            "after_commit": 1
+          }
+        ]
+      },
+      {
+        "on": {
+          "node": "Q29",
+          "value": 1,
+          "phase": "after_full_ex"
+        },
+        "steps": [
+          {
+            "op": "guard_bound_action",
+            "require": "same unconsumed head, generation and qualification; stale is NOOP"
+          },
+          {
+            "op": "lock_H_snapshot",
+            "identity": "fresh replay batch",
+            "holders": "independent immutable output/preparation task locks"
+          },
+          {
+            "op": "enqueue_preparation",
+            "type": "replay",
+            "marker": 0
+          },
+          {
+            "op": "after_commit",
+            "emit": [
+              {
+                "source": "R1.READ_REQUEST",
+                "v": 1,
+                "when": "preparation request is head and BUSY=0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "on": {
+          "node": "Q30",
+          "value": 1,
+          "phase": "after_full_ex"
+        },
+        "steps": [
+          {
+            "op": "guard_bound_action",
+            "require": "same unconsumed head, generation and qualification; stale is NOOP"
+          },
+          {
+            "op": "emit_and_evaluate",
+            "source": "R1.SET_ACK_VALID",
+            "v": 0
+          },
+          {
+            "op": "evaluate_bound",
+            "target": "head.valid",
+            "value": 0
+          },
+          {
+            "op": "consume_and_advance_head",
+            "once": "action identity",
+            "preserve": "already accepted immutable batches"
+          },
+          {
+            "op": "after_commit",
+            "emit": [
+              {
+                "source": "R1.READ_REQUEST",
+                "v": 1,
+                "when": "new POST head exists"
+              },
+              {
+                "source": "R1.GC_REQUEST",
+                "v": 1,
+                "when": "retirement candidates exist"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "on": {
+          "node": "Q31",
+          "value": 1,
+          "phase": "after_full_ex"
+        },
+        "steps": [
+          {
+            "op": "select_reclaimable",
+            "require": "block admitted 8 frames this generation, all consumed, no protected dependencies"
+          },
+          {
+            "op": "validate_fragment_detach",
+            "include": [
+              "target/source versions",
+              "arrivals",
+              "queued EX",
+              "real references",
+              "output targets",
+              "all batch holders"
+            ]
+          },
+          {
+            "op": "detach_and_delete",
+            "domain": "whole fragment; no active node exemption"
+          },
+          {
+            "op": "reuse_capacity",
+            "generation": "increment once after safe whole-block release",
+            "logical_node_ids": "always fresh"
+          }
+        ]
+      },
+      {
+        "on": {
+          "node": "Q79",
+          "value": 0,
+          "phase": "after_full_ex"
+        },
+        "steps": [
+          {
+            "op": "emit_and_evaluate",
+            "source": "R1.SET_BUSINESS_READY",
+            "v": 0
+          }
+        ]
+      },
+      {
+        "on": {
+          "node": "Q79",
+          "value": 1,
+          "phase": "after_full_ex"
+        },
+        "steps": [
+          {
+            "op": "emit_and_evaluate",
+            "source": "R1.SET_BUSINESS_READY",
+            "v": 1
+          },
+          {
+            "op": "after_commit",
+            "emit": [
+              {
+                "source": "R1.TRY_CLAIM",
+                "v": 1,
+                "when": "PRE head exists"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "output_protocol": {
+      "prepare_order": "FIFO request metadata; not a new execution FIFO",
+      "first_marker": 1,
+      "replay_marker": 0,
+      "first_requires": "POST head saved; no older head awaiting ACK1",
+      "qualification_requires": "all actual data outputs and FRAME_OUT really completed, followed by COMPLETE transaction",
+      "completion_delivery": "reliably enqueue completion receipt before exposing its successful FRAME_OUT receipt to subsequent ACK admission; never directly write qualification in callback",
+      "B_protection": "first batch owns B through its qualifying completion; later first preparation cannot overwrite it",
+      "replay_independence": "accepted H snapshot survives subsequent head consumption and reuse",
+      "ACK_early": "DEC with valid=0 publishes no action; do not preserve it waiting for future READY",
+      "ACK_binding": "at each DEC EX entry, then revalidate same bound frame at ACT; no retargeting",
+      "complete_vs_ACK": "root COMPLETE never implies external business ACK received"
+    },
+    "atomicity": {
+      "outer_R1": "ordinary JKS; no whole-lifetime transaction and no atomic flag",
+      "roots": "stage JKS use nonempty trigger.transaction, one actual control delivery per stage call",
+      "nested_F1": "shares active root and exact parent path; no extra FIFO or separate commit",
+      "stage_admission": "all actual external bit/data parameters for that stage already available; no waiting for future independent tasks",
+      "source_timing": "PARAM latched, STATE at EX entry, SELF fixed per EX",
+      "publications": "preserve each legal publication and order; no final-value coalescing",
+      "complete": "required EX, operations and required internal deliveries settled; then commit and necessary external propagation/successor enqueue",
+      "precommit_failure": "no partial structure/q/output; retain original inputs and candidates",
+      "postcommit_failure": "resume outbox/cursor; do not recompute"
+    },
+    "metadata_contract": {
+      "zones": "ordered frame/slot/node references only",
+      "ids": [
+        "frame id",
+        "batch id",
+        "run id",
+        "delivery id",
+        "root task_id + path"
+      ],
+      "generation": "block metadata plus bound task references; not an unapproved extra JKI.pro field",
+      "factory_drafts": "private uninstalled records until safe configuration and commit",
+      "runtime": "JKS.runtime remains instance_id/pending/calls only; detailed queues, holders, metadata and recovery log are separate runtime-owned state",
+      "snapshot": "must include all referenced definitions, q/candidates, input presence, allocator reservations, frame/slot links, generation, batches, queues, outbox and progress; ordinary runtime view is not this checkpoint",
+      "detailed_state": "runtime-owned metadata is keyed by actual R1 instance and referenced from its scoped calls; it is not placed into JKI.pro or silently added to the approved JKS.runtime record"
+    },
+    "validation": {
+      "before_active_install": [
+        "JKI six fields; q/seed exclusive; nonempty complete trigger.any and sources",
+        "all bit arrays aligned and no boolean bits",
+        "each JKI.pro contains only jksid",
+        "all trigger and source aliases explicitly bound",
+        "actual instance ownership and immutable definition resolution",
+        "real EX reference requirements and DAG after allowed self exclusion; no pool/tail/control exemption",
+        "no deletion or rebind of protected nodes",
+        "stage-specific required parameters and completion receipts"
+      ],
+      "publication_format": "exactly one of the seven conversation-approved modes",
+      "scope_note": "design check validates static bindings and interface contracts; runtime must additionally instantiate and validate every real reference, EX dependency and DAG, using the specified closure construction; no claim that an unexpanded template is an already-legal active graph"
+    },
+    "definitions": {
+      "Q20": {
+        "id": "Q20",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.FRAME_IN"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "R1.ACCEPT": {
+        "id": "R1.ACCEPT",
+        "members": [
+          "Q20"
+        ],
+        "trigger": {
+          "transaction": [
+            "R1.FRAME_IN"
+          ]
+        },
+        "queue": "work",
+        "pro": {
+          "complete": {
+            "executed": [
+              "Q20"
+            ],
+            "required_actions": "settled"
+          },
+          "scope": "can execute explicitly registered dynamic R1 nodes in this call; no implicit EX"
+        },
+        "runtime": {}
+      },
+      "Q21": {
+        "id": "Q21",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.RESULT_IN"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "one": [
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "R1.RESULT": {
+        "id": "R1.RESULT",
+        "members": [
+          "Q21",
+          "Q35"
+        ],
+        "trigger": {
+          "transaction": [
+            "R1.RESULT_IN"
+          ]
+        },
+        "queue": "work",
+        "pro": {
+          "complete": {
+            "executed": [
+              "Q21"
+            ],
+            "required_actions": "settled"
+          },
+          "scope": "can execute explicitly registered dynamic R1 nodes in this call; no implicit EX"
+        },
+        "runtime": {}
+      },
+      "Q23": {
+        "id": "Q23",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.READ_REQUEST"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "one": [
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "R1.READ": {
+        "id": "R1.READ",
+        "members": [
+          "Q23",
+          "Q32",
+          "Q64",
+          "Q40",
+          "Q41",
+          "Q42",
+          "Q43",
+          "Q44",
+          "Q45",
+          "Q46",
+          "Q47"
+        ],
+        "trigger": {
+          "transaction": [
+            "R1.READ_REQUEST"
+          ]
+        },
+        "queue": "work",
+        "pro": {
+          "complete": {
+            "executed": [
+              "Q23"
+            ],
+            "required_actions": "settled"
+          },
+          "scope": "can execute explicitly registered dynamic R1 nodes in this call; no implicit EX"
+        },
+        "runtime": {}
+      },
+      "Q24": {
+        "id": "Q24",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.READ_DONE"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "one": [
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "R1.RELAY": {
+        "id": "R1.RELAY",
+        "members": [
+          "Q24",
+          "Q56",
+          "Q57",
+          "Q58",
+          "Q59",
+          "Q60",
+          "Q61",
+          "Q62",
+          "Q63",
+          "Q65",
+          "Q32"
+        ],
+        "trigger": {
+          "transaction": [
+            "R1.READ_DONE"
+          ]
+        },
+        "queue": "work",
+        "pro": {
+          "complete": {
+            "executed": [
+              "Q24"
+            ],
+            "required_actions": "settled"
+          },
+          "scope": "can execute explicitly registered dynamic R1 nodes in this call; no implicit EX"
+        },
+        "runtime": {}
+      },
+      "Q25": {
+        "id": "Q25",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.RELAY_DONE"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "one": [
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "R1.SEND": {
+        "id": "R1.SEND",
+        "members": [
+          "Q25",
+          "Q66",
+          "Q67",
+          "Q68",
+          "Q69",
+          "Q70",
+          "Q71",
+          "Q72",
+          "Q73",
+          "Q74"
+        ],
+        "trigger": {
+          "transaction": [
+            "R1.RELAY_DONE"
+          ]
+        },
+        "queue": "work",
+        "pro": {
+          "complete": {
+            "executed": [
+              "Q25"
+            ],
+            "required_actions": "settled"
+          },
+          "scope": "can execute explicitly registered dynamic R1 nodes in this call; no implicit EX"
+        },
+        "runtime": {}
+      },
+      "Q26": {
+        "id": "Q26",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.OUTPUT_DONE"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "one": [
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "R1.COMPLETE": {
+        "id": "R1.COMPLETE",
+        "members": [
+          "Q26",
+          "Q48",
+          "Q49",
+          "Q50",
+          "Q51",
+          "Q52",
+          "Q53",
+          "Q54",
+          "Q55",
+          "Q33",
+          "Q34"
+        ],
+        "trigger": {
+          "transaction": [
+            "R1.OUTPUT_DONE"
+          ]
+        },
+        "queue": "work",
+        "pro": {
+          "complete": {
+            "executed": [
+              "Q26"
+            ],
+            "required_actions": "settled"
+          },
+          "scope": "can execute explicitly registered dynamic R1 nodes in this call; no implicit EX"
+        },
+        "runtime": {}
+      },
+      "Q29": {
+        "id": "Q29",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.REPLAY_ACTION"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "one": [
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "R1.ACT0": {
+        "id": "R1.ACT0",
+        "members": [
+          "Q29"
+        ],
+        "trigger": {
+          "transaction": [
+            "R1.REPLAY_ACTION"
+          ]
+        },
+        "queue": "work",
+        "pro": {
+          "complete": {
+            "executed": [
+              "Q29"
+            ],
+            "required_actions": "settled"
+          },
+          "scope": "can execute explicitly registered dynamic R1 nodes in this call; no implicit EX"
+        },
+        "runtime": {}
+      },
+      "Q30": {
+        "id": "Q30",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.CONSUME_ACTION"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "one": [
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "R1.ACT1": {
+        "id": "R1.ACT1",
+        "members": [
+          "Q30",
+          "Q33"
+        ],
+        "trigger": {
+          "transaction": [
+            "R1.CONSUME_ACTION"
+          ]
+        },
+        "queue": "work",
+        "pro": {
+          "complete": {
+            "executed": [
+              "Q30"
+            ],
+            "required_actions": "settled"
+          },
+          "scope": "can execute explicitly registered dynamic R1 nodes in this call; no implicit EX"
+        },
+        "runtime": {}
+      },
+      "Q31": {
+        "id": "Q31",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.GC_REQUEST"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "one": [
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "R1.GC": {
+        "id": "R1.GC",
+        "members": [
+          "Q31"
+        ],
+        "trigger": {
+          "transaction": [
+            "R1.GC_REQUEST"
+          ]
+        },
+        "queue": "work",
+        "pro": {
+          "complete": {
+            "executed": [
+              "Q31"
+            ],
+            "required_actions": "settled"
+          },
+          "scope": "can execute explicitly registered dynamic R1 nodes in this call; no implicit EX"
+        },
+        "runtime": {}
+      },
+      "Q22": {
+        "id": "Q22",
+        "state": {
+          "seed": 1
+        },
+        "trigger": {
+          "any": [
+            "R1.TRY_CLAIM"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "CLAIMED",
+            "HEAD_VALID",
+            "BUSINESS_READY"
+          ],
+          "ex": [
+            "K",
+            "J",
+            "J"
+          ],
+          "v": [
+            null,
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "one": [
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "R1.CLAIM": {
+        "id": "R1.CLAIM",
+        "members": [
+          "Q22",
+          "Q35"
+        ],
+        "trigger": {
+          "transaction": [
+            "R1.TRY_CLAIM"
+          ]
+        },
+        "queue": "work",
+        "pro": {
+          "complete": {
+            "executed": [
+              "Q22"
+            ],
+            "required_actions": "settled"
+          },
+          "scope": "can execute explicitly registered dynamic R1 nodes in this call; no implicit EX"
+        },
+        "runtime": {}
+      },
+      "Q27": {
+        "id": "Q27",
+        "state": {
+          "seed": 1
+        },
+        "trigger": {
+          "any": [
+            "R1.ACK"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ACK_VALUE",
+            "ACK_VALID",
+            "HEAD_VALID"
+          ],
+          "ex": [
+            "K",
+            "J",
+            "J"
+          ],
+          "v": [
+            null,
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "one": [
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q28": {
+        "id": "Q28",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.ACK"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "ACK_VALUE",
+            "ACK_VALID",
+            "HEAD_VALID"
+          ],
+          "ex": [
+            "J",
+            "K",
+            "J",
+            "J"
+          ],
+          "v": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "one": [
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "R1.DEC0": {
+        "id": "R1.DEC0",
+        "members": [
+          "Q27"
+        ],
+        "trigger": {
+          "transaction": [
+            "R1.ACK"
+          ]
+        },
+        "queue": "work",
+        "pro": {
+          "bind_at_ex_entry": [
+            "current head frame id",
+            "slot/block generation",
+            "qualification token",
+            "H identities",
+            "required state references"
+          ],
+          "complete": {
+            "executed": [
+              "Q27"
+            ],
+            "required_actions": "settled"
+          }
+        },
+        "runtime": {}
+      },
+      "R1.DEC1": {
+        "id": "R1.DEC1",
+        "members": [
+          "Q28"
+        ],
+        "trigger": {
+          "transaction": [
+            "R1.ACK"
+          ]
+        },
+        "queue": "work",
+        "pro": {
+          "bind_at_ex_entry": [
+            "current head frame id",
+            "slot/block generation",
+            "qualification token",
+            "H identities",
+            "required state references"
+          ],
+          "complete": {
+            "executed": [
+              "Q28"
+            ],
+            "required_actions": "settled"
+          }
+        },
+        "runtime": {}
+      },
+      "Q32": {
+        "id": "Q32",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.SET_BUSY"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q33": {
+        "id": "Q33",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.SET_ACK_VALID"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q34": {
+        "id": "Q34",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.SET_CACHE_VALID"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q35": {
+        "id": "Q35",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.SET_BUSINESS_READY"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q40": {
+        "id": "Q40",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.LOAD_B0"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "STORED_BIT0"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q48": {
+        "id": "Q48",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.LOAD_H0"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "Q40"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q56": {
+        "id": "Q56",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.RELAY_BIT0"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "RELAY_BIT0"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q66": {
+        "id": "Q66",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.OUTPUT_BIT0"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "OUTPUT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q41": {
+        "id": "Q41",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.LOAD_B1"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "STORED_BIT1"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q49": {
+        "id": "Q49",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.LOAD_H1"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "Q41"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q57": {
+        "id": "Q57",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.RELAY_BIT1"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "RELAY_BIT1"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q67": {
+        "id": "Q67",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.OUTPUT_BIT1"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "OUTPUT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q42": {
+        "id": "Q42",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.LOAD_B2"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "STORED_BIT2"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q50": {
+        "id": "Q50",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.LOAD_H2"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "Q42"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q58": {
+        "id": "Q58",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.RELAY_BIT2"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "RELAY_BIT2"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q68": {
+        "id": "Q68",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.OUTPUT_BIT2"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "OUTPUT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q43": {
+        "id": "Q43",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.LOAD_B3"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "STORED_BIT3"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q51": {
+        "id": "Q51",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.LOAD_H3"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "Q43"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q59": {
+        "id": "Q59",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.RELAY_BIT3"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "RELAY_BIT3"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q69": {
+        "id": "Q69",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.OUTPUT_BIT3"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "OUTPUT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q44": {
+        "id": "Q44",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.LOAD_B4"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "STORED_BIT4"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q52": {
+        "id": "Q52",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.LOAD_H4"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "Q44"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q60": {
+        "id": "Q60",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.RELAY_BIT4"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "RELAY_BIT4"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q70": {
+        "id": "Q70",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.OUTPUT_BIT4"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "OUTPUT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q45": {
+        "id": "Q45",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.LOAD_B5"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "STORED_BIT5"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q53": {
+        "id": "Q53",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.LOAD_H5"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "Q45"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q61": {
+        "id": "Q61",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.RELAY_BIT5"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "RELAY_BIT5"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q71": {
+        "id": "Q71",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.OUTPUT_BIT5"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "OUTPUT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q46": {
+        "id": "Q46",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.LOAD_B6"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "STORED_BIT6"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q54": {
+        "id": "Q54",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.LOAD_H6"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "Q46"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q62": {
+        "id": "Q62",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.RELAY_BIT6"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "RELAY_BIT6"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q72": {
+        "id": "Q72",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.OUTPUT_BIT6"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "OUTPUT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q47": {
+        "id": "Q47",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.LOAD_B7"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "STORED_BIT7"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q55": {
+        "id": "Q55",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.LOAD_H7"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "Q47"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q63": {
+        "id": "Q63",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.RELAY_BIT7"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "RELAY_BIT7"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q73": {
+        "id": "Q73",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.OUTPUT_BIT7"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "OUTPUT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q64": {
+        "id": "Q64",
+        "state": {
+          "q": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.SET_MODE"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "never": []
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q65": {
+        "id": "Q65",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.RELAY_MARKER"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "Q64"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "Q74": {
+        "id": "Q74",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.OUTPUT_MARKER"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "OUTPUT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "RAM1": {
+        "id": "RAM1",
+        "members": [
+          "R1.ACCEPT",
+          "R1.RESULT",
+          "R1.CLAIM",
+          "R1.READ",
+          "R1.RELAY",
+          "R1.SEND",
+          "R1.COMPLETE",
+          "R1.DEC0",
+          "R1.DEC1",
+          "R1.ACT0",
+          "R1.ACT1",
+          "R1.GC",
+          "R1.READY"
+        ],
+        "trigger": {},
+        "queue": "work",
+        "pro": {
+          "name": "RAM",
+          "scope": "all Q20..Q74 and dynamic slot nodes are shared actual R1-owned state, not cloned by repeated member references"
+        },
+        "runtime": {}
+      },
+      "Q79": {
+        "id": "Q79",
+        "state": {
+          "seed": 0
+        },
+        "trigger": {
+          "any": [
+            "R1.BUSINESS_READY"
+          ],
+          "v": [
+            null
+          ]
+        },
+        "sources": {
+          "s": [
+            "ZERO",
+            "EVENT_VALUE"
+          ],
+          "ex": [
+            "J",
+            "K"
+          ],
+          "v": [
+            null,
+            null
+          ]
+        },
+        "publish": {
+          "always": [
+            0,
+            1
+          ]
+        },
+        "pro": {
+          "jksid": "R1"
+        }
+      },
+      "R1.READY": {
+        "id": "R1.READY",
+        "members": [
+          "Q79",
+          "Q35"
+        ],
+        "trigger": {
+          "transaction": [
+            "R1.BUSINESS_READY"
+          ]
+        },
+        "queue": "work",
+        "pro": {
+          "complete": {
+            "executed": [
+              "Q79",
+              "Q35"
+            ],
+            "required_actions": "settled"
+          }
+        },
+        "runtime": {}
+      }
+    },
+    "stage_binding": {
+      "R1.ACCEPT": "lock current FRAME_IN admission and all actual input bit identities; do not reread latest DATA later",
+      "R1.CLAIM": "bind current PRE head and existing frontier at entry; gate reads actual candidate/state q",
+      "R1.RESULT": "bind exactly the originating run, PRE frame and available result/state locks; never select another run",
+      "R1.READ": "bind preparation-request head, batch kind and source frame or immutable H snapshot; BUSY=1 yields normal NOOP retaining request",
+      "R1.RELAY": "bind the preceding completed READ batch; prepare next batch only after all output locks of this batch exist",
+      "R1.COMPLETE": "bind trusted completion batch; stale/replay completion is normal NOOP before any H/qualification EX",
+      "R1.DEC0/R1.DEC1": "each independent DEC binds actual current POST head at its own EX entry, not ACK arrival",
+      "R1.ACT0/R1.ACT1": "use frozen DEC bindings; revalidation cannot replace them with a later head",
+      "R1.GC": "collect candidates at execution; normal NOOP if none eligible; active GC controller is not a deletion candidate"
+    },
+    "failure_handoff": {
+      "factory_success": "a draft and its identity are staged in the containing root; input-clear is part of that same root; no external visibility before commit",
+      "installation_failure_after_child_return": "root retains returned draft, its node id, actual frame locks and F1 candidates; retry the same operation, not a new factory edge",
+      "root_abort": "discard uncommitted active-node installs and restore candidate domain; reserved identities remain tombstones",
+      "after_root_commit": "input clear is durable with draft/install result; delivery failures resume existing outbox only",
+      "failed_request_vs_new_input": "a new b5=0 clears only its own admitted input state; it cannot erase saved call contexts or results"
+    },
+    "protocol_events": {
+      "control_ready": "v=1 means an actual phase completion, not a checksum or data bit value",
+      "data": "0 and repeated values are independent valid deliveries",
+      "clear": "an explicit v=0 input-control delivery; zeroing a q does not by itself manufacture an event",
+      "no_hidden_wait": "incomplete factory input rejects; missing business-stage parameters stay outside the stage FIFO task"
+    }
+  },
+  "runtime": {}
+}

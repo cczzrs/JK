@@ -1,0 +1,43 @@
+{
+  "static_JKS_definitions": 22,
+  "static_JKI_definitions": 65,
+  "source_binding_and_member_resolution": "passed",
+  "state_and_publication_checks": 128,
+  "factory_protocol_traces": "passed: input clear, valid zero bits, success clear, repeated one, incomplete reject, zero-to-one rearm",
+  "ACK_and_claim_JK_truth_tables": "passed",
+  "not_executed": [
+    "full dynamic RAM instantiation",
+    "expanded reference-count and DAG proof",
+    "actual allocator/commit/outbox implementation",
+    "interleavings and recovery",
+    "CUDA compilation/execution/performance"
+  ],
+  "web_update_2026_10_31": {
+    "spec_version": "7.0.0",
+    "http_controller_tests": 14,
+    "frontend_checks": [
+      "factory.test.mjs",
+      "graph.test.mjs",
+      "state.test.mjs",
+      "app.js syntax"
+    ],
+    "browser": [
+      "direct factory link",
+      "overview/factory/RAM/all scopes",
+      "Q12 EX and one_changed inspector",
+      "all 65 JKI and 22 JKS retained under search",
+      "binding visibility and vertical/horizontal layout",
+      "exact clipboard/download JSON",
+      "return to 28-node live model",
+      "390px no page horizontal overflow",
+      "no console warning or error"
+    ],
+    "design_activity_overlay": "disabled; initialization definitions are not runtime state",
+    "not_verified": [
+      "expanded RAM topology/reference/DAG legality",
+      "factory operation execution",
+      "concurrent recovery",
+      "CUDA"
+    ]
+  }
+}

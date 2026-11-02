@@ -1,0 +1,276 @@
+{
+  "verified_at_utc": "2026-10-28T20:03:25.784536+00:00",
+  "environment": {
+    "python": "3.9.6",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "compiler": "/usr/bin/clang++"
+  },
+  "checks": {
+    "unittest": {
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-q"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "----------------------------------------------------------------------\nRan 149 tests in 4.591s\n\nOK\n",
+      "tests_run": 149
+    },
+    "cpp_strict": {
+      "command": [
+        "/usr/bin/clang++",
+        "-std=c++17",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+        "-Werror",
+        "-fsyntax-only",
+        "jkcuda/native/cpu.cpp"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    "native_differential": {
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "scripts/validate_cuda.py",
+        "--device",
+        "native-cpu",
+        "--modules"
+      ],
+      "exit_code": 0,
+      "stderr": ".............................................................\n----------------------------------------------------------------------\nRan 61 tests in 2.377s\n\nOK\n",
+      "summary": {
+        "status": "passed",
+        "environment": {
+          "python": "3.9.6",
+          "platform": "macOS-26.6.2-arm64-arm-64bit",
+          "device": "native-cpu",
+          "work_bounds": [
+            1,
+            7,
+            10000
+          ],
+          "propagation": "both",
+          "propagation_chunk": 128,
+          "block_size": 128
+        },
+        "cases": 33,
+        "runs": 198,
+        "completed_tasks": 4098,
+        "compared_trace_records": 30312,
+        "validation_wall_seconds": 3.738037083,
+        "cuda_verified": false,
+        "sanitizer_verified": false,
+        "module_tests": {
+          "device": "native-cpu",
+          "tests": 61,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "passed": true
+        },
+        "coverage": "enqueue/select/bind/commit/event/delivery/match/output/complete ordered traces",
+        "limitations": [
+          "validation wall time is not an end-to-end performance benchmark",
+          "native-cpu emulates cooperative phases but does not exercise CUDA synchronization",
+          "Compute Sanitizer results must be collected by separate runs"
+        ]
+      }
+    },
+    "propagation_harness_smoke": {
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "scripts/benchmark_propagation.py",
+        "--device",
+        "native-cpu",
+        "--fanout",
+        "129",
+        "--events",
+        "3",
+        "--propagation-chunk",
+        "33",
+        "--block-size",
+        "64"
+      ],
+      "exit_code": 0,
+      "stderr": "",
+      "summary": {
+        "status": "measured",
+        "environment": {
+          "device": "native-cpu",
+          "python": "3.9.6",
+          "platform": "macOS-26.6.2-arm64-arm-64bit"
+        },
+        "fanout": 129,
+        "events": 3,
+        "propagation_chunk": 33,
+        "block_size": 64,
+        "logical_states_equal": true,
+        "variants": {
+          "serial": {
+            "wall_seconds": 0.0002452909999999947,
+            "completed_tasks": 390,
+            "completed_tasks_per_second": 1589948.2655295483,
+            "metrics": {
+              "E": 3,
+              "D": 387,
+              "R": 387,
+              "G": 3,
+              "ex_evaluations": 390,
+              "external_enqueued": 3,
+              "completed_tasks": 390,
+              "last_work": 1950,
+              "last_completed": 390
+            },
+            "physical_metrics": {
+              "cuda_kernel_launches": 0,
+              "native_advance_calls": 1,
+              "h2d_transfers": 0,
+              "h2d_bytes": 0,
+              "d2h_transfers": 0,
+              "d2h_bytes": 0,
+              "max_host_arena_bytes": 1563856,
+              "parallel_batches": 0,
+              "parallel_edges": 0,
+              "parallel_target_groups": 0,
+              "parallel_tasks_formed": 0,
+              "max_parallel_chunk": 0,
+              "cuda_device_peak_allocated_bytes": null,
+              "cuda_device_peak_reserved_bytes": null,
+              "host_arena_bytes": 1563856,
+              "propagation_scratch_bytes": 5800,
+              "device_arena_bytes": 0
+            }
+          },
+          "parallel": {
+            "wall_seconds": 0.00017391700000000954,
+            "completed_tasks": 390,
+            "completed_tasks_per_second": 2242448.9842854845,
+            "metrics": {
+              "E": 3,
+              "D": 387,
+              "R": 387,
+              "G": 3,
+              "ex_evaluations": 390,
+              "external_enqueued": 3,
+              "completed_tasks": 390,
+              "last_work": 1950,
+              "last_completed": 390
+            },
+            "physical_metrics": {
+              "cuda_kernel_launches": 0,
+              "native_advance_calls": 1,
+              "h2d_transfers": 0,
+              "h2d_bytes": 0,
+              "d2h_transfers": 0,
+              "d2h_bytes": 0,
+              "max_host_arena_bytes": 1563856,
+              "parallel_batches": 12,
+              "parallel_edges": 387,
+              "parallel_target_groups": 387,
+              "parallel_tasks_formed": 387,
+              "max_parallel_chunk": 33,
+              "cuda_device_peak_allocated_bytes": null,
+              "cuda_device_peak_reserved_bytes": null,
+              "host_arena_bytes": 1563856,
+              "propagation_scratch_bytes": 5800,
+              "device_arena_bytes": 0
+            }
+          }
+        },
+        "limitations": [
+          "synthetic ANY fanout; not all application workloads",
+          "native-cpu uses a serial emulator of cooperative phases, not GPU performance",
+          "one sample per variant; repeat and compare distributions on the actual GPU",
+          "full arena transfer remains included; phase-level GPU timings unavailable"
+        ]
+      }
+    },
+    "cuda": {
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "scripts/validate_cuda.py",
+        "--device",
+        "cuda",
+        "--modules"
+      ],
+      "exit_code": 77,
+      "stderr": "",
+      "summary": {
+        "status": "skipped",
+        "reason": "PyTorch is not installed",
+        "environment": {
+          "python": "3.9.6",
+          "platform": "macOS-26.6.2-arm64-arm-64bit",
+          "device": "cuda",
+          "work_bounds": [
+            1,
+            7,
+            10000
+          ],
+          "propagation": "both",
+          "propagation_chunk": 128,
+          "block_size": 128
+        },
+        "cuda_verified": false
+      }
+    }
+  },
+  "cuda_verified": false,
+  "compute_sanitizer_verified": false,
+  "gpu_performance_measured": false,
+  "limitations": [
+    "native success does not prove GPU compilation, memory ordering or performance",
+    "V5 full runtime recovery and 75-task continuation are not implemented",
+    "cooperative CUDA propagation has only native phase-emulation evidence locally",
+    "JIT, physical GC, multi-block propagation and asynchronous arena transfer remain incomplete"
+  ],
+  "source_sha256": {
+    "examples/cuda/business.json": "383d04bf906552609c08935215ae209b37c003312b9627bf46db4960b4806a8a",
+    "examples/cuda/frames.json": "baf7e6b9557c6a805d33463500073999e91c104a5b3fb103ebf62260419b4441",
+    "examples/cuda/xor.json": "3705e648cf49348a49578caf3ccbf639f2607fee46e1785b41b0ced46f60711d",
+    "jkcuda/__init__.py": "fed5a2fe79250972fe752711ed5dfa21347607685c6733703ec52735cd6f149f",
+    "jkcuda/__main__.py": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d",
+    "jkcuda/backend.py": "fb06fd696eeb7c1588d6ae4bb1c274dab25489b32378645c4e9e1eef185c5393",
+    "jkcuda/business.py": "d770973a8008586cd43a8f69a2bfef1e6a0fea76b0d224151c683d257bc515b2",
+    "jkcuda/cli.py": "f65fa042e629a7a7b12fcdfb191193df7e01fa7b3fbeba605a717e43b715a24a",
+    "jkcuda/compat.py": "e2ea156371994a37627048c167fee4557f20e8bb079f3cd05b795bd6463c3db5",
+    "jkcuda/frames.py": "1070003bf45649357bf0908af64a4b555c28d0fb790b1ea7d48987eaca0d6e44",
+    "jkcuda/model.py": "e3d8984685ed74945ac6bc5e1c391d2a5ae0414492bf1da89732d605674f3adf",
+    "jkcuda/native/bindings.cpp": "b7f248b5976434f93f5867356acdea3322c5ff6e10ec75abc5ae403817e4deff",
+    "jkcuda/native/core.hpp": "9846f2bad514cb0a6de389606078eab55fad6fb64edd32e02140b6bc20d66c6c",
+    "jkcuda/native/cpu.cpp": "e46f3151264c4accb7b917ff19f79259ca096775077ad2121d056002e09f931a",
+    "jkcuda/native/engine.cu": "88a48b53e7d7c3f582cf5985b9447416610a2703a24bc6ca1822c9596577937a",
+    "jkcuda/native/frames.hpp": "6a8e7bd50a8550aaed5ae824f23dbda5b27a0163117bfac1d9d440afa6b45a84",
+    "jkcuda/native/propagation.hpp": "4129d4530ac90772bd39051b1d032ee901f822fe57e8172e873406fb4e5d94c1",
+    "jkcuda/persistence.py": "8962fc860e5127d0991afdb25c94b3c45c0e537ea05a451f495a00ddfb0fcd6c",
+    "jkcuda/reference.py": "a8f610d840073534f56641370e7bc49c3bbdccba46f7e91718f7c6a94dd32967",
+    "jkcuda/runtime.py": "4dcce7493cb68031df174e4e03851cdc2ea36480c9921ddba06be25fc3b28fa0",
+    "pyproject.toml": "4bd5c79222f5427d44c09a4fdb755a08c419bf1581e60a12b316b34782a4d66c",
+    "scripts/benchmark_cuda.py": "dba1c86a3513fc89ebf52d25db9ec8095b1d797744179349b518f236e4e51615",
+    "scripts/benchmark_propagation.py": "56b517dda5d2835ecd4055febdff530e2124c8a65e48972bc9f7480e0c8a9c08",
+    "scripts/validate_cuda.py": "b4d9ce50bcb14537a94fb202f00f6b98bb2bbc85988d862839ef9993c4da04ab",
+    "scripts/verify_local.py": "eaf49d173ff14e688d19f786aeb03da085ee48be1196ed3c210f415e539b800d",
+    "tests/__init__.py": "56a5b3178e48b9fc4ba6daf71cdfa4cec69911276474e2bf26f33afbd60949c5",
+    "tests/test_backend_admission.py": "1f5208a2d7a2b5c2f651b5f3b411c693c168b0db1e29f60c7ccedeb1eb0d1ff2",
+    "tests/test_business.py": "ea0c5ae7dbadb4025f5f6417f1b8187458f55181d240a99a144c000424d39075",
+    "tests/test_business_audit.py": "c28551350f590e39a53e13275243ae93c2a7799018a4fed1c8b3ceee34060f19",
+    "tests/test_compat.py": "48633168d2f20495a277957622d9a37f14201525b2934f6a9aad25361d840582",
+    "tests/test_differential.py": "b77a1c89b384225e54af4f317bbed7254690a49707b3e6c9a3d0a2a57ed4333b",
+    "tests/test_dynamic.py": "8307acec6a112e840e55f888e85927a490e234f9aca12ef0691986c0b1bd09eb",
+    "tests/test_frame_integration.py": "48169d605e21a528c812e1cddc4f2adc09219bd7cac134ea3ef6311d83d8ddda",
+    "tests/test_frame_runtime.py": "2cae2b13430fbf9fe1430e1f114df522595c060a183b59f2fcb82e88b336df4c",
+    "tests/test_frames_semantics.py": "9f3f4e9b656752ddc94782b0fda702fa942e47bedc54737810a9bb6b3660bb88",
+    "tests/test_model.py": "1b2dc5a129da0bd83b0a84ec315dda3c3912863fcc9929e6b67970f9f5c211b1",
+    "tests/test_parallel_propagation.py": "56bac19f1296f62203fdffda80714d30254952cc9a92f06c7488c656e79acb0a",
+    "tests/test_reference.py": "e8ecd7e2ce4681d8df04362705962f4f59d16745c960eb3af37b890ff95e4cdd",
+    "tests/test_runtime.py": "ec2ad640b26d848bf9162bd463b3921ba9287c37a3d30f0844f7b61786d5ef40"
+  }
+}

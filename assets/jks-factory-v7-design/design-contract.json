@@ -1,0 +1,194 @@
+{
+  "status": "approved module design adopted into JKRD7 on 2026-10-31; implementation evidence remains separate",
+  "version": "7.0.0",
+  "entrypoints": [
+    "JKI.FACTORY.json",
+    "RAM.FACTORY.json"
+  ],
+  "queues": [
+    {
+      "id": "work",
+      "order": "FIFO",
+      "active_roots": 1
+    }
+  ],
+  "definition_resolution": "load imports once; recursively register pro.definitions; members contain actual JKI/JKS ids only; template placeholders are excluded until instantiated",
+  "source_resolution": "pro.bindings lexical lookup; {const}, {param}, {state}, {state_ref}, {self}, and explicit by_source/by_batch selectors; selection resolved to bound identity/value, never guessed from names",
+  "dynamic_scope": "explicit register operation extends the current root evaluation set; each dynamic member still needs an actual trigger delivery and its own full EX",
+  "structural_operations": "performed by runtime on behalf of the owning JKS, not by J/K and never by a host business-bit algorithm",
+  "shared_node_resolution": "a repeated member id within one parent instance resolves to one actual state; a different parent instance has different state; allocated public Q ids remain model-global",
+  "allocator": "scan existing/static/reserved ids before starting; reserve monotonically and idempotently by operation identity; never decrement or reuse logical ids",
+  "operation_families": {
+    "emit_internal/emit_and_evaluate": "emit one identified bit delivery inside current root; target full EX must run; do not also enqueue a duplicate independent task",
+    "snapshot_node_bits": "lock actual q from the listed nodes and record provenance; no creation when required presence q is zero",
+    "reserve_node_id": "atomic model allocator reservation, stable on retry and retained on abort",
+    "build_jki_draft": "decode factory state/publish maps and construct six fields with empty trigger/sources; does not install an active node",
+    "stage_reply/stage_outputs": "append immutable identified records to root outbox; internal consumers may proceed, external visibility waits commit",
+    "construct_slot": "execute the declared factory sequence per actual node, configure private nodes, invoke real load EX, add valid/claim/read/control references and stage membership; no direct write_q",
+    "evaluate_bound/load_B": "bind existing values and emit one real node activation per target; state changes come only from its J/K EX",
+    "append_slot/consume_pre/consume_and_advance_head": "edit frame links only alongside the explicitly required q changes; preserve frame order and task identities",
+    "admit_output_request/enqueue_preparation": "ordered business request references and per-request q flags; never substitute a new execution FIFO",
+    "lock_output_tasks/lock_H_snapshot/stage_business_handoff": "independent immutable per-task locks with origin identity and holder count; release predecessor only after handoff",
+    "guard_batch/guard_bound_action": "revalidate already bound metadata identity, generation, consumption and qualification; invalid becomes normal NOOP, never rebind to next head",
+    "stage_bound_action/after_commit": "a fresh independent stage call with its own root identity; child return is not a new commit boundary",
+    "validate_fragment_detach/detach_and_delete/reuse_capacity": "validate all real references and queued holders, commit full unlink/removal, then reuse only capacity with new generation and fresh logical node ids",
+    "failure": "pause/fault the admitted call retaining inputs/reservations/context; explicit retry resumes same identity; after commit retry publication only"
+  },
+  "normal_rejection_vs_fault": "incomplete input/early ACK/stale ACT are normal rejection or NOOP; allocator/commit/transport errors have retained fault state",
+  "not_claimed": [
+    "production executor support",
+    "CUDA correctness or performance",
+    "arbitrary expanded topology already validated",
+    "complete persisted recovery implementation"
+  ],
+  "sources": [
+    "JKRD7.md sections 2,3,5,6,7,8,11",
+    "docs/logic_units/async-structural-storage-draft.md sections 3,4,5,13",
+    "current conversation state/publication/factory-input/ownership confirmations"
+  ],
+  "operation_arguments": {
+    "admit_output_request": [
+      "require"
+    ],
+    "after_commit": [
+      "emit"
+    ],
+    "after_publication_receipts": [
+      "emit",
+      "require"
+    ],
+    "append_slot": [
+      "commit"
+    ],
+    "build_jki_draft": [
+      "owner",
+      "publish_map",
+      "sources",
+      "state_map",
+      "trigger"
+    ],
+    "clear_uncommitted_ingress": [
+      "preserve",
+      "scope"
+    ],
+    "commit_qualification": [
+      "domain",
+      "identity"
+    ],
+    "construct_slot": [
+      "evaluate",
+      "factory",
+      "zone"
+    ],
+    "consume_and_advance_head": [
+      "once",
+      "preserve"
+    ],
+    "consume_pre": [
+      "require"
+    ],
+    "detach_and_delete": [
+      "domain"
+    ],
+    "emit_and_evaluate": [
+      "after",
+      "for_each",
+      "params",
+      "source",
+      "v",
+      "value",
+      "values"
+    ],
+    "emit_internal": [
+      "source",
+      "v"
+    ],
+    "enqueue_preparation": [
+      "marker",
+      "type"
+    ],
+    "evaluate_bound": [
+      "target",
+      "value"
+    ],
+    "guard_batch": [
+      "require"
+    ],
+    "guard_bound_action": [
+      "require"
+    ],
+    "load_B": [
+      "evaluate",
+      "for_each"
+    ],
+    "lock_H_snapshot": [
+      "holders",
+      "identity"
+    ],
+    "lock_frame": [
+      "identity",
+      "preserve_order"
+    ],
+    "lock_output_tasks": [
+      "inputs"
+    ],
+    "record_actual_stage_completion": [
+      "require"
+    ],
+    "reserve_node_id": [
+      "allocator",
+      "idempotency"
+    ],
+    "reuse_capacity": [
+      "generation",
+      "logical_node_ids"
+    ],
+    "select_reclaimable": [
+      "require"
+    ],
+    "snapshot_node_bits": [
+      "as_name",
+      "nodes"
+    ],
+    "stage_bound_action": [
+      "after_commit",
+      "bind",
+      "port"
+    ],
+    "stage_business_handoff": [
+      "identity",
+      "inputs",
+      "state"
+    ],
+    "stage_outputs": [
+      "identity",
+      "order"
+    ],
+    "stage_reply": [
+      "allocate",
+      "code",
+      "payload",
+      "port"
+    ],
+    "validate_fragment_detach": [
+      "include"
+    ],
+    "validate_frame": [
+      "require",
+      "values",
+      "width"
+    ],
+    "validate_result": [
+      "require"
+    ]
+  },
+  "guard_semantics": "guards that fail for early/stale/busy/no-candidate cases terminate this action as normal NOOP; no later mutation step runs; committed state from other calls is never rolled back",
+  "parameter_notation": "JSON strings naming bound context paths and listed role recipes are declarative references evaluated by the owning JKS adapter; they are not arbitrary executable code or guessed node-name conventions",
+  "progress": "each EX/delivery/operation has a call-local stable sequence entry; successful steps are not replayed on retry; parent and nested F1 share root task_id and full path identities",
+  "adopted_extensions": [
+    "new JKS.pro interface/bindings/actions/definition/template contracts",
+    "exclusive requester/instance ownership and allocator behavior",
+    "reliable output completion receipt ordering",
+    "structural allocation/candidate/result handoff and detailed failure/recovery mechanisms"
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "revision": 0,
+  "temporary": [],
+  "permanent": [
+    {
+      "id": "example-v4",
+      "createdAt": "2026-10-08T00:00:00.000Z",
+      "promotedAt": "2026-10-08T00:00:00.000Z",
+      "model": {
+        "name": "JKRD V4.0.0 输入副本与事件输出示例",
+        "md5": "2d931bcc3ea692d355aca712e08c5967",
+        "format": "jk-logic-structure-V4.0.0",
+        "format_md5": "e277ebf36aefd919d79f179348b513ae",
+        "created_at": "2026-10-08T00:1791417600000000000",
+        "input_bits": 4,
+        "jk_bits_max": 8,
+        "jk_bits": 8,
+        "output_bits": 4,
+        "ex_source_max": 3,
+        "ex_operation_max": 4,
+        "ex_source_sum": 11,
+        "ex_operation_sum": 19,
+        "nodes": [
+          {
+            "id": "Q0",
+            "ex": "J0K(X0)"
+          },
+          {
+            "id": "Q1",
+            "ex": "J0K(X1)"
+          },
+          {
+            "id": "Q2",
+            "ex": "J0K(X2)"
+          },
+          {
+            "id": "Q3",
+            "ex": "J0K(X3)"
+          },
+          {
+            "id": "Q4",
+            "ex": "J0K1K(Q0)"
+          },
+          {
+            "id": "Q5",
+            "ex": "J0K(Q1)K(Q2)"
+          },
+          {
+            "id": "Q6",
+            "ex": "K(Q3)"
+          },
+          {
+            "id": "Q7",
+            "ex": "J0K(Q4)K(Q5)K(Q6)"
+          }
+        ],
+        "initial_q": {
+          "0": [
+            "Q0",
+            "Q1",
+            "Q2",
+            "Q3",
+            "Q6"
+          ],
+          "1": []
+        },
+        "q_y": [
+          {
+            "Y0": "Q4"
+          },
+          {
+            "Y1": "Q5"
+          },
+          {
+            "Y2": "Q6"
+          },
+          {
+            "Y3": "Q7"
+          }
+        ],
+        "inputs": [
+          {
+            "X0": "X0"
+          },
+          {
+            "X1": "X1"
+          },
+          {
+            "X2": "X2"
+          },
+          {
+            "X3": "X3"
+          }
+        ],
+        "outputs": [
+          {
+            "Y0": "Y0"
+          },
+          {
+            "Y1": "Y1"
+          },
+          {
+            "Y2": "Y2"
+          },
+          {
+            "Y3": "Y3"
+          }
+        ],
+        "FIFOS": {
+          "Xi.FIFO": [],
+          "Qi.FIFO": []
+        },
+        "display": {
+          "show": "5D"
+        }
+      }
+    }
+  ]
+}
