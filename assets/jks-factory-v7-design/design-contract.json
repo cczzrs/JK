@@ -1,5 +1,5 @@
 {
-  "status": "approved module design adopted into JKRD7 on 2026-10-31; implementation evidence remains separate",
+  "status": "requires adaptation to JKI 2026-11-04 and JKS 2026-11-05; retained module proposal, not current normative execution rules or compatible input",
   "version": "7.0.0",
   "entrypoints": [
     "JKI.FACTORY.json",
@@ -43,8 +43,8 @@
   ],
   "sources": [
     "JKRD7.md sections 2,3,5,6,7,8,11",
-    "docs/logic_units/async-structural-storage-draft.md sections 3,4,5,13",
-    "current conversation state/publication/factory-input/ownership confirmations"
+    "JKRD7.md sections 13.1-13.9, including 13.8.1 installation/reference protection/release",
+    "JKRD7.md section 13.1 adaptation status: JKI 2026-11-04 and JKS 2026-11-05 supersede conflicting original module rules"
   ],
   "operation_arguments": {
     "admit_output_request": [

@@ -2,36 +2,25 @@
   "schema_version": 1,
   "canonical": {
     "project": "JK",
-    "rules": "docs/JKRD.md",
+    "rules": "JKRD7.md",
     "index": "README.md",
     "instructions": "AGENTS.md",
-    "rules_version": "V5.0.0"
+    "rules_version": "7.0.0"
   },
+  "scope": "JKRD7 design, definitions and static verification only",
+  "previous_version_compatibility": false,
+  "executor_implemented": false,
   "documents": {
-    "JKRD": "docs/JKRD.md",
-    "logic-units": "docs/logic_units/logic-units.md",
-    "latch-dynamic-waiting": "docs/logic_units/latch-dynamic-waiting.md",
-    "counters-events": "docs/logic_units/counters-events.md",
-    "static-prototypes": "docs/logic_units/static-prototypes.md",
-    "async-structural-storage": "docs/logic_units/async-structural-storage-draft.md"
+    "maintenance": "docs/jkrd7-maintenance.md"
   },
-  "drafts": {
-    "JKRD-V5.0.0": {
-      "status": "integrated-with-deferred-items",
-      "diff": "docs/drafts/JKRD-V5.0.0-diff.md",
-      "notes": "docs/drafts/JKRD-V5.0.0-notes.md",
-      "async_structural_storage": "docs/logic_units/async-structural-storage-draft.md",
-      "source_thread": "01a13e30-a6a2-78f1-b722-3b96bb9c3be0",
-      "integration": "docs/drafts/JKRD-V5.0.0-integration.md",
-      "module_status": "design-draft",
-      "deferred": [
-        "rings-and-DAG.CARE",
-        "snapshots-recovery-validation-fingerprints"
-      ],
-      "node_rule_exemptions": "rejected",
-      "pending_index": "docs/drafts/JKRD-V5.0.0-pending-index.md",
-      "ring_supervision_pending": "docs/drafts/JKRD-V5.0.0-ring-supervision-pending.md",
-      "snapshot_recovery_pending": "docs/drafts/JKRD-V5.0.0-snapshot-recovery-pending.md"
-    }
+  "assets": {
+    "factory": "assets/jks-factory-v7-design/JKI.FACTORY.json",
+    "ram": "assets/jks-factory-v7-design/RAM.FACTORY.json",
+    "contract": "assets/jks-factory-v7-design/design-contract.json",
+    "example": "assets/jks-factory-v7-design/generation-example.json",
+    "verification": "assets/jks-factory-v7-design/verification.json"
+  },
+  "tools": {
+    "validator": "scripts/validate_jkrd7.py"
   }
 }

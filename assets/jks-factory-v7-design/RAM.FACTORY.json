@@ -8,7 +8,7 @@
   "queue": "work",
   "pro": {
     "name": "RAM.FACTORY",
-    "design_status": "approved_design_7.0.0_not_runtime_implementation",
+    "design_status": "requires_adaptation_to_JKI_2026-11-04_and_JKS_2026-11-05_not_current_valid_input",
     "imports": {
       "F1": "./JKI.FACTORY.json"
     },
@@ -403,7 +403,7 @@
         }
       },
       "reference_closure": {
-        "source": "current module section 13 reference-closure construction; the expanded graph is validated before installation",
+        "source": "JKRD7.md section 13.8.1; concrete V7 expansion and general reference/self-reference rules remain explicitly open in section 11; validate each expanded graph before installation",
         "no_exemptions": 1,
         "hold": "SELF is fixed q_start; required external anchor references and real readers are instantiated, not management lines",
         "protected_sinks": "fixed output and relay targets remain present while tasks reference them",

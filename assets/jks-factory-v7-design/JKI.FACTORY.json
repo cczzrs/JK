@@ -12,7 +12,7 @@
   "queue": "work",
   "pro": {
     "name": "JKI.FACTORY",
-    "design_status": "approved_design_7.0.0_not_runtime_implementation",
+    "design_status": "requires_adaptation_to_JKI_2026-11-04_and_JKS_2026-11-05_not_current_valid_input",
     "ports": {
       "inputs": {
         "b0": {

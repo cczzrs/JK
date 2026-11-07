@@ -1,41 +1,42 @@
-# JK
+# JK · JKRD7
 
-JK 项目统一维护所有 JK 相关项目的现行规则、已确认设计、可复用小结构、模型 JSON 与验证依据。JK_NET、JK_LOGIC、ModelShow 及其他相关 JK 项目均以本项目为规则和设计主来源；后续先在此处维护规则，再对齐消费者。
+本项目只维护 **JKRD7（7.0.0）** 的设计规则、已批准的 JKI／JKS 定义、工厂模块附件及设计核对工具。不兼容、不维护此前版本，也不保留旧执行器作为本版规则的依据。
 
-节点与执行契约集中在 [JKRD](docs/JKRD.md)，各专题记录具体结构和适用边界。项目 README、代码、测试、生成器、技能及历史模型如有偏离，应记录差异并按现行 JKRD 对齐，旧实现不能反向定义规则。
+唯一规则入口是 [JKRD7.md](JKRD7.md)。其已批准部分保持有效；尚待定义的通用机制集中在第 11 节。当前范围是设计与定义核对，尚未实现 JKRD7 执行器，静态检查通过不代表事务、动态安装、恢复或硬件执行已经验证。本轮不制作 Web 页面。
 
-## JK 项目协作规范
+JKS.members 递归保存完整 JKI／子 JKS 对象；跨层连接采用绝对 JKI 路径，节点任务目标及通知来源入队也使用绝对路径。同层短 Q 编号仅用于连接配置，不作为队列中的完整身份。
 
-本项目是全部 JK 相关项目的规则、设计、模型参考及验证材料的统一主源。先读 [JKRD](docs/JKRD.md)，再读对应专题。用户最新明确指令优先。必须得到明确指令后再进行修改 README.md 或 JKRD.md 内容，且明确列出修改内容差异对比。
-
-- 规则修改先在本项目完成，再更新消费者实现与依赖；其它项目的 README、代码、测试、生成器及历史模型不能反向定义 JKRD。
-- provenance/ 保存迁移证据；当前维护 docs/，不反向编辑原文归档。
+JKS.trigger 的所有类型均按内部连接结构需要登记，同一 trigger 对象中的事件源整体去重。all 与 transaction 都在全部前置通知到齐后触发任务入队并清空本轮记录，排队或执行期间的新通知属于下一轮；transaction 还保证完整执行失败时回滚、取消本次全部计算。可编辑入口的登记资格不限定为 any，其他控制类型或用途按需增加。当前工具可核对注册格式，JKS 齐备触发与事务回滚执行仍未实现。
 
 ## 阅读入口
 
-先读本文件了解项目定位，再读 JKRD 掌握计算契约；随后从逻辑单元库进入所需专题，结合参考模型与验证记录理解适用范围。
-
-| 文档 | 内容 |
+| 内容 | 入口与职责 |
 | --- | --- |
-| [JKRD 规则与设计](docs/JKRD.md) | 唯一计算契约：模型组成、节点状态、J/K 与 EX 顺序、触发和传播、FIFO、快照、指纹及优化边界 |
-| [逻辑单元库](docs/logic_units/logic-units.md) | 基础门、MUX、触发恒值与高阻能力边界 |
-| [计数器与事件组合](docs/logic_units/counters-events.md) | 2bit/8bit 全量与进位传播计数器、changed 等前后值判定、Q7/Q8/Q9 状态分离及 Q10i 许可模式 |
-| [锁存与动态等待区](docs/logic_units/latch-dynamic-waiting.md) | 持续接收、逐项独立保存、按需扩缩、FIFO 递交确认及计算前后接入；动态管理待实现 |
-| [异步结构静态原型](docs/logic_units/static-prototypes.md) | 6/17/40/43 节点有限原型、完整 43 节点 JSON、Q39/Q41 接口及验证边界 |
+| JKI／JKS 规则 | [JKRD7](JKRD7.md)：状态、触发、计算来源、发布、嵌套事务、运行记录及工厂模块 |
+| 节点工厂 | [JKI.FACTORY.json](assets/jks-factory-v7-design/JKI.FACTORY.json)：F1 的六位配置输入、真实 JKI 与局部事务 |
+| RAM 工厂 | [RAM.FACTORY.json](assets/jks-factory-v7-design/RAM.FACTORY.json)：R1、RAM1、阶段、动态模板及生命周期 |
+| 操作契约 | [design-contract.json](assets/jks-factory-v7-design/design-contract.json)：模块操作、参数与交接边界 |
+| 生成示例 | [generation-example.json](assets/jks-factory-v7-design/generation-example.json)：未安装草稿及输入消费结果 |
+| 核对证据 | [verification.json](assets/jks-factory-v7-design/verification.json)：本版有限静态检查及源码摘要 |
+| 十选一 ASCII 结构 | [完整 JSON](assets/ascii-bit-design/digits.paired-state.proposal.json)：一个 JKS 对象，members 包含 Q1—Q28 完整定义 |
+| ASCII 参考验证 | [报告](assets/ascii-bit-design/digits.paired-state.verification.json)：有限串行输入、嵌套路径检查及重叠反例 |
+| 本次整理差异 | [维护记录](docs/jkrd7-maintenance.md)：升级范围、保留内容、删除范围与验证边界 |
 
-## 目录职责
+[jk.config.json](jk.config.json) 保存本版入口索引；[AGENTS.md](AGENTS.md) 保存协作要求。规则正文、附件和索引有各自职责，不能通过修改展示代码反向定义规则。
 
-- `docs/JKRD.md` 保存统一计算契约，`docs/logic_units/` 保存专题结构与设计。
-- `assets/` 保存历史参考模型、验证脚本和报告，保留原始内容与哈希。
-- `provenance/` 保存原始页面、导出数据、迁移清单和核验记录，用于追溯来源。
+## 设计核对
 
-## 维护与依赖
+使用 Python 3 标准库执行定义、示例和本地链接检查：
 
-入口和主要文件列表集中在 [jk.config.json](jk.config.json)。文档与参考附件直接引用，避免各自复制维护。
+```sh
+python3 scripts/validate_jkrd7.py
+```
 
-## 迁移状态与证据边界
+需要更新静态报告时，明确执行 `python3 scripts/validate_jkrd7.py --write-report`。报告仅覆盖工具实际检查的条款，不是执行器合规证明。
 
-2026-10-03 已迁入 JK 空间全部 8 个页面正文，包括 447 个原始块与 5 个 Mermaid 源图；原层级、版本、块元数据和维护说明保存在 [原始导出](provenance/space-export-2026-10-03.json)。9 个可读取附件保持 UTF-8 内容与 SHA-256，见 [迁移清单](provenance/migration-manifest.json)。
+使用 `python3 scripts/verify_ascii_digits.py` 核对十选一结构的有限参考轨迹；加 `--write-report` 更新其报告。该参考工具仅执行 JKS 空注册／any 的普通节点连接，明确拒绝尚未实现的 JKS all、transaction 等控制注册，JKI.all 的节点到达规则仍受支持。工厂附件仍待适配，`digits.shared.invalid.json` 保留为无效反例，均不作为递归 members 的合法示例。
 
-原空间入口的内容概览已合并到本文件，迁移前原文仍保存在 [原入口归档](provenance/original-pages/page_6abc4b5e3dd88191a1d99ee9d2d4255f.md)。迁移清单记录迁移时的文件位置，后续现行入口以 `jk.config.json` 为准。
+## 维护要求
+
+修改 README 或 JKRD7 正文须有用户明确指令，并列出修改前后差异。新增或改变行为必须有批准依据；尚未确定的选择留在 JKRD7 的待补充清单，不从旧版本或代码补默认规则。
 
