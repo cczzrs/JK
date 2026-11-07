@@ -7,20 +7,33 @@
     "instructions": "AGENTS.md",
     "rules_version": "7.0.0"
   },
-  "scope": "JKRD7 design, definitions and static verification only",
+  "scope": "JKRD7 design, definitions, static checks, the serial reference interpreter and the CUDA design",
   "previous_version_compatibility": false,
   "executor_implemented": false,
+  "reference_interpreter": "single-queue serial reference (JKRD7 §7, §11); not a production executor",
   "documents": {
-    "maintenance": "docs/jkrd7-maintenance.md"
+    "maintenance": "docs/jkrd7-maintenance.md",
+    "proposal": "docs/jkrd7-proposal-2026-11-05.md",
+    "proposal_second": "docs/jkrd7-proposal-2026-11-06.md",
+    "factory_pending": "docs/modules/factory-pending.md",
+    "cuda": "CUDA.md"
   },
   "assets": {
+    "ascii_digits": "assets/ascii-bit-design/digits.jkm.json",
     "factory": "assets/jks-factory-v7-design/JKI.FACTORY.json",
     "ram": "assets/jks-factory-v7-design/RAM.FACTORY.json",
     "contract": "assets/jks-factory-v7-design/design-contract.json",
-    "example": "assets/jks-factory-v7-design/generation-example.json",
-    "verification": "assets/jks-factory-v7-design/verification.json"
+    "example": "assets/jks-factory-v7-design/generation-example.json"
   },
   "tools": {
-    "validator": "scripts/validate_jkrd7.py"
-  }
+    "model": "scripts/jk_model.py",
+    "validator": "scripts/validate_jkrd7.py",
+    "reference": "scripts/jk_reference.py",
+    "cuda_model": "scripts/jk_cuda_model.py"
+  },
+  "reports": {
+    "static": "reports/static-validation.json",
+    "reference": "reports/reference-run.json"
+  },
+  "cuda_implemented": false
 }

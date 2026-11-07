@@ -1,0 +1,293 @@
+{
+  "status": "passed",
+  "generated_at_utc": "2026-11-07T01:43:57+00:00",
+  "scope": "JKRD7 §2/§3/§5/§6.2/§8 static rules, document JSON, model asset, fixtures, links and index; no execution (see reports/reference-run.json)",
+  "checks": [
+    {
+      "check": "JKRD7 模型 M1",
+      "passed": true
+    },
+    {
+      "check": "JKRD7 运行脚本 ascii-overlap",
+      "passed": true
+    },
+    {
+      "check": "JKRD7 快照 S1",
+      "passed": true
+    },
+    {
+      "check": "JKRD7 模型 M_FLOW",
+      "passed": true
+    },
+    {
+      "check": "JKRD7 JKI 片段 Q8",
+      "passed": true
+    },
+    {
+      "check": "JKRD7 JKI 片段 Q17",
+      "passed": true
+    },
+    {
+      "check": "JKRD7 模型 M_PATH",
+      "passed": true
+    },
+    {
+      "check": "JKRD7 模型 M_SYNC",
+      "passed": true
+    },
+    {
+      "check": "JKRD7 模型 M_TX",
+      "passed": true
+    },
+    {
+      "check": "JKRD7 模型 M_NEST",
+      "passed": true
+    },
+    {
+      "check": "JKRD7 模型 M_REG",
+      "passed": true
+    },
+    {
+      "check": "JKRD7 第 10 节模型齐全",
+      "passed": true
+    },
+    {
+      "check": "模型附件 assets/ascii-bit-design/digits.jkm.json",
+      "passed": true
+    },
+    {
+      "check": "待适配附件 JSON 语法 assets/jks-factory-v7-design/JKI.FACTORY.json",
+      "passed": true
+    },
+    {
+      "check": "待适配附件 JSON 语法 assets/jks-factory-v7-design/RAM.FACTORY.json",
+      "passed": true
+    },
+    {
+      "check": "待适配附件 JSON 语法 assets/jks-factory-v7-design/design-contract.json",
+      "passed": true
+    },
+    {
+      "check": "待适配附件 JSON 语法 assets/jks-factory-v7-design/generation-example.json",
+      "passed": true
+    },
+    {
+      "check": "正例：基准模型",
+      "passed": true
+    },
+    {
+      "check": "正例：事务范围以外成环",
+      "passed": true
+    },
+    {
+      "check": "正例：前置为嵌套成员（绝对路径）",
+      "passed": true
+    },
+    {
+      "check": "正例：显式空对象、ack 登记、JKS.pro.tag 与 pro.jksid",
+      "passed": true
+    },
+    {
+      "check": "正例：会停下的空 EX 环",
+      "passed": true
+    },
+    {
+      "check": "负例：seed 为 null",
+      "passed": true
+    },
+    {
+      "check": "负例：q 为字符串",
+      "passed": true
+    },
+    {
+      "check": "负例：q 为布尔值",
+      "passed": true
+    },
+    {
+      "check": "负例：未批准的 JKI 字段",
+      "passed": true
+    },
+    {
+      "check": "负例：trigger 同时有 any 和 all",
+      "passed": true
+    },
+    {
+      "check": "负例：trigger.all 为空",
+      "passed": true
+    },
+    {
+      "check": "负例：ex 与 s 不等长",
+      "passed": true
+    },
+    {
+      "check": "负例：publish 集合错误",
+      "passed": true
+    },
+    {
+      "check": "负例：publish 未知模式",
+      "passed": true
+    },
+    {
+      "check": "负例：all 节点缺少记录",
+      "passed": true
+    },
+    {
+      "check": "负例：all 记录长度不符",
+      "passed": true
+    },
+    {
+      "check": "负例：any 节点保存记录",
+      "passed": true
+    },
+    {
+      "check": "负例：pro 未批准字段",
+      "passed": true
+    },
+    {
+      "check": "负例：id 不是 Q＋数字",
+      "passed": true
+    },
+    {
+      "check": "负例：JKS id 是 Q＋数字",
+      "passed": true
+    },
+    {
+      "check": "负例：JKS id 带名称",
+      "passed": true
+    },
+    {
+      "check": "负例：JKS 缺字段",
+      "passed": true
+    },
+    {
+      "check": "负例：JKS.pro 未批准字段",
+      "passed": true
+    },
+    {
+      "check": "负例：JKS.pro.tag 非字符串",
+      "passed": true
+    },
+    {
+      "check": "负例：JKS.runtime 非空",
+      "passed": true
+    },
+    {
+      "check": "负例：queue 未声明",
+      "passed": true
+    },
+    {
+      "check": "负例：JKM 版本错误",
+      "passed": true
+    },
+    {
+      "check": "负例：JKM 多出字段",
+      "passed": true
+    },
+    {
+      "check": "负例：queues 重复",
+      "passed": true
+    },
+    {
+      "check": "负例：members 写成 ID",
+      "passed": true
+    },
+    {
+      "check": "负例：同层 id 重复",
+      "passed": true
+    },
+    {
+      "check": "负例：根 id 重复",
+      "passed": true
+    },
+    {
+      "check": "负例：短 ID 跨层",
+      "passed": true
+    },
+    {
+      "check": "负例：引用落到 JKS",
+      "passed": true
+    },
+    {
+      "check": "负例：引用不存在",
+      "passed": true
+    },
+    {
+      "check": "负例：trigger 短 ID 与路径重复",
+      "passed": true
+    },
+    {
+      "check": "负例：未定义的登记类型",
+      "passed": true
+    },
+    {
+      "check": "负例：登记为空数组",
+      "passed": true
+    },
+    {
+      "check": "负例：登记外部节点",
+      "passed": true
+    },
+    {
+      "check": "负例：跨类型重复登记",
+      "passed": true
+    },
+    {
+      "check": "负例：同一 JKI 被两个 JKS 登记",
+      "passed": true
+    },
+    {
+      "check": "负例：未登记节点写空 any",
+      "passed": true
+    },
+    {
+      "check": "负例：事务范围被外部触发",
+      "passed": true
+    },
+    {
+      "check": "负例：事务范围成环",
+      "passed": true
+    },
+    {
+      "check": "负例：定义中 trigger_all 非 null",
+      "passed": true
+    },
+    {
+      "check": "负例：pro.jksid 不存在",
+      "passed": true
+    },
+    {
+      "check": "负例：pro.jksid 指向 JKI",
+      "passed": true
+    },
+    {
+      "check": "负例：纯通知环",
+      "passed": true
+    },
+    {
+      "check": "本地链接",
+      "passed": true
+    },
+    {
+      "check": "jk.config.json 索引",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "sha256": {
+    "AGENTS.md": "c8f3dfa030d5dcc0e030aed60dee3a388fc6861f9c3ad9de14891091bdb868d0",
+    "JKRD7.md": "9da57245dee6dc621b786a57d0cccec7798cf7f6f4e7fb3aef0cd9e35a95f669",
+    "README.md": "d5dccb09713119969bf172c899097926fbf74b63fbf33ca31086ed6520151f9b",
+    "assets/ascii-bit-design/digits.jkm.json": "017d9f72328699643b9dc8cd105ef36957616d62493ea9a7da984c95ffd907ce",
+    "assets/jks-factory-v7-design/JKI.FACTORY.json": "410729692fba6f0e70c69ec78436c27923c4e6de6fb0ed244ce378eeacda19d8",
+    "assets/jks-factory-v7-design/RAM.FACTORY.json": "9ec8a03b18c4552d3db4ec42fddbfdfe39f3fd6e29a5d06675ba727f61c42f8f",
+    "assets/jks-factory-v7-design/design-contract.json": "1e2f03cf60e4c4f233aaa9f361827debd2b17997653fce593effac4649d67c54",
+    "assets/jks-factory-v7-design/generation-example.json": "f1b5561b14982b07b1ce41edb0285a1402e2b1f0f6eacba35199e60214b6c648",
+    "docs/jkrd7-maintenance.md": "527fdbf3a07fd90d85feadb5389cde5175fc6e6e5eb4dde9ecdf87d02d1fbb37",
+    "docs/jkrd7-proposal-2026-11-05.md": "050f4b365a837e3b23f0167bbf6997e98601ce760bc98689128b5f8f3491e269",
+    "docs/jkrd7-proposal-2026-11-06.md": "9fcbd3027b60425e3a803a49803c66b24986f6036073a7786c23a1ac175d4e03",
+    "docs/modules/factory-pending.md": "e8139c930aa319f881d2ffcdeafeac86492a8ecfce65cda7fa020ba346718dc3",
+    "jk.config.json": "2110cef2e6348396a955848008028c7ad2bf6e76f4d6d1d71d6426052691bc84",
+    "scripts/jk_model.py": "db4e15aaa3bbc1459243fb049414ffe988beb654a475be6aabb722bbd126eddb",
+    "scripts/validate_jkrd7.py": "b1aa2a1251fd579d24b5943554fb00a31a9812a76282a9dc4ce6f47c464d329f"
+  }
+}

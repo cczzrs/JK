@@ -1,0 +1,140 @@
+{
+  "status": "passed",
+  "generated_at_utc": "2026-11-07T01:43:50+00:00",
+  "semantics": "JKRD7 §4–§7 serial reference: one unit at a time, event-first, path-ordered delivery, JKS integration, transactions with local sequences and a single commit; §7.5 batches; §9.4 run scripts and records; §9.5 snapshots; CUDA.md execution model compared",
+  "scope": "single-queue models; Python only; not a production executor; no CUDA, multi-queue or hardware check",
+  "cases": [
+    {
+      "case": "计算与 seed（M_FLOW）",
+      "passed": true,
+      "detail": "Q5 结果 [1, 0]，Q6 结果 [1, 1]，通知 2／2"
+    },
+    {
+      "case": "changed 与 q_before 比较",
+      "passed": true,
+      "detail": "always_changed 时通知 Q5 2 次，Q6 1 次"
+    },
+    {
+      "case": "JKI all：A,A,B,B",
+      "passed": true,
+      "detail": "Q8 计算 1 次，记录 [None, 0]"
+    },
+    {
+      "case": "空 EX",
+      "passed": true,
+      "detail": "默认通知 3 次、无节点任务、q 保持 1；always_changed 通知 0 次"
+    },
+    {
+      "case": "JKS all 同步（M_SYNC）",
+      "passed": true,
+      "detail": "放行通知 ['G1.Q3', 'G1.Q4']；再注入 Q2 后 ['G1.Q3', 'G1.Q4']"
+    },
+    {
+      "case": "transaction 轮次",
+      "passed": true,
+      "detail": "事务任务 1 个，下一轮已记录 ['G1.Q2']"
+    },
+    {
+      "case": "事务传播（M_TX）",
+      "passed": true,
+      "detail": "事务任务 1 个，Q101 [1]，Q102 [1]"
+    },
+    {
+      "case": "统一提交",
+      "passed": true,
+      "detail": "范围外接收者收到 Q101 的通知时读到 Q102=1"
+    },
+    {
+      "case": "不满足 publish 不推进",
+      "passed": true,
+      "detail": "Q101 [0]，Q102 []"
+    },
+    {
+      "case": "多实例顺序执行",
+      "passed": true,
+      "detail": "执行记录 ['tx', 'G2.Q101', 'G2.Q102', 'commit', 'tx', 'G2.Q101', 'G2.Q102', 'commit']"
+    },
+    {
+      "case": "嵌套事务（M_NEST）",
+      "passed": true,
+      "detail": "事务任务 ['G2']，结果 [[1], [1], [1], [1]]"
+    },
+    {
+      "case": "先整合后照常投递",
+      "passed": true,
+      "detail": "节点任务顺序 ['G1.Q3', 'G1.Q4', 'G2.Q1']，Q3 读到 G2.Q1 的旧值得 [0]；改用 trigger.all 等待 G2.Q1 后得 [1]"
+    },
+    {
+      "case": "路径排序",
+      "passed": true,
+      "detail": "投递顺序 ['G1.Q2', 'G1.G2.Q1', 'G1.G10.Q1']"
+    },
+    {
+      "case": "嵌套与同名节点（M_PATH）",
+      "passed": true,
+      "detail": "G1.G2.Q1 [1]，G1.Q2 [1]"
+    },
+    {
+      "case": "书写顺序无关",
+      "passed": true,
+      "detail": "打乱 members 后，M_NEST、M_PATH、M_FLOW 与十选一的执行记录与原序相同"
+    },
+    {
+      "case": "十选一逐个输入",
+      "passed": true,
+      "detail": "输出 ['0x30', '0x31', '0x32', '0x33', '0x34', '0x35', '0x36', '0x37', '0x38', '0x39']"
+    },
+    {
+      "case": "十选一重叠输入",
+      "passed": true,
+      "detail": "400 组重叠或交错输入，与逐个输入不同的有 0 组"
+    },
+    {
+      "case": "十选一不用事务",
+      "passed": true,
+      "detail": "登记改为 any 时，同时输入 0、1 的输出为 ['0x31']，应为 ['0x30', '0x31']"
+    },
+    {
+      "case": "多 queue 暂不支持",
+      "passed": true,
+      "detail": "单 queue 可执行；两个 queue 的模型被明确拒绝（§9.3）"
+    },
+    {
+      "case": "范围内成员在事务外执行（§6.2）",
+      "passed": true,
+      "detail": "经同一 JKS 的 any 登记、祖先的 all 登记、范围内的输入入口进入范围的通知，都在事务之外处理"
+    },
+    {
+      "case": "1 bit 寄存器（M_REG）",
+      "passed": true,
+      "detail": "set1,set1,set0,set0,set1,set0 → [1, 1, 0, 0, 1, 0]"
+    },
+    {
+      "case": "可并行批（§7.5）",
+      "passed": true,
+      "detail": "第 10 节模型一致；十选一 100 组、随机模型 300 个，记录不同的分别有 0、0 组；随机模型共 2210 批，平均每批 1.90 个任务，最大 6；十选一单次请求的批大小 [4, 4]"
+    },
+    {
+      "case": "运行脚本（§9.4）",
+      "passed": true,
+      "detail": "输出 ['0x30', '0x31', '0x39']，执行记录 72 条，批执行模式记录相同"
+    },
+    {
+      "case": "快照（§9.5）",
+      "passed": true,
+      "detail": "M_TX 的中间状态与 §9.5 一致，从快照继续的记录与不中断运行相同；随机模型 150 次中途快照，不同的有 0 次"
+    },
+    {
+      "case": "CUDA 执行模型（CUDA.md）",
+      "passed": true,
+      "detail": "第 10 节模型与运行脚本一致；十选一 100 组与随机模型 300 个中，记录不同的有 0 组；随机模型共 2269 个投递波次，平均每波 1.35 条事件，最大 6"
+    }
+  ],
+  "sha256": {
+    "JKRD7.md": "9da57245dee6dc621b786a57d0cccec7798cf7f6f4e7fb3aef0cd9e35a95f669",
+    "assets/ascii-bit-design/digits.jkm.json": "017d9f72328699643b9dc8cd105ef36957616d62493ea9a7da984c95ffd907ce",
+    "scripts/jk_reference.py": "8ffed556d1c280f4d4627bda7f76886a41fa4e6ddf9b52e9d1f254354fae01d1",
+    "scripts/jk_model.py": "db4e15aaa3bbc1459243fb049414ffe988beb654a475be6aabb722bbd126eddb",
+    "scripts/jk_cuda_model.py": "476d0781c5531589fdb07f47fa8ebd5512a384d53e8365ba235eb0212bb23487"
+  }
+}
