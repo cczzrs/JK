@@ -7,20 +7,49 @@
     "instructions": "AGENTS.md",
     "rules_version": "7.0.0"
   },
-  "scope": "JKRD7 design, definitions and static verification only",
+  "scope": "JKRD7 design, definitions, static checks, and an executor with a CPU backend (serial reference, default) and a GPU backend (WebGPU)",
   "previous_version_compatibility": false,
-  "executor_implemented": false,
+  "language": "TypeScript",
+  "runtime": {
+    "node": ".node-version",
+    "package": "package.json",
+    "typescript": "tsconfig.json",
+    "gpu_browser": "Chrome (WebGPU)"
+  },
   "documents": {
-    "maintenance": "docs/jkrd7-maintenance.md"
+    "maintenance": "docs/jkrd7-maintenance.md",
+    "proposal": "docs/jkrd7-proposal-2026-11-05.md",
+    "proposal_second": "docs/jkrd7-proposal-2026-11-06.md",
+    "factory_pending": "docs/modules/factory-pending.md",
+    "typescript": "TypeScript.md",
+    "webgpu": "WebGPU.md"
   },
   "assets": {
+    "ascii_digits": "assets/ascii-bit-design/digits.jkm.json",
     "factory": "assets/jks-factory-v7-design/JKI.FACTORY.json",
     "ram": "assets/jks-factory-v7-design/RAM.FACTORY.json",
     "contract": "assets/jks-factory-v7-design/design-contract.json",
-    "example": "assets/jks-factory-v7-design/generation-example.json",
-    "verification": "assets/jks-factory-v7-design/verification.json"
+    "example": "assets/jks-factory-v7-design/generation-example.json"
+  },
+  "executor": {
+    "default_backend": "cpu",
+    "entry": "src/executor.ts",
+    "cpu": "src/cpu.ts",
+    "gpu": "src/gpu/backend.ts",
+    "gpu_compiler": "src/gpu/compile.ts",
+    "gpu_kernel": "src/gpu/kernel.ts",
+    "limits": "single-queue models (JKRD7 §9.3); GPU backend checked only in this machine's Chrome"
   },
   "tools": {
-    "validator": "scripts/validate_jkrd7.py"
+    "model": "src/model.ts",
+    "validator": "tools/validate.ts",
+    "reference": "tools/reference.ts",
+    "gpu": "tools/gpu.ts",
+    "gpu_page": "web/index.html"
+  },
+  "reports": {
+    "static": "reports/static-validation.json",
+    "reference": "reports/reference-run.json",
+    "gpu": "reports/gpu-run.json"
   }
 }

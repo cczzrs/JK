@@ -1,0 +1,78 @@
+{
+  "status": "passed",
+  "generated_at_utc": "2026-11-07T00:42:42+00:00",
+  "semantics": "GPU backend (WebGPU, one invocation per instance, serial micro-steps of JKRD7 §7) compared byte for byte with the CPU backend in the same page: records, end-of-run snapshots, snapshot resume, capacity errors",
+  "scope": "single-queue models; this machine's Chrome and GPU only; throughput figures are indicative, not a benchmark",
+  "adapter": {
+    "vendor": "apple",
+    "architecture": "metal-3",
+    "device": "",
+    "description": ""
+  },
+  "limits": {
+    "maxStorageBufferBindingSize": 4294967292,
+    "maxBufferSize": 4294967292,
+    "maxComputeWorkgroupsPerDimension": 65535
+  },
+  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+  "cases": [
+    {
+      "case": "GPU：第 10 节模型",
+      "passed": true,
+      "detail": "M_FLOW、M_PATH、M_SYNC、M_TX、M_NEST、M_REG 共 6 个，执行记录或结束快照不同的有 0 个"
+    },
+    {
+      "case": "GPU：运行脚本（§9.4）",
+      "passed": true,
+      "detail": "输出 [\"0x30\",\"0x31\",\"0x39\"]，72 条执行记录与 CPU 逐字节相同"
+    },
+    {
+      "case": "GPU：十选一多实例",
+      "passed": true,
+      "detail": "一次运行 1000 个实例（各自 1—3 批、每批 1—4 个重叠请求），与 CPU 不同的有 0 个；调度 3 次"
+    },
+    {
+      "case": "GPU：随机模型",
+      "passed": true,
+      "detail": "300 个随机模型、每个 4 个实例，执行记录或结束快照与 CPU 不同的有 0 个"
+    },
+    {
+      "case": "GPU：从快照继续",
+      "passed": true,
+      "detail": "§9.5 的 M_TX 快照与随机模型 150 次中途快照（其中 56 次带未处理的事件或任务）载入 GPU 后继续运行，与 CPU 不同的有 0 个"
+    },
+    {
+      "case": "GPU：容量与错误",
+      "passed": true,
+      "detail": "事件 FIFO 容量设为 6 时，一批 9 个输入的实例报告“事件 FIFO 溢出”并停下，同一次运行中的另一个实例不受影响，记录与 CPU 相同；步数上限设为 10 时报告“超过一批的步数上限”"
+    }
+  ],
+  "throughput": {
+    "instances": 16384,
+    "gpuMs": 186.30000007152557,
+    "kernelMs": 62.5,
+    "decodeMs": 43.60000002384186,
+    "cpuMs": 977.3999999761581,
+    "dispatches": 1,
+    "same": true,
+    "bytesPerInstance": 8172
+  },
+  "sha256": {
+    "JKRD7.md": "c9dad0b26af0a54c84f7f5f2e3911e0b778ed215732dcb9ba3171d048a6409ff",
+    "assets/ascii-bit-design/digits.jkm.json": "017d9f72328699643b9dc8cd105ef36957616d62493ea9a7da984c95ffd907ce",
+    "tools/gpu.ts": "ca641f3c03f854e7e7007a803fe9e259e532b183f7776bfc17a2b08167708a68",
+    "web/gpu.ts": "053bc9f77e68025c83c38f5bde47d1a3d8fbc55e2d276d341eebf34a1fc9843d",
+    "src/testing/gpu-cases.ts": "4c4793c86a776ad1d5731bb03e66301db7f16a768f71afe45fe91e59c4981202",
+    "src/model.ts": "b94155d09d008083b078bbfd9b0b82f744b8df67cc8c8d9b44294e7e234a1d7b",
+    "src/record.ts": "10cabb8a103842fb6350a7be4e67dca9c9812f7e6a05d2796f53acd046808550",
+    "src/cpu.ts": "b3a2ecc10b5a0db6740846d7d79aeefba93fadb8eccfa90814d94bcd70e0d59f",
+    "src/executor.ts": "aedcc64322e19a108e5197bd75f4886d5d809cc9a4617c09db61814116bfa8f4",
+    "src/gpu/compile.ts": "b2ba48e61c13c4de686e330eca6b768762f495ad855473d79a7792a19eb190c5",
+    "src/gpu/kernel.ts": "b0c61a4ab0f1bae08faa983d747e302f7cb7b1d75e899a1846162f741562893d",
+    "src/gpu/backend.ts": "67c5a416bf5ebef0fa34ac9fe3a0a7d7cc299851dff0fab4138b02193febfba6",
+    "src/testing/cases.ts": "aee1939a5d022b428ece956fc01370d2d3880d3337dac0aa4d33e0d65f07c548",
+    "src/testing/fixtures.ts": "2e88f0ee30bf70827dad97ea4e895cc50d23f4ecc85c69c6ce0fe844fe7accfc",
+    "src/testing/random.ts": "690b7384041ec9d52a2feb99bb8c988f36a2363abbe85d1ed6a00f9308b73fa4",
+    "src/testing/static.ts": "73f09f642461b7a0a8b0e3321fb832efef7df9eea6cbb91688c8dbc625d4176f"
+  }
+}

@@ -1,0 +1,144 @@
+{
+  "status": "passed",
+  "generated_at_utc": "2026-11-07T00:41:07+00:00",
+  "semantics": "JKRD7 §4–§7 serial reference (CPU backend): one unit at a time, event-first, path-ordered delivery, JKS integration, transactions with local sequences and a single commit; §7.5 batches; §9.4 run scripts and records; §9.5 snapshots",
+  "scope": "single-queue models; CPU backend in TypeScript on Node; GPU backend is checked separately (reports/gpu-run.json)",
+  "cases": [
+    {
+      "case": "计算与 seed（M_FLOW）",
+      "passed": true,
+      "detail": "Q5 结果 [1,0]，Q6 结果 [1,1]，通知 2／2"
+    },
+    {
+      "case": "changed 与 q_before 比较",
+      "passed": true,
+      "detail": "always_changed 时通知 Q5 2 次，Q6 1 次"
+    },
+    {
+      "case": "JKI all：A,A,B,B",
+      "passed": true,
+      "detail": "Q8 计算 1 次，记录 [null,0]"
+    },
+    {
+      "case": "空 EX",
+      "passed": true,
+      "detail": "默认通知 3 次、无节点任务、q 保持 1；always_changed 通知 0 次"
+    },
+    {
+      "case": "JKS all 同步（M_SYNC）",
+      "passed": true,
+      "detail": "放行通知 [\"G1.Q3\",\"G1.Q4\"]；再注入 Q2 后 [\"G1.Q3\",\"G1.Q4\"]"
+    },
+    {
+      "case": "transaction 轮次",
+      "passed": true,
+      "detail": "事务任务 1 个，下一轮已记录 [\"G1.Q2\"]"
+    },
+    {
+      "case": "事务传播（M_TX）",
+      "passed": true,
+      "detail": "事务任务 1 个，Q101 [1]，Q102 [1]"
+    },
+    {
+      "case": "统一提交",
+      "passed": true,
+      "detail": "范围外接收者收到 Q101 的通知时读到 Q102=1"
+    },
+    {
+      "case": "不满足 publish 不推进",
+      "passed": true,
+      "detail": "Q101 [0]，Q102 []"
+    },
+    {
+      "case": "多实例顺序执行",
+      "passed": true,
+      "detail": "执行记录 [\"tx\",\"G2.Q101\",\"G2.Q102\",\"commit\",\"tx\",\"G2.Q101\",\"G2.Q102\",\"commit\"]"
+    },
+    {
+      "case": "嵌套事务（M_NEST）",
+      "passed": true,
+      "detail": "事务任务 [\"G2\"]，结果 [[1],[1],[1],[1]]"
+    },
+    {
+      "case": "先整合后照常投递",
+      "passed": true,
+      "detail": "节点任务顺序 [\"G1.Q3\",\"G1.Q4\",\"G2.Q1\"]，Q3 读到 G2.Q1 的旧值得 [0]；改用 trigger.all 等待 G2.Q1 后得 [1]"
+    },
+    {
+      "case": "路径排序",
+      "passed": true,
+      "detail": "投递顺序 [\"G1.Q2\",\"G1.G2.Q1\",\"G1.G10.Q1\"]"
+    },
+    {
+      "case": "嵌套与同名节点（M_PATH）",
+      "passed": true,
+      "detail": "G1.G2.Q1 [1]，G1.Q2 [1]"
+    },
+    {
+      "case": "书写顺序无关",
+      "passed": true,
+      "detail": "打乱 members 后，M_NEST、M_PATH、M_FLOW 与十选一的执行记录与原序相同"
+    },
+    {
+      "case": "十选一逐个输入",
+      "passed": true,
+      "detail": "输出 [\"0x30\",\"0x31\",\"0x32\",\"0x33\",\"0x34\",\"0x35\",\"0x36\",\"0x37\",\"0x38\",\"0x39\"]"
+    },
+    {
+      "case": "十选一重叠输入",
+      "passed": true,
+      "detail": "400 组重叠或交错输入，与逐个输入不同的有 0 组"
+    },
+    {
+      "case": "十选一不用事务",
+      "passed": true,
+      "detail": "登记改为 any 时，同时输入 0、1 的输出为 [\"0x31\"]，应为 [\"0x30\",\"0x31\"]"
+    },
+    {
+      "case": "多 queue 暂不支持",
+      "passed": true,
+      "detail": "单 queue 可执行；两个 queue 的模型被明确拒绝（§9.3）"
+    },
+    {
+      "case": "范围内成员在事务外执行（§6.2）",
+      "passed": true,
+      "detail": "经同一 JKS 的 any 登记、祖先的 all 登记、范围内的输入入口进入范围的通知，都在事务之外处理"
+    },
+    {
+      "case": "1 bit 寄存器（M_REG）",
+      "passed": true,
+      "detail": "set1,set1,set0,set0,set1,set0 → [1,1,0,0,1,0]"
+    },
+    {
+      "case": "可并行批（§7.5）",
+      "passed": true,
+      "detail": "第 10 节模型一致；十选一 100 组、随机模型 300 个，记录不同的分别有 0、0 组；随机模型共 2060 批，平均每批 1.86 个任务，最大 5；十选一单次请求的批大小 [4,4]"
+    },
+    {
+      "case": "运行脚本（§9.4）",
+      "passed": true,
+      "detail": "输出 [\"0x30\",\"0x31\",\"0x39\"]，执行记录 72 条，批执行模式记录相同"
+    },
+    {
+      "case": "快照（§9.5）",
+      "passed": true,
+      "detail": "M_TX 的中间状态与 §9.5 一致，从快照继续的记录与不中断运行相同；随机模型 150 次中途快照，不同的有 0 次"
+    }
+  ],
+  "sha256": {
+    "JKRD7.md": "c9dad0b26af0a54c84f7f5f2e3911e0b778ed215732dcb9ba3171d048a6409ff",
+    "assets/ascii-bit-design/digits.jkm.json": "017d9f72328699643b9dc8cd105ef36957616d62493ea9a7da984c95ffd907ce",
+    "tools/reference.ts": "81aa2fc74b14be332d29f1d85b1f7c751a67b26dca8a0087aa04f1a3ae17ee96",
+    "src/model.ts": "b94155d09d008083b078bbfd9b0b82f744b8df67cc8c8d9b44294e7e234a1d7b",
+    "src/record.ts": "10cabb8a103842fb6350a7be4e67dca9c9812f7e6a05d2796f53acd046808550",
+    "src/cpu.ts": "b3a2ecc10b5a0db6740846d7d79aeefba93fadb8eccfa90814d94bcd70e0d59f",
+    "src/executor.ts": "aedcc64322e19a108e5197bd75f4886d5d809cc9a4617c09db61814116bfa8f4",
+    "src/gpu/compile.ts": "b2ba48e61c13c4de686e330eca6b768762f495ad855473d79a7792a19eb190c5",
+    "src/gpu/kernel.ts": "b0c61a4ab0f1bae08faa983d747e302f7cb7b1d75e899a1846162f741562893d",
+    "src/gpu/backend.ts": "67c5a416bf5ebef0fa34ac9fe3a0a7d7cc299851dff0fab4138b02193febfba6",
+    "src/testing/cases.ts": "aee1939a5d022b428ece956fc01370d2d3880d3337dac0aa4d33e0d65f07c548",
+    "src/testing/fixtures.ts": "2e88f0ee30bf70827dad97ea4e895cc50d23f4ecc85c69c6ce0fe844fe7accfc",
+    "src/testing/random.ts": "690b7384041ec9d52a2feb99bb8c988f36a2363abbe85d1ed6a00f9308b73fa4",
+    "src/testing/static.ts": "73f09f642461b7a0a8b0e3321fb832efef7df9eea6cbb91688c8dbc625d4176f"
+  }
+}

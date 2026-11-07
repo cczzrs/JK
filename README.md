@@ -1,42 +1,61 @@
 # JK · JKRD7
 
-本项目只维护 **JKRD7（7.0.0）** 的设计规则、已批准的 JKI／JKS 定义、工厂模块附件及设计核对工具。不兼容、不维护此前版本，也不保留旧执行器作为本版规则的依据。
+本项目只维护 **JKRD7（7.0.0）**：JKI／JKS 的设计规则、已批准的模型示例、静态检查，以及按规则实现的执行器。不兼容、不维护此前版本。
 
-唯一规则入口是 [JKRD7.md](JKRD7.md)。其已批准部分保持有效；尚待定义的通用机制集中在第 11 节。当前范围是设计与定义核对，尚未实现 JKRD7 执行器，静态检查通过不代表事务、动态安装、恢复或硬件执行已经验证。本轮不制作 Web 页面。
+唯一规则入口是 [JKRD7.md](JKRD7.md)。尚未确定的选择集中在 JKRD7 §9.3。全部代码用 TypeScript 编写。执行器有两个后端：
 
-JKS.members 递归保存完整 JKI／子 JKS 对象；跨层连接采用绝对 JKI 路径，节点任务目标及通知来源入队也使用绝对路径。同层短 Q 编号仅用于连接配置，不作为队列中的完整身份。
+- **CPU 后端**（默认）：JKRD7 的串行参考语义，是判断对错的基准；
+- **GPU 后端**：在 WebGPU 上同时执行许多实例，执行记录必须与 CPU 后端逐字节相同。
 
-JKS.trigger 的所有类型均按内部连接结构需要登记，同一 trigger 对象中的事件源整体去重。all 与 transaction 都在全部前置通知到齐后触发任务入队并清空本轮记录，排队或执行期间的新通知属于下一轮；transaction 还保证完整执行失败时回滚、取消本次全部计算。可编辑入口的登记资格不限定为 any，其他控制类型或用途按需增加。当前工具可核对注册格式，JKS 齐备触发与事务回滚执行仍未实现。
+两个后端都只执行单 queue 模型。
+
+## 设计要点
+
+- **JKI**：每个节点保存 q；trigger 为 any 或 all；EX 由 J（AND）、K（XOR）组成，在执行入口读取来源的 q；publish 有七种模式。通知不携带值。
+- **JKS**：members 递归保存完整的 JKI 与子 JKS；跨层引用写绝对路径。trigger 登记本结构的前置成员，按类型整合它们的通知：any 不整合，all 到齐后同步放行，transaction 到齐后形成事务任务，transaction_any 每条通知形成一个事务任务。
+- **事务**：范围是除前置成员以外的全部成员；事务内按 publish 结果沿连接传播；发往范围外的通知在结束时统一提交；不设失败与回滚；多个事务任务按任务 FIFO 顺序逐个执行。
+- **执行模型**：一次处理一个单元；事件优先；同一通知按订阅者绝对路径的顺序投递。任何并行实现对同一运行脚本必须产生与串行参考相同的执行记录；JKRD7 §7.5 给出了可以直接并行的任务批。
+- **运行脚本与快照**：运行脚本规定输入批与输出观察，执行记录按串行顺序逐条列出；快照保存两个处理单元之间的全部运行状态。
+- **JKM**：模型封装，包含版本、queue 声明与根 JKS。
 
 ## 阅读入口
 
-| 内容 | 入口与职责 |
+| 内容 | 入口 |
 | --- | --- |
-| JKI／JKS 规则 | [JKRD7](JKRD7.md)：状态、触发、计算来源、发布、嵌套事务、运行记录及工厂模块 |
-| 节点工厂 | [JKI.FACTORY.json](assets/jks-factory-v7-design/JKI.FACTORY.json)：F1 的六位配置输入、真实 JKI 与局部事务 |
-| RAM 工厂 | [RAM.FACTORY.json](assets/jks-factory-v7-design/RAM.FACTORY.json)：R1、RAM1、阶段、动态模板及生命周期 |
-| 操作契约 | [design-contract.json](assets/jks-factory-v7-design/design-contract.json)：模块操作、参数与交接边界 |
-| 生成示例 | [generation-example.json](assets/jks-factory-v7-design/generation-example.json)：未安装草稿及输入消费结果 |
-| 核对证据 | [verification.json](assets/jks-factory-v7-design/verification.json)：本版有限静态检查及源码摘要 |
-| 十选一 ASCII 结构 | [完整 JSON](assets/ascii-bit-design/digits.paired-state.proposal.json)：一个 JKS 对象，members 包含 Q1—Q28 完整定义 |
-| ASCII 参考验证 | [报告](assets/ascii-bit-design/digits.paired-state.verification.json)：有限串行输入、嵌套路径检查及重叠反例 |
-| 本次整理差异 | [维护记录](docs/jkrd7-maintenance.md)：升级范围、保留内容、删除范围与验证边界 |
+| 规则 | [JKRD7](JKRD7.md)：字段、触发、整合、事务、执行模型、寻址、模块边界、示例与验收案例 |
+| 十选一 ASCII 模型 | [digits.jkm.json](assets/ascii-bit-design/digits.jkm.json)：完整 JKM，一个数字选择转换为 8 个 ASCII bit |
+| TypeScript 工具链 | [TypeScript.md](TypeScript.md)：环境、目录、命令、写法约束，以及各模块与 JKRD7 章节的对应 |
+| WebGPU 运行方案 | [WebGPU.md](WebGPU.md)：GPU 后端的设计、实现与实测（实现设计，不是规则来源） |
+| 工厂模块（待适配） | [factory-pending.md](docs/modules/factory-pending.md) 及 [assets/jks-factory-v7-design/](assets/jks-factory-v7-design/JKI.FACTORY.json) 中的附件 |
+| 维护记录 | [jkrd7-maintenance.md](docs/jkrd7-maintenance.md)：各次修改的依据与前后差异 |
+| 补充提案 | [第一轮](docs/jkrd7-proposal-2026-11-05.md)（P1—P9）、[第二轮](docs/jkrd7-proposal-2026-11-06.md)（P10—P17），均已批准 |
+| 核对报告 | [静态检查](reports/static-validation.json)、[CPU 后端](reports/reference-run.json)、[GPU 后端](reports/gpu-run.json) |
 
-[jk.config.json](jk.config.json) 保存本版入口索引；[AGENTS.md](AGENTS.md) 保存协作要求。规则正文、附件和索引有各自职责，不能通过修改展示代码反向定义规则。
+[jk.config.json](jk.config.json) 保存入口索引；[AGENTS.md](AGENTS.md) 保存协作要求。
 
-## 设计核对
+## 核对
 
-使用 Python 3 标准库执行定义、示例和本地链接检查：
+需要 Node 26（[.node-version](.node-version)），首次运行前执行 `npm install` 安装类型检查用的开发依赖。GPU 后端还需要本机装有 Chrome。
 
 ```sh
-python3 scripts/validate_jkrd7.py
+npm run typecheck
+node tools/validate.ts
+node tools/reference.ts
+node tools/gpu.ts
 ```
 
-需要更新静态报告时，明确执行 `python3 scripts/validate_jkrd7.py --write-report`。报告仅覆盖工具实际检查的条款，不是执行器合规证明。
+- `npm run typecheck`：TypeScript 类型检查。
+- `tools/validate.ts`：静态检查。范围包括 JKRD7 中的 JSON、模型附件、正例与负例、待适配附件的 JSON 语法、本地链接和索引。
+- `tools/reference.ts`：用 CPU 后端执行 JKRD7 第 10 节的模型与十选一附件，核对 §11.2 的验收案例。案例包括批执行模式、运行脚本和快照。
+- `tools/gpu.ts`：以无头模式启动本机 Chrome，在 WebGPU 上执行 GPU 后端，并与同一页面里的 CPU 后端逐字节对拍。
+- 加 `--write-report` 时更新 `reports/` 下的报告。
+- 用 `--script <运行脚本>` 输出 JKRD7 §9.4 的执行记录，供逐条比对：
+  - `node tools/reference.ts`（CPU）可加 `--batch`、`--start <快照>`、`--save <快照>`；
+  - `node tools/gpu.ts`（GPU）可加 `--start <快照>`、`--save <快照>`。
+- 运行 `npm run serve` 后，可以在浏览器中打开 GPU 对拍页面手动查看。
 
-使用 `python3 scripts/verify_ascii_digits.py` 核对十选一结构的有限参考轨迹；加 `--write-report` 更新其报告。该参考工具仅执行 JKS 空注册／any 的普通节点连接，明确拒绝尚未实现的 JKS all、transaction 等控制注册，JKI.all 的节点到达规则仍受支持。工厂附件仍待适配，`digits.shared.invalid.json` 保留为无效反例，均不作为递归 members 的合法示例。
+这些检查通过，只说明在本机已核对的范围内两个后端与规则一致。其他浏览器、其他 GPU、恢复流程和多 queue 调度尚未验证。
 
 ## 维护要求
 
-修改 README 或 JKRD7 正文须有用户明确指令，并列出修改前后差异。新增或改变行为必须有批准依据；尚未确定的选择留在 JKRD7 的待补充清单，不从旧版本或代码补默认规则。
-
+修改 README 或 JKRD7 正文须有用户明确指令，并在维护记录中列出修改前后差异。新增或改变行为必须有批准依据；尚未确定的选择留在 JKRD7 §9.3，不从旧版本或代码补默认规则。

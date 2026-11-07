@@ -1,5 +1,217 @@
 # JKRD7 维护记录
 
+## 2026-11-06：改用 TypeScript；执行器分为 CPU、GPU（WebGPU）两个后端
+
+依据：用户回复“批准只使用 TypeScript，规则工具链也改成 TypeScript，并更新说明到 TypeScript.md 文档里。执行器做两个后端：CPU 和 GPU，默认为 CPU。WebGPU 的运行方案或相关说明更新到 WebGPU.md 文档里。可以重构所有相关代码。依据 JKRD7 实现 TypeScript 代码，CPU 运行和 WebGPU 运行设计和代码。”此前用户已确定“注重：运行跨平台，计算和展示一体”，GPU 平台由 CUDA 改为 WebGPU。
+
+规则本身没有变化；JKRD7 只改了提到工具和 CUDA 的地方。
+
+### JKRD7
+
+| 位置 | 修改前 | 修改后 |
+| --- | --- | --- |
+| §7.5 第一句 | 任何并行实现（包括 CUDA）…… | 任何并行实现（包括 GPU 后端）…… |
+| §7.5 末句 | CUDA 上的具体方案见 CUDA.md | WebGPU 上的具体方案见 WebGPU.md |
+| §11.1 | 两个 Python 命令（validate_jkrd7.py、jk_reference.py）；公共部分在 scripts/jk_model.py，jk_cuda_model.py 是 CUDA 方案的执行模型；命令行用法为 python3 | 工具用 TypeScript 编写、在 Node 上运行；执行器分 CPU（默认，即串行参考）与 GPU 两个后端；三个命令 `node tools/validate.ts`、`node tools/reference.ts`、`node tools/gpu.ts`；三份报告；命令行用法改为 node，并增加 GPU 后端的 `--script` |
+| §11.2 | 末行“CUDA 执行模型：方案的执行记录与串行参考完全相同” | 改为“GPU 后端”一行：第 10 节模型、运行脚本、十选一多实例、随机模型、从快照继续，执行记录与结束快照与 CPU 后端逐字节相同；容量不足与超出步数时报错且不影响其他实例。另说明“核对”一栏三种取值对应的命令 |
+| §11.3 | 参考解释器只实现单 queue；CUDA 执行模型是 Python 方案模型，两个工具都不验证 GPU、恢复流程、多 queue 或硬件 | 两个后端都只实现单 queue；GPU 后端只在本机 Chrome（Apple GPU，Metal）上对拍过；工具不验证恢复流程、多 queue 调度或硬件故障行为 |
+
+### 其他文件
+
+| 文件 | 修改前 | 修改后 |
+| --- | --- | --- |
+| scripts/jk_model.py、validate_jkrd7.py、jk_reference.py、jk_cuda_model.py | Python 工具 | 删除；由 src/model.ts、tools/validate.ts、src/cpu.ts 与 tools/reference.ts 取代，删除前逐字节对拍（TypeScript.md 第 7 节） |
+| CUDA.md | CUDA 运行方案 | 删除；与平台无关的部分并入 WebGPU.md |
+| TypeScript.md | 空文件（用户新建） | 工具链说明：环境、目录、命令、写法约束、模块与 JKRD7 的对应、记录与快照的文本格式、迁移核对、浏览器运行、边界 |
+| WebGPU.md | 空文件（用户新建） | GPU 后端的设计与实现：两个后端、并行度来源、编译到结构数组、实例状态、微步内核、主机端、WebGPU 限制、验证、本机实测、后续阶段、风险 |
+| src/、tools/、web/（新增） | 无 | 规则模型、CPU 后端、GPU 后端（编译、WGSL 内核、主机端）、验收案例、命令行、浏览器对拍页面 |
+| package.json、package-lock.json、tsconfig.json、.node-version（新增） | 无 | Node 26；开发依赖 typescript 7.0.2、@types/node、@webgpu/types；类型检查配置 |
+| .gitignore | 无 node_modules | 增加 node_modules/ |
+| README.md | Python 命令；CUDA 方案入口；“当前没有生产执行器” | 说明两个后端与 TypeScript；阅读入口改为 TypeScript.md、WebGPU.md；核对命令改为 node；报告增加 GPU |
+| AGENTS.md | CUDA.md 不是规则来源；python3 命令 | 只用 TypeScript；WebGPU.md 不是规则来源；node 命令与 GPU 对拍；验证边界 |
+| jk.config.json | scripts/*.py 与 CUDA.md 的索引；cuda_implemented | 语言、运行环境、执行器（默认 CPU）、工具、三份报告的索引 |
+| reports/ | Python 工具生成的两份报告 | TypeScript 工具重新生成；新增 gpu-run.json |
+
+## 2026-11-06：批准第二轮提案 P10—P17，新增 CUDA 运行方案
+
+依据：用户回复“P10 事务范围内的成员允许在事务外执行。P11 拒绝纯通知环。批准全部。根据 JKRD7 推理设计出在 CUDA 平台运行的方案，都更新在 CUDA.md 文档里。”批准依据见[第二轮提案](jkrd7-proposal-2026-11-06.md)：P10 选 B，P11 选 A，其余均按推荐。
+
+### JKRD7
+
+| 位置 | 修改前 | 修改后 |
+| --- | --- | --- |
+| 状态行 | 2026-11-05 按 P1—P9 重排 | 另注明 2026-11-06 写入 P10—P17 |
+| §2 | 六条约定 | 新增一条：运行脚本与快照是独立文件，不属于 JKM |
+| §3 pro.jksid（P15） | 非空字符串，管理该节点的 JKS id | 管理 JKS 的绝对路径，必须解析到实际 JKS |
+| §3 runtime.trigger_all（P14） | 元素为 null、0 或 1 | 定义中全为 null；运行中的记录只保存在快照中 |
+| §6.2（P11） | 事务范围以外允许成环，终止由结构负责 | 另规定纯通知环（any、空 EX、按其 q 会发布、连接不经整合）永不终止并使全部任务得不到执行，静态检查拒绝 |
+| §6.2（P10，选 B） | 未说明范围内成员能否在事务外执行 | 写明三种情况（同一 JKS 的非事务登记、祖先的非事务登记、范围内的输入入口）下，通知在事务之外照常处理；需要保护时应只用事务类型登记，并把输入入口放在前置成员 |
+| §6.3（P16-2） | 提交时“追加到事件 FIFO” | 追加到各自来源 JKI 所属 JKS 的事件 FIFO |
+| §7.5（P12、P13） | 可观察结果为各 JKI 的 q 写入序列和通知序列 | 对同一运行脚本，执行记录必须与串行参考完全相同；写入可并行批的条件与成立理由；链接 CUDA.md（实现设计，不是规则来源） |
+| §7.6 | 8 条易误读点 | 新增“事务范围内的成员只在事务中执行”一条 |
+| §8.1（P16-1） | 只写编号作用域 | 另写明静态检查只要求同层编号唯一，分配与复用由生命周期模块规定 |
+| §9.1 | 注入与输出观察未说明比对方式 | 注入在处理单元之间进行；比对按运行脚本的批注入、按 observe 观察 |
+| §9.3 | 第 4 项“运行现场的持久化与恢复格式”，第 5 项“输出接入的具体接口” | 第 4 项改为快照的保存时机、存储与恢复流程（格式见 §9.5）；第 5 项改为与外部系统的接口（比对用观察见 §9.4） |
+| §9.4（P13，新增） | 无 | 运行脚本格式（run、model、observe、batches）、按批注入的执行方式、四种执行记录条目 |
+| §9.5（P14，新增） | 无 | 快照格式（q、trigger_all、rounds、queues）、队列项写法，以及 M_TX 的真实中间状态示例 |
+| §10.8（P17，新增） | 无 | 1 bit 寄存器 M_REG |
+| §11 | 两个工具，19 个参考案例 | 工具说明加入运行脚本、快照与 CUDA 执行模型；验收案例增加 9 行；验证边界说明 CUDA 执行模型不是 CUDA 实现 |
+
+### 其他文件
+
+| 文件 | 修改前 | 修改后 |
+| --- | --- | --- |
+| CUDA.md | 空文件（用户新建） | 由 JKRD7 推导的 CUDA 运行方案：并行来源分析、编译到结构数组、实例状态、波次投递与任务批与事务算法、CUDA 映射、验证方案、实施阶段、风险 |
+| scripts/jk_cuda_model.py | 无 | 新增：CUDA 方案的 Python 执行模型，按结构数组与分阶段算法运行 |
+| scripts/jk_model.py | 无纯通知环、jksid、定义中 trigger_all 的检查 | 新增这三项检查，以及运行脚本、快照的格式检查 |
+| scripts/validate_jkrd7.py | 正文 JSON 只接受 JKM 与 JKI 片段；39 个负例 | 也检查正文中的运行脚本与快照；新增 4 个负例（共 43 个）与 1 个正例（共 5 个） |
+| scripts/jk_reference.py | 19 个案例；命令行只有 --model/--inject | 引擎统一串行与批执行；新增执行记录、快照导出与载入、运行脚本、随机模型生成；命令行增加 --script、--batch、--start、--save；案例增至 25 个（含 CUDA 执行模型对拍） |
+| README.md、AGENTS.md、jk.config.json | 无 CUDA 方案 | 加入 CUDA.md、执行模型与第二轮提案的入口；AGENTS 注明 CUDA.md 不是规则来源 |
+| docs/jkrd7-proposal-2026-11-06.md | 待批准 | 已批准，记录 P10 选 B |
+
+## 2026-11-06：JKS.pro 增加 tag
+
+依据：用户回复“增加 pro.tag”，解决上一条留下的问题：JKS id 改为 G 编号后，名称没有字段可放。
+
+| 位置 | 修改前 | 修改后 |
+| --- | --- | --- |
+| JKRD7 §5.1 pro | 对象，当前为 {}；尚无已批准字段 | 对象，没有内容时为 {}；已批准的字段只有 tag |
+| JKRD7 §5.1 pro.tag | 无 | 字符串数组，空时省略；记名称或用途，不影响身份、寻址、登记、整合、事务或执行顺序 |
+| JKRD7 §9.3 | 第 7 项：JKS 是否需要用途标签 | 已解决，删除 |
+| JKRD7 §10.7 | 根 JKS 为 G1 | 另注明 pro.tag 记名称 ASCII.bit.DIGITS |
+| JKRD7 §11.2 | 登记格式案例未涉及 JKS.pro | 加“JKS.pro 只含 tag” |
+| assets/ascii-bit-design/digits.jkm.json | 根 G1 的 pro 为 {} | pro 为 {"tag": ["ASCII.bit.DIGITS"]} |
+| scripts/jk_model.py | JKS.pro 必须是 {} | JKS.pro 只允许 tag，tag 为非空字符串组成的数组 |
+| scripts/validate_jkrd7.py | 负例“JKS.pro 非空” | 改为“JKS.pro 未批准字段”，新增“JKS.pro.tag 非字符串”（共 39 个负例）；正例加入带 tag 与空 tag 的 JKS |
+
+## 2026-11-06：JKS id 改为 G＋递增编号，路径排序改为 JKI 段在前
+
+依据：用户回复“第一处批准。第二处：JKS.id = G + 递增数字；G1.G2.Q1 排在 G1.Q2 之后。”。第一处（先整合，再照常投递）维持上一条的修改。本条取代上一条中关于路径排序的修改。
+
+| 位置 | 修改前 | 修改后 |
+| --- | --- | --- |
+| JKRD7 §5.1 JKS id | 非空字符串，不得是 Q＋数字的形式 | G＋正整数，如 G1；在所属 JKS 内唯一（根 JKS 在 JKM 内唯一），按递增编号分配，与 JKI 的 Q 编号各自计数 |
+| JKRD7 §7.3 路径排序 | 同一层上 JKS 段在前；JKI 段按数值；JKS 段按自然排序 | 同一层上 JKI 段（Q＋数字）在前、JKS 段（G＋数字）在后；同类的段按编号数值比较。G1.Q2 在 G1.G2.Q1 之前，G1.G2.Q1 在 G1.G10.Q1 之前 |
+| JKRD7 §8.1 | JKI 编号的作用域是其所属 JKS | 另写明：JKS 编号的作用域是其上层 JKS，根 JKS 的作用域是 JKM |
+| JKRD7 §8.2 | “id 含点”一条，以根 ASCII.bit.DIGITS 为例 | 改为“地址唯一”：id 只能是 G＋数字或 Q＋数字，同层 id 互不相同即保证地址唯一 |
+| JKRD7 §10 示例 | JKS id 为 G_IN、G_FLOW、G_SYNC、G_PRE、G_TX、G_PARENT、G_CHILD | M_FLOW：G1、G2；M_SYNC：G1；M_TX：G1、G2；M_NEST：G1、G2，G2 的子结构为 G1、G2（路径 G2.G1、G2.G2）。M_PATH 原本就是 G1、G2，未改 |
+| JKRD7 §10.3 | G1.G2.Q1 排在 G1.Q2 之前 | G1.Q2 排在 G1.G2.Q1 之前 |
+| JKRD7 §10.7、§11.2 | 十选一根 JKS 为 ASCII.bit.DIGITS；路径排序案例为 G.G2.Q1、G.G10.Q1、G.Q2；登记格式案例写“JKS id 不是 Q＋数字” | 根 JKS 为 G1（模型名留在 jkm：ASCII_DIGITS）；排序案例为 G1.Q2、G1.G2.Q1、G1.G10.Q1；登记格式案例写“JKS id 为 G＋数字” |
+| assets/ascii-bit-design/digits.jkm.json | 根 id 为 ASCII.bit.DIGITS | 根 id 为 G1，成员不变 |
+| docs/modules/factory-pending.md | 无 | 头部注明附件中的 F1、R1、RAM1 等 JKS id 在适配时改为 G 编号 |
+| scripts/jk_model.py | JKS id 只拒绝 Q＋数字；路径排序含自然排序 | JKS id 必须匹配 G＋正整数；路径排序改为每段（JKI 在前／JKS 在后，编号数值），删除自然排序 |
+| scripts/validate_jkrd7.py | 固定样例用 G_IN、G、G2；“绝对路径冲突”负例以根 G.G2 构造 | 固定样例改用 G 编号；新增“JKS id 带名称”负例；“绝对路径冲突”在新 id 规则下无法构造，改为“根 id 重复”负例（共 38 个负例） |
+| scripts/jk_reference.py | 案例中的路径按旧 id；路径排序案例预期 JKS 段在前 | 路径改为 G 编号；排序案例预期 G1.Q2、G1.G2.Q1、G1.G10.Q1 |
+| JKRD7 §9.3 | 待补充 6 项 | 增加第 7 项：JKS 是否需要用途标签 |
+
+JKS 改为编号后，原先写在 id 中的名称（如 ASCII.bit.DIGITS）没有字段可放：JKS.pro 尚无已批准字段。是否给 JKS 增加类似 JKI.pro.tag 的用途标签，已列入 JKRD7 §9.3 第 7 项，待用户决定。
+
+## 2026-11-06：确认 7 处细节，调整投递顺序与路径排序
+
+依据：用户回复“1.先整合，再照常投递，（如果 S1 需要读 X 已算完的新值，应添加 X 到 S1.trigger.all 里） 2.JKS 段也改用‘自然排序’，让 G2 排在 G10 之前；让 JKS 段排在 JKI 段之前。全部认可”。第 3—7 条按原文确认，未改动。
+
+| 位置 | 修改前 | 修改后 |
+| --- | --- | --- |
+| JKRD7 §7.3 投递步骤 | 先依次交给不受整合的订阅者，再处理登记 | 先按 §5.3 处理登记（放行或形成事务任务），再依次交给不受整合的订阅者 |
+| JKRD7 §7.3 说明 | 无 | 投递顺序只决定同一单元内追加任务和事件的先后；需要读取另一节点本轮新值的节点，应通过触发连接等待它（如加入 trigger.all），不依赖投递顺序 |
+| JKRD7 §7.3 路径排序 | Q＋数字的段排在其他段之前；其他段按 Unicode 码位比较 | 同一层上 JKS 段排在 JKI 段之前；JKI 段按数值比较；JKS 段按自然排序（数字片按数值，非数字片按码位，数字片在前，片数少的在前，仍相同时按整段码位），如 G2 在 G10 之前 |
+| JKRD7 §10.3 | G1.Q2 排在 G1.G2.Q1 之前 | G1.G2.Q1 排在 G1.Q2 之前 |
+| JKRD7 §11.2 | 无对应案例 | 新增“先整合后照常投递”“路径排序”两个案例 |
+| scripts/jk_model.py | path_key：Q＋数字段在前，其他段按码位 | 新增 natural_key；path_key 改为 JKS 段（自然排序）在前、JKI 段（数值）在后 |
+| scripts/jk_reference.py | 投递时先照常投递，再整合 | 先整合，再照常投递；新增上述两个案例，共 19 个 |
+| reports/ | 旧报告 | 用 `--write-report` 重新生成 |
+
+## 2026-11-05：批准 P1—P9，重排 JKRD7
+
+依据：用户回复“全部批准！重排 JKRD7。不维护之前版本的内容。”，批准[补充提案](jkrd7-proposal-2026-11-05.md) P1—P9 的全部推荐选项。P2 的类型名按提案示例定为 `transaction_any`；工厂一节移出正文。
+
+### 正文结构
+
+| 修改前（972 行） | 修改后（约 740 行） |
+| --- | --- |
+| 状态区 18 条，其中 15 条是带日期的确认行，并与正文重复 | 5 行版本与状态；原确认行移入本条末尾 |
+| §1 三层职责 | §1 术语与职责（新增术语表） |
+| §2 JSON 基本约定 | §2 JSON 约定 |
+| §3 JKI 字段结构、§3.1—§3.4 | §3 JKI 字段（§3.1 引用、§3.2 输入入口、§3.3 省略与有效值） |
+| §4 JKI 触发与发布，含 §4.3 队列接口、§4.4—§4.5 示例 | §4 触发、计算、节点任务、publish；队列接口移到 §7，示例移到 §10 |
+| §5 JKS 字段结构，含 §5.4 绝对路径 | §5 JKS 字段与登记（新增 §5.3 整合、§5.4 轮）；绝对路径移到 §8.2 |
+| §6 JKS 组合与事务规则 | §6 事务（任务与范围、范围约束、执行、嵌套、不处理的任务） |
+| 无 | §7 执行模型（处理单元、事件优先、投递、队列、并行实现、易误读点） |
+| §7 静态定义与实时状态、§8 扩展属性与能力归属 | 并入 §3、§5.1、§9.2 |
+| 无 | §8 模型封装与寻址（JKM、绝对路径） |
+| §11 模块职责与后续工作 | §9 模块边界与待补充（输入输出、运行现场、待补充清单） |
+| §9 示例（局部片段，引用未展开的外部节点） | §10 示例：M_FLOW、M_PATH、M_SYNC、M_TX、M_NEST 为完整 JKM，参考解释器直接执行；保留 Q8、Q17 两个 JKI 片段；十选一附件说明 |
+| §10 一致性约束（25 行） | §7.6 易误读点（8 行） |
+| §12、§12.1 来源、核对与验收案例 | §11 验收案例与核对工具 |
+| §13 工厂模块（约 185 行） | 附录一段说明；原文移至 [docs/modules/factory-pending.md](modules/factory-pending.md) |
+
+写法：每条规则只在一处陈述；删去描述“不再采用旧的……”的文字；日期与批准经过只记在本维护记录。
+
+### 规则变化
+
+| 项 | 修改前 | 修改后 |
+| --- | --- | --- |
+| P1 整合 | JKS.trigger 只写“到齐后触发”，未说明前置通知与成员 JKI.trigger 的关系，也未说明 JKS.all 到齐后放行什么 | §5.3：受整合订阅者为本 JKS 内非前置成员。any 不整合；all 到齐后按首次到达顺序每个前置放行一次；transaction 到齐后形成事务任务；ack 等用途按 any 处理 |
+| P2 任一入口事务 | 无。十选一登记 any，请求重叠时输出错误 | §5.2 新增 `transaction_any`：每条通知形成一个事务任务；十选一改用它 |
+| P3 事务执行 | 只写整体计算、沿连接传播、统一提交“所需”通知 | §6.1 范围 R(G)；§6.2 范围内触发只引用本 JKS 成员、不成环；§6.3 局部事件／任务序列，范围外投递暂存后统一提交；§6.4 子孙 JKS 的事务登记就地处理；§6.5 不处理的任务 |
+| P4 执行模型 | “最新可见 q”；FIFO 优先级与广播顺序交给队列模块 | §7：一次处理一个单元；事件优先；订阅者按绝对路径排序投递；“执行入口时的当前 q”；并行实现须与串行参考一致；每个 queue 一对 FIFO |
+| P5 输入输出 | “外部值如何进入可读节点 q”待定 | §9.1：输入只以输入入口为来源注入通知，不写 q，用独热入口表达取值；输出订阅成员通知并在投递时读 q |
+| P6 JKM | 未定义多根、queue 声明与版本标记的载体 | §8.1 `{"jkm","version","queues","roots"}`；绝对路径从根 JKS id 开始 |
+| P7-1 | seed 的 null“不等于缺失”，含义未定 | seed 只能是 0 或 1，null 非法 |
+| P7-2 | JKS id 无格式限制 | 不得是 Q＋数字的形式 |
+| P7-3 | 未说明环 | 事务范围以外允许成环，终止由结构负责 |
+
+### 为使串行参考结果唯一而补的细节（2026-11-06 已确认，第 1、2 条已按用户意见调整，见上一条）
+
+P4 要求同一输入只有唯一结果，以下几处提案没有写到，我按最简单的一致做法写入，需用户确认：
+
+1. 投递时先交给不受整合的订阅者，再处理登记（§7.3 第 2、3 步）。
+2. 路径排序中，Q＋数字的段排在其他段之前，其他段按 Unicode 码位比较（§7.3）。
+3. 事务提交的事件只投递给记下的范围外接收者，不再投给范围内订阅者（§6.3）。
+4. 事务执行期间，子孙 JKS 的 transaction 就地处理的方式与 all 放行相同；非子孙 JKS 的事务登记到齐时照常入队（§6.4）。
+5. 注入的通知等同于输入入口发出一次通知（§9.1）。
+6. 同一 JKI 被多个 JKS 登记时如何整合未定义，列入 §9.3 待补充，工具拒绝此类结构。
+7. 未定义的登记类型不能使用；JKS.pro、JKS.runtime 当前只能是 `{}`，因为尚无已批准字段或格式（§5.1、§5.2）。
+
+### 其他文件
+
+| 文件 | 修改前 | 修改后 |
+| --- | --- | --- |
+| README.md | 按旧章节描述规则，工具为 validate_jkrd7.py 与 verify_ascii_digits.py | 按新规则重写要点、阅读入口与核对命令 |
+| AGENTS.md | 待补充在“第 11 节”，工厂在“第 13 节”，第二个工具为 verify_ascii_digits.py | 待补充在 §9.3，工厂在附录与 docs/modules/factory-pending.md，第二个工具为 jk_reference.py |
+| jk.config.json | 索引旧 ASCII 文件与两个旧工具 | 索引 digits.jkm.json、三个脚本、两份报告、工厂待适配文档与提案 |
+| scripts/validate_jkrd7.py | 813 行，按旧章节文本做有限静态检查 | 重写：检查正文 JSON、模型附件、37 个负例与 4 个正例、待适配附件语法、本地链接与索引 |
+| scripts/jk_model.py | 无 | 新增：模型加载、引用解析与静态规则 |
+| scripts/jk_reference.py | 无 | 新增：串行参考解释器与 §11.2 验收案例；可按命令行执行任意单 queue JKM |
+| scripts/verify_ascii_digits.py | 603 行，只执行 any 登记的普通连接 | 删除，由 jk_reference.py 取代 |
+| assets/ascii-bit-design/ | digits.paired-state.proposal.json（单个 JKS，any 登记）、b3-two-input.proposal.json、digits.shared.invalid.json（旧 ID 型 members 反例）及其报告 | digits.jkm.json（完整 JKM，transaction_any 登记，成员不变）；其余删除 |
+| assets/jks-factory-v7-design/verification.json | 旧静态工具的报告 | 删除，由 reports/static-validation.json 取代 |
+| reports/ | 无 | static-validation.json、reference-run.json |
+| docs/jkrd7-proposal-2026-11-05.md | 状态“待批准” | 状态“已全部批准”，保留为批准依据 |
+
+工厂附件 JSON 未改动，仍待适配。
+
+### 原状态区确认行（移入，原文）
+
+- **版本：7.0.0**
+- **确认日期：2026-10-29**
+- **状态：用户已批准的 JKI／JKS 设计、规则、JSON 示例及格式。**
+- **范围：JKI 节点定义、JKS 组合与事务、事件与计算来源、静态定义与实时状态，以及 JKI.FACTORY／RAM.FACTORY 模块设计。**
+- **补充确认：JKS 支持嵌套；`trigger.transaction` 登记事务前置 ID，最外层活动事务保持统一计算与传播边界；queue 与 runtime 位于 JKS 顶层。**
+- **2026-10-31 补充确认：纳入工厂 JKS 设计、六位输入协议、七种 publish、pro.jksid、模块操作与 JSON 附件；版本保持 7.0.0。**
+- **2026-11-04 JKI 更新确认：每节点 q、可选 sources.seed、any/all、runtime.trigger_all、执行入口读取来源 q；changed 比较 result != q_before。批准相关 JKI 建议，版本仍为 7.0.0。**
+- **2026-11-04 补充确认：JKI 传播事件仅作通知，不携带或保存 result；完整 EX 后按 publish 决定是否追加通知事件，随后更新 q 并结束任务。队列调度与故障处理不属于 JKI 的设计范围。**
+- **2026-11-05 JKS 更新确认：members 直接保存本层 JKI 与子 JKS 的完整 JSON，子 JKS 递归嵌套；trigger 各注册项使用前置引用数组，未使用的键省略；事务顺序按 JKI.trigger 的连接关系确定，sources 只负责取值。前置条件收齐后形成整体事务任务，完整顺序计算所包含的 JKI，计算完后统一提交所需传播通知。**
+- **2026-11-05 JKI 简化确认：sources、pro、runtime 为空时省略，sources.s/ex 与 pro.tag 为空时省略；publish 省略或为空时默认 always=[0,1]，显式默认值也可省略。新增用途标签 pro.tag。EX 为空时不入任务队列，触发满足后直接按当前 q 判定 publish，满足时追加通知事件，q 不变。**
+- **2026-11-05 JKI 编号确认：所有 JKI.id 使用 Q＋当前 JKS／JKM 内的递增编号；B1、done、pre 等位名或用途声明放入 JKI.pro.tag，不作为节点 ID。**
+- **2026-11-05 JKS 入口登记确认：JKS.trigger 统计需要前置触发的 JKI；十选一结构使用 trigger.any=[Q1,…,Q10]，Q1—Q10 是该 JKS 的实际入口成员，必须提供其 JKI 定义，不能仅作为未展开外部引用。用途标签不替代入口登记。**
+- **2026-11-05 入口连接补充：Q1—Q10 是当前 JKS 内的可编辑节点；上游需要触发某入口时，将实际上游 JKI 注册到该入口的 trigger.any。入口定义保留 trigger，尚未注册来源时以 any=[] 表示未连接；JKS 定义不必预先固定十组上游编号。**
+- **2026-11-05 成员与寻址确认：members 使用完整对象数组，替代原成员 ID 数组。跨层连接使用到 JKI 的绝对路径，如 G1.G2.Q1；任务与事件入队时，其中的 JKI 目标与来源也使用绝对路径。JKI.id 继续保存本层 Q 编号，不改成路径，不增加地址字段。**
+- **2026-11-05 JKS 触发与回滚更新：增加 trigger.all，所登记前置通知全部到齐后触发；trigger.transaction 同样等待全部到齐，且本次完整执行失败时回滚、取消本次所有计算（失败与回滚部分已由下方“事务与队列确认”删除）。其他控制类型或用途按需增加，不把已有注册名称固定为封闭枚举。**
+- **2026-11-05 JKS 登记与轮次纠正：所有 trigger 类型都根据 JKS 内部连接结构按需登记；同一 JKS.trigger 的事件源整体去重。重复通知只用于判断触发条件；all／transaction 到齐后任务入队并立即清空本轮通知记录，前一轮排队或执行期间的新通知属于下一轮。可编辑入口的登记资格不限定为 any 类型。**
+- **2026-11-05 事务与队列确认：JKS.trigger 的前置 ID 必须是本结构成员，外部上游经前置成员自身的 JKI.trigger 接入；前置成员不属于其所登记的事务，事务结果与前置成员无关。事务内按成员 publish 结果沿 JKI.trigger 连接传播。删除“执行失败”及其回滚分支。同一事务可有多个实例并存于任务 FIFO，按顺序逐个执行，处理完一个任务或不处理一个任务后才执行下一个，不并行计算。all 与其他类型一样按结构需要注册。JKS.queue 对应事件队列与任务队列的 FIFO。**
+- **2026-11-02 维护范围：只完善本版设计规则及相关内容，不兼容或维护此前版本，先不做 Web 页面；规则、附件与索引统一以本文件为依据。**
+
 ## 2026-11-05：前置成员、事务传播、多实例顺序与 queue 对应
 
 依据用户对 N1—N4、A1、A5、A6、A8、D19 的确认更新 JKRD7。
@@ -16,7 +228,18 @@
 | §9.6 示例 | G_PARENT 与 G_TX 都登记外部 G_PRE.Q10 | 新增前置成员 G_PARENT.Q202；G_PARENT.transaction=[Q202]；G_TX.Q103 由 G_PARENT.Q202 触发，在父事务内计算 |
 | §10—§12.1 | 含失败回滚相关约束与验收案例 | 改为前置成员、publish 传播、无失败分支及多实例顺序执行的约束与验收案例 |
 
-静态核对工具仍通过；它尚未检查“前置 ID 必须是本结构成员”，也不验证事务执行语义。README 中“transaction 还保证完整执行失败时回滚”的表述未改动，与本次正文不一致。
+随后按用户指令同步其他文件：
+
+| 文件 | 修改前 | 修改后 |
+| --- | --- | --- |
+| README.md | transaction 保证完整执行失败时回滚；工具核对注册格式 | 前置 ID 为本结构成员；前置成员不属于事务；事务按 publish 沿连接传播、统一提交，不设失败与回滚；多实例按任务 FIFO 顺序执行；queue 对应两个 FIFO；工具另核对前置成员范围 |
+| scripts/validate_jkrd7.py | 前置注册只要求可解析、去重，允许登记外部节点 | 新增前置 ID 必须是本结构（含子 JKS）JKI 成员的检查；修正登记外部或不存在节点的旧正例，新增 3 个拒绝反例；报告不再写失败回滚 |
+| scripts/verify_ascii_digits.py | all／transaction 拒绝用例直接登记外部 G_SOURCE.Q1 | 改由成员 Q2 接入外部并登记为前置；未实现能力说明改为事务内 publish 传播与统一提交 |
+| jk.config.json | 未索引 ASCII 结构附件与参考工具 | 增加 ASCII 结构、报告、B3 片段、无效反例及参考工具入口 |
+| AGENTS.md | 空文件（HEAD 中为 V5 时期内容） | 按 README／JKRD7 已有维护要求整理为 JKRD7 协作要求，不新增规则 |
+| 两份核对报告 | 旧统计与源码摘要 | 用 `--write-report` 重新生成 |
+
+工厂附件中的 failure／failure_handoff 属于第 13 节待适配的结构生命周期方案，未改写；它们不定义当前 JKS 事务的执行失败或回滚。
 
 ## 2026-11-05：纠正 JKS 登记与通知轮次的审查前提
 
@@ -99,7 +322,7 @@
 
 本次没有取消通用 JKS.trigger.pre 注册，也没有新增 JKS.trigger.any。十选一的触发来自成员实际 any/all 连接；用途标签不参与寻址或执行。Q1—Q10 外部前置仍需由所属上下文明确提供，未设计跨作用域的路径或查找机制；编号顺序不代替执行顺序。
 
-当前组件：[十选一 JSON](../assets/ascii-bit-design/digits.paired-state.proposal.json)、[B3 JSON](../assets/ascii-bit-design/b3-two-input.proposal.json)。字段形式由通用工具核对；[ASCII 参考验证](../scripts/verify_ascii_digits.py) 保留 462 次逐次输入检查及 4 个重叠反例，[报告](../assets/ascii-bit-design/digits.paired-state.verification.json)记录实际 Q 引用与源码摘要。编号分配器、完整作用域解析和生产执行器仍未实现，不将局部格式检查报告为其执行证明。
+当前组件：十选一 JSON（`assets/ascii-bit-design/digits.paired-state.proposal.json`，已于重排时删除）、B3 JSON（`assets/ascii-bit-design/b3-two-input.proposal.json`，已于重排时删除）。字段形式由通用工具核对；ASCII 参考验证（`scripts/verify_ascii_digits.py`，已于重排时删除） 保留 462 次逐次输入检查及 4 个重叠反例，报告（`assets/ascii-bit-design/digits.paired-state.verification.json`，已于重排时删除）记录实际 Q 引用与源码摘要。编号分配器、完整作用域解析和生产执行器仍未实现，不将局部格式检查报告为其执行证明。
 
 ## 2026-11-05：JKI 可省略字段、用途标签与空 EX 通知
 
@@ -218,6 +441,6 @@
 
 ## 当前验证边界
 
-可重复检查为 `python3 scripts/validate_jkrd7.py`；静态报告见 [verification.json](../assets/jks-factory-v7-design/verification.json)。核对工具只依赖 Python 标准库，检查设计结构、有限算术案例、无效输入反例及本地文件链接。
+可重复检查为 `python3 scripts/validate_jkrd7.py`；静态报告见 verification.json（`assets/jks-factory-v7-design/verification.json`，已于重排时删除）。核对工具只依赖 Python 标准库，检查设计结构、有限算术案例、无效输入反例及本地文件链接。
 
 JKRD7 第 11 节仍保留通用内部调度、实例／事件现场、完整输入输出映射、恢复与封装等未定细节。引用计数和合法自引用的通用表达同样不能从旧版自动继承。本次完成的是本版设计资料的独立维护与清理，不代表这些规则已经补齐，也不代表存在本版执行器。

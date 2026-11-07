@@ -1,0 +1,23 @@
+{
+  "name": "jk",
+  "version": "7.0.0",
+  "private": true,
+  "description": "JKRD7 rules, static checks, CPU reference executor and WebGPU executor",
+  "type": "module",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "typecheck": "tsc",
+    "validate": "node tools/validate.ts",
+    "reference": "node tools/reference.ts",
+    "gpu": "node tools/gpu.ts",
+    "serve": "node tools/serve.ts",
+    "check": "npm run typecheck && npm run validate && npm run reference"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "@webgpu/types": "0.1.74",
+    "typescript": "7.0.2"
+  }
+}
