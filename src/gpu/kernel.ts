@@ -3,12 +3,12 @@
  * 顺序推进“微步”。实例的全部状态都在存储缓冲区里，所以一次调度可以在任意微步之后
  * 停下，下一次调度接着执行；每次调度的微步数和记录量都有上限，避免单次调度运行过久。
  *
- * 微步：一次注入、一次事件投递、一个节点任务、一次事务开始或一次事务提交。
+ * 微步：一次注入、一次事件投递、一个节点任务、一次事务开始（含嵌套事务）或一次事务结束。
  * 结果与 CPU 后端（cpu.ts，batch=false）逐条相同。
  */
 
 import {
-  EVF_OUT, EVF_RECV, F_ALL, F_EX, F_WATCH, GATE_ALL, GATE_NONE, GATE_TX_ANY, H, HEADER_WORDS, type Layout, NONE,
+  F_ALL, F_EX, F_WATCH, GATE_ALL, GATE_NONE, GATE_TX_ANY, H, HEADER_WORDS, type Layout, NONE,
   REC_INJECT, REC_NOTIFY, REC_OUTPUT, REC_Q,
 } from "./compile.ts";
 
@@ -22,14 +22,15 @@ export function kernelSource(l: Layout): string {
   const consts: [string, number][] = [
     ["NONE", NONE], ["N", l.c.n],
     ["EV_CAP", l.cap.events], ["TK_CAP", l.cap.tasks], ["LEV_CAP", l.cap.localEvents], ["LTK_CAP", l.cap.localTasks],
-    ["CM_CAP", l.cap.committed], ["EV_STRIDE", l.evStride], ["TK_STRIDE", l.tkStride],
+    ["DEPTH", l.cap.depth],
+    ["TK_STRIDE", l.tkStride],
     ...Object.entries(l.m).map(([k, v]) => [`M_${k}`, v] as [string, number]),
     ...Object.entries(l.s).map(([k, v]) => [`S_${k}`, v] as [string, number]),
     ["STATE_WORDS", l.stateWords], ["READ_N", l.read.length], ["OUT_WORDS", l.outWords],
     ["MAX_REC_STEP", l.maxRecStep], ["REC_WORDS", l.recWords], ["REC_CAP", l.recWords - 2],
     ...Object.entries(H).map(([k, v]) => [`H_${k}`, v] as [string, number]),
     ["HEADER_WORDS", HEADER_WORDS],
-    ["F_ALL", F_ALL], ["F_EX", F_EX], ["F_WATCH", F_WATCH], ["EVF_RECV", EVF_RECV], ["EVF_OUT", EVF_OUT],
+    ["F_ALL", F_ALL], ["F_EX", F_EX], ["F_WATCH", F_WATCH],
     ["GATE_NONE", GATE_NONE], ["GATE_ALL", GATE_ALL], ["GATE_TX_ANY", GATE_TX_ANY],
     ["REC_INJECT", REC_INJECT], ["REC_NOTIFY", REC_NOTIFY], ["REC_Q", REC_Q], ["REC_OUTPUT", REC_OUTPUT],
   ];
@@ -41,9 +42,10 @@ const ERR_EVENTS: u32 = 1u;
 const ERR_TASKS: u32 = 2u;
 const ERR_LOCAL_EVENTS: u32 = 3u;
 const ERR_LOCAL_TASKS: u32 = 4u;
-const ERR_COMMIT: u32 = 5u;
 const ERR_STEPS: u32 = 6u;
 const ERR_RECORDS: u32 = 7u;
+const ERR_DEPTH: u32 = 8u;
+const ERR_TX_STEPS: u32 = 9u;
 const LOW31: u32 = 0x7fffffffu;
 
 struct Params {
@@ -52,7 +54,7 @@ struct Params {
   budget: u32,
   step_limit: u32,
   in_words: u32,
-  pad0: u32,
+  tx_limit: u32,
   pad1: u32,
   pad2: u32,
 }
@@ -94,53 +96,58 @@ fn publishes(i: u32, has_before: bool, before: u32, value: u32) -> bool {
   return true;
 }
 
-// JKI i 是 JKS g 的成员且不是 g 的前置：受 g 整合的订阅者，也是 g 的事务范围（§5.3、§6.2）
+// JKI i 是 JKS g 的成员且不是 g 的前置：受 g 整合的订阅者（§5.3）
 fn in_scope(g: u32, i: u32) -> bool {
   return M[M_JKS_LO + g] <= i && i < M[M_JKS_HI + g] && M[M_REG_JKS + i] != g;
 }
 
-// JKS c 是 JKS p 的严格后代
-fn strict_desc(c: u32, p: u32) -> bool {
-  return M[M_JKS_LO + p] <= M[M_JKS_LO + c] && M[M_JKS_HI + c] <= M[M_JKS_HI + p]
-    && M[M_JKS_DEPTH + c] > M[M_JKS_DEPTH + p];
-}
+// ---- FIFO ------------------------------------------------------------------
+// 事件项是来源 JKI 的编号；thread 的两个 FIFO 与每一层事务的两个 FIFO（§6.2）都是环形缓冲。
+// 任务项：类别（0 节点、1 事务）、节点或 JKS、前置数、前置。
 
-// ---- 队列 ------------------------------------------------------------------
+// 当前事务层的 FIFO 位置字：0 事件头，1 事件数，2 任务头，3 任务数
+fn lv(k: u32) -> u32 { return S_LV + (ld(H_MODE) - 1u) * 4u + k; }
+fn lev_base() -> u32 { return S_LEV + (ld(H_MODE) - 1u) * LEV_CAP; }
+fn ltk_base() -> u32 { return S_LTK + (ld(H_MODE) - 1u) * LTK_CAP * TK_STRIDE; }
 
 fn ev_push(src: u32) {
   let len = ld(H_EV_LEN);
   if (len >= EV_CAP) { fail(ERR_EVENTS); return; }
-  let o = S_EV + ((ld(H_EV_HEAD) + len) % EV_CAP) * EV_STRIDE;
-  sto(o, src);
-  sto(o + 1u, EVF_OUT);
-  sto(o + 2u, 0u);
+  sto(S_EV + (ld(H_EV_HEAD) + len) % EV_CAP, src);
   sto(H_EV_LEN, len + 1u);
 }
 
 fn lev_push(src: u32) {
-  let len = ld(H_LEV_LEN);
+  let len = ld(lv(1u));
   if (len >= LEV_CAP) { fail(ERR_LOCAL_EVENTS); return; }
-  sto(S_LEV + (ld(H_LEV_HEAD) + len) % LEV_CAP, src);
-  sto(H_LEV_LEN, len + 1u);
+  sto(lev_base() + (ld(lv(0u)) + len) % LEV_CAP, src);
+  sto(lv(1u), len + 1u);
 }
 
-fn tk_alloc() -> u32 {
+// tx：追加到当前事务层的事务任务 FIFO；否则追加到 thread 的任务 FIFO
+fn tk_alloc(tx: bool) -> u32 {
+  if (tx) {
+    let len = ld(lv(3u));
+    if (len >= LTK_CAP) { fail(ERR_LOCAL_TASKS); return NONE; }
+    sto(lv(3u), len + 1u);
+    return ltk_base() + ((ld(lv(2u)) + len) % LTK_CAP) * TK_STRIDE;
+  }
   let len = ld(H_TK_LEN);
   if (len >= TK_CAP) { fail(ERR_TASKS); return NONE; }
   sto(H_TK_LEN, len + 1u);
   return S_TK + ((ld(H_TK_HEAD) + len) % TK_CAP) * TK_STRIDE;
 }
 
-fn tk_push_node(i: u32) {
-  let o = tk_alloc();
+fn tk_push_node(i: u32, tx: bool) {
+  let o = tk_alloc(tx);
   if (o == NONE) { return; }
   sto(o, 0u);
   sto(o + 1u, i);
   sto(o + 2u, 0u);
 }
 
-fn tk_push_tx1(g: u32, x: u32) {
-  let o = tk_alloc();
+fn tk_push_tx1(g: u32, x: u32, tx: bool) {
+  let o = tk_alloc(tx);
   if (o == NONE) { return; }
   sto(o, 1u);
   sto(o + 1u, g);
@@ -149,44 +156,13 @@ fn tk_push_tx1(g: u32, x: u32) {
 }
 
 // 事务任务，前置按本轮到达顺序取自轮记录 b
-fn tk_push_tx_round(g: u32, b: u32, cnt: u32) {
-  let o = tk_alloc();
+fn tk_push_tx_round(g: u32, b: u32, cnt: u32, tx: bool) {
+  let o = tk_alloc(tx);
   if (o == NONE) { return; }
   sto(o, 1u);
   sto(o + 1u, g);
   sto(o + 2u, cnt);
   for (var j = 0u; j < cnt; j++) { sto(o + 3u + j, ld(b + 1u + j)); }
-}
-
-fn ltk_push(i: u32) {
-  let len = ld(H_LTK_LEN);
-  if (len >= LTK_CAP) { fail(ERR_LOCAL_TASKS); return; }
-  sto(S_LTK + (ld(H_LTK_HEAD) + len) % LTK_CAP, i);
-  sto(H_LTK_LEN, len + 1u);
-}
-
-// 事务提交列表：先打开一项，接收者逐个加入，最后决定是否保留
-fn cm_open(src: u32, flags: u32) -> u32 {
-  let n = ld(H_CM_LEN);
-  if (n >= CM_CAP) { return NONE; }
-  let o = S_CM + n * EV_STRIDE;
-  sto(o, src);
-  sto(o + 1u, flags);
-  sto(o + 2u, 0u);
-  return o;
-}
-
-fn cm_add(o: u32, e: u32) {
-  if (o == NONE) { fail(ERR_COMMIT); return; }
-  let k = ld(o + 2u);
-  sto(o + 3u + k, e);
-  sto(o + 2u, k + 1u);
-}
-
-fn cm_close(o: u32, keep: bool) {
-  if (!keep) { return; }
-  if (o == NONE) { fail(ERR_COMMIT); return; }
-  sto(H_CM_LEN, ld(H_CM_LEN) + 1u);
 }
 
 // ---- §4.1 到达、§4.3 节点任务 -------------------------------------------------
@@ -207,7 +183,7 @@ fn receive(sub: u32, slot: u32, tx: bool) {
     for (var j = 0u; j < n; j++) { sto(b + j, NONE); }
   }
   if ((fl & F_EX) != 0u) {
-    if (tx) { ltk_push(sub); } else { tk_push_node(sub); }
+    tk_push_node(sub, tx);
   } else if (publishes(sub, false, 0u, ld(S_Q + sub))) {
     emit(sub, tx);
   }
@@ -242,27 +218,16 @@ fn output(src: u32) {
 
 // 放行前置 x 给 JKS g 的受整合订阅者
 fn release_one(g: u32, x: u32, tx: bool) {
-  var o = NONE;
-  if (tx) { o = cm_open(x, EVF_RECV); }
-  var deferred = 0u;
-  let txg = ld(H_TX_G);
   for (var e = M[M_SUB_OFF + x]; e < M[M_SUB_OFF + x + 1u]; e++) {
     let sub = M[M_SUB + e] & LOW31;
-    if (!in_scope(g, sub)) { continue; }
-    if (tx && !in_scope(txg, sub)) {
-      cm_add(o, e);
-      deferred = deferred + 1u;
-    } else {
-      receive(sub, M[M_SUB_SLOT + e], tx);
-    }
+    if (in_scope(g, sub)) { receive(sub, M[M_SUB_SLOT + e], tx); }
   }
-  if (tx) { cm_close(o, deferred > 0u); }
 }
 
+// 事务登记形成事务任务：不在事务中时进入 thread，事务中进入当前层的事务任务 FIFO（嵌套事务，§6.3）
 fn feed(g: u32, gate: u32, src: u32, tx: bool) {
-  let nested = tx && strict_desc(g, ld(H_TX_G));
   if (gate == GATE_TX_ANY) {
-    if (nested) { release_one(g, src, true); } else { tk_push_tx1(g, src); }
+    tk_push_tx1(g, src, tx);
     return;
   }
   let r = M[M_REG_ROUND + src];
@@ -276,74 +241,45 @@ fn feed(g: u32, gate: u32, src: u32, tx: bool) {
     sto(b, cnt);
   }
   if (cnt < M[M_ROUND_NEED + r]) { return; }
-  if (gate == GATE_ALL || nested) {
+  if (gate == GATE_ALL) {
     for (var j = 0u; j < cnt; j++) { release_one(g, ld(b + 1u + j), tx); }
   } else {
-    tk_push_tx_round(g, b, cnt);
+    tk_push_tx_round(g, b, cnt, tx);
   }
   sto(b, 0u);
 }
 
-// 投递一条事件；eo 是带接收者列表的事件项在状态区中的偏移
-fn deliver(src: u32, flags: u32, eo: u32, tx: bool) {
-  let fl = M[M_FLAGS + src];
-  if (!tx && (flags & EVF_OUT) != 0u && (fl & F_WATCH) != 0u) { output(src); }
-  if ((flags & EVF_RECV) != 0u) {
-    let n = ld(eo + 2u);
-    for (var k = 0u; k < n; k++) {
-      let e = ld(eo + 3u + k);
-      receive(M[M_SUB + e] & LOW31, M[M_SUB_SLOT + e], false);
-    }
-    return;
-  }
+// 投递一条事件；事务执行期间（tx）形成的任务和事件进入事务 FIFO
+fn deliver(src: u32, tx: bool) {
+  if ((M[M_FLAGS + src] & F_WATCH) != 0u) { output(src); } // 输出模块在投递时读取，事务内也一样（§6.2）
   let gate = M[M_REG_GATE + src];
   if (gate != GATE_NONE) { feed(M[M_REG_JKS + src], gate, src, tx); } // 先整合
-  var o = NONE;
-  if (tx) { o = cm_open(src, EVF_RECV | EVF_OUT); }
-  var deferred = 0u;
-  let txg = ld(H_TX_G);
   for (var e = M[M_SUB_OFF + src]; e < M[M_SUB_OFF + src + 1u]; e++) { // 再照常投递
     let w = M[M_SUB + e];
     if (gate != GATE_NONE && (w >> 31u) != 0u) { continue; }
-    let sub = w & LOW31;
-    if (tx && !in_scope(txg, sub)) {
-      cm_add(o, e);
-      deferred = deferred + 1u;
-    } else {
-      receive(sub, M[M_SUB_SLOT + e], tx);
-    }
+    receive(w & LOW31, M[M_SUB_SLOT + e], tx);
   }
-  if (tx) { cm_close(o, deferred > 0u || (fl & F_WATCH) != 0u); }
 }
 
-// ---- §6.3 事务 -------------------------------------------------------------------
+// ---- §6.2、§6.3 事务 -----------------------------------------------------------------
 
+// 开始一个事务（o 是已出队的事务任务项）：进入高一层，清空该层的两个 FIFO，放行本次前置
 fn start_tx(o: u32) {
+  let d = ld(H_MODE) + 1u;
+  if (d > DEPTH) { fail(ERR_DEPTH); return; }
+  if (d == 1u) { sto(H_TX_STEPS, 0u); }
+  sto(H_MODE, d);
+  for (var k = 0u; k < 4u; k++) { sto(lv(k), 0u); }
   let g = ld(o + 1u);
   let n = ld(o + 2u);
-  sto(H_MODE, 1u);
-  sto(H_TX_G, g);
-  sto(H_LEV_HEAD, 0u);
-  sto(H_LEV_LEN, 0u);
-  sto(H_LTK_HEAD, 0u);
-  sto(H_LTK_LEN, 0u);
-  sto(H_CM_LEN, 0u);
   for (var j = 0u; j < n; j++) { release_one(g, ld(o + 3u + j), true); }
 }
 
-fn commit() {
-  let n = ld(H_CM_LEN);
-  for (var k = 0u; k < n; k++) {
-    let len = ld(H_EV_LEN);
-    if (len >= EV_CAP) { fail(ERR_EVENTS); return; }
-    let d = S_EV + ((ld(H_EV_HEAD) + len) % EV_CAP) * EV_STRIDE;
-    let s = S_CM + k * EV_STRIDE;
-    let m = 3u + ld(s + 2u);
-    for (var w = 0u; w < m; w++) { sto(d + w, ld(s + w)); }
-    sto(H_EV_LEN, len + 1u);
-  }
-  sto(H_CM_LEN, 0u);
-  sto(H_MODE, 0u);
+// §6.4：事务中每投递一条事件、执行一个节点任务算一步；超出时在这一步之前停下
+fn tx_step() -> bool {
+  if (ld(H_TX_STEPS) >= P.tx_limit) { fail(ERR_TX_STEPS); return false; }
+  sto(H_TX_STEPS, ld(H_TX_STEPS) + 1u);
+  return true;
 }
 
 // ---- 微步与入口 ----------------------------------------------------------------------
@@ -361,39 +297,44 @@ fn micro_step() {
     sto(H_INJ_POS, pos + 1u);
     return;
   }
-  if (ld(H_MODE) == 1u) { // 事务中：局部事件优先，其次局部任务，都空时提交
-    if (ld(H_LEV_LEN) > 0u) {
-      let h = ld(H_LEV_HEAD);
-      let src = ld(S_LEV + h);
-      sto(H_LEV_HEAD, (h + 1u) % LEV_CAP);
-      sto(H_LEV_LEN, ld(H_LEV_LEN) - 1u);
-      deliver(src, EVF_OUT, 0u, true);
-    } else if (ld(H_LTK_LEN) > 0u) {
-      let h = ld(H_LTK_HEAD);
-      let i = ld(S_LTK + h);
-      sto(H_LTK_HEAD, (h + 1u) % LTK_CAP);
-      sto(H_LTK_LEN, ld(H_LTK_LEN) - 1u);
-      run_task(i, true);
+  let d = ld(H_MODE);
+  if (d > 0u) { // 第 d 层事务中：事务事件优先，其次事务任务，都空时本层事务结束，回到外层
+    if (ld(lv(1u)) > 0u) {
+      if (!tx_step()) { return; }
+      let h = ld(lv(0u));
+      let src = ld(lev_base() + h);
+      sto(lv(0u), (h + 1u) % LEV_CAP);
+      sto(lv(1u), ld(lv(1u)) - 1u);
+      deliver(src, true);
+    } else if (ld(lv(3u)) > 0u) {
+      let h = ld(lv(2u));
+      let o = ltk_base() + h * TK_STRIDE;
+      let kind = ld(o);
+      let i = ld(o + 1u);
+      if (kind == 0u && !tx_step()) { return; }
+      sto(lv(2u), (h + 1u) % LTK_CAP);
+      sto(lv(3u), ld(lv(3u)) - 1u);
+      if (kind == 0u) { run_task(i, true); } else { start_tx(o); } // 嵌套事务在高一层执行；本层的任务项不会被覆盖
     } else {
-      commit();
+      sto(H_MODE, d - 1u);
     }
     return;
   }
-  if (ld(H_EV_LEN) > 0u) { // 事件优先；处理完再出队，期间新追加的事件不会覆盖这一项
-    let o = S_EV + ld(H_EV_HEAD) * EV_STRIDE;
-    deliver(ld(o), ld(o + 1u), o, false);
-    sto(H_EV_HEAD, (ld(H_EV_HEAD) + 1u) % EV_CAP);
+  if (ld(H_EV_LEN) > 0u) { // 事件优先：先出队，再投递
+    let h = ld(H_EV_HEAD);
+    let src = ld(S_EV + h);
+    sto(H_EV_HEAD, (h + 1u) % EV_CAP);
     sto(H_EV_LEN, ld(H_EV_LEN) - 1u);
+    deliver(src, false);
     return;
   }
   if (ld(H_TK_LEN) > 0u) {
     let o = S_TK + ld(H_TK_HEAD) * TK_STRIDE;
     let kind = ld(o);
     let i = ld(o + 1u);
-    if (kind == 1u) { start_tx(o); }
     sto(H_TK_HEAD, (ld(H_TK_HEAD) + 1u) % TK_CAP);
     sto(H_TK_LEN, ld(H_TK_LEN) - 1u);
-    if (kind == 0u) { run_task(i, false); }
+    if (kind == 0u) { run_task(i, false); } else { start_tx(o); } // 事务执行期间 thread 的 FIFO 不追加，任务项不会被覆盖
   }
 }
 

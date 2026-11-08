@@ -38,7 +38,7 @@
     "gpu": "src/gpu/backend.ts",
     "gpu_compiler": "src/gpu/compile.ts",
     "gpu_kernel": "src/gpu/kernel.ts",
-    "limits": "single-queue models (JKRD7 §9.3); GPU backend checked only in this machine's Chrome"
+    "limits": "single-thread models (JKRD7 §9.3); GPU backend checked only in this machine's Chrome"
   },
   "tools": {
     "model": "src/model.ts",

@@ -5,11 +5,46 @@ import { CpuExecutor, type CpuOptions } from "../cpu.ts";
 import type { Random } from "./random.ts";
 
 export function jkm(name: string, ...roots: Jks[]): Jkm {
-  return { jkm: name, version: "7.0.0", queues: ["work"], roots };
+  return { jkm: name, version: "7.0.0", threads: ["work"], roots };
 }
 
 export function jks(id: string, members: (Jki | Jks)[], trigger: Jks["trigger"]): Jks {
-  return { id, members, trigger, queue: "work", pro: {}, runtime: {} };
+  return { id, thread: "work", trigger, members };
+}
+
+/** 每次触发都翻转自身的节点。 */
+function toggle(id: string, ...from: string[]): Jki {
+  return { id, q: 0, trigger: { any: from }, sources: { seed: 1, s: [id], ex: ["K"] } };
+}
+
+/**
+ * JKRD7 §6.3：三层嵌套事务。G1 的事务（transaction_any）推进到 G2 的 transaction 登记，
+ * G2 的事务再推进到 G3 的 transaction_any 登记。
+ */
+export function inlineModel(): Jkm {
+  return jkm("M_INLINE",
+    jks("G1", [...inputs("Q1"), toggle("Q2", "Q1")], { transaction_any: ["Q1"] }),
+    jks("G2", [{ id: "Q1", q: 1, trigger: { any: ["G1.Q2"] } }, toggle("Q2", "Q1")], { transaction: ["Q1"] }),
+    jks("G3", [{ id: "Q1", q: 1, trigger: { any: ["G2.Q2"] } }, toggle("Q2", "Q1")], { transaction_any: ["Q1"] }));
+}
+
+/**
+ * JKRD7 §6.3：嵌套事务连续执行完，外层才继续。G1 的事务中，G1.Q2 推进到 G2 的 transaction 登记，
+ * 外层还排着 G1.Q3、G1.Q4。节点任务的顺序应为 G1.Q2、G1.Q3、G2.Q2、G2.Q3、G1.Q4。
+ */
+export function nestOrderModel(): Jkm {
+  return jkm("M_NEST2",
+    jks("G1", [...inputs("Q1"), toggle("Q2", "Q1"), toggle("Q3", "Q1"), toggle("Q4", "Q3")], { transaction_any: ["Q1"] }),
+    jks("G2", [{ id: "Q1", q: 1, trigger: { any: ["G1.Q2"] } }, toggle("Q2", "Q1"), toggle("Q3", "Q2")], { transaction: ["Q1"] }));
+}
+
+/**
+ * JKRD7 §6.4：环上有退出结构（G1.Q3 的 publish 不是 always），所以通过静态检查。
+ * publish 为 one_changed 时每次请求循环两次后退出；为 always_changed 时永不退出，由事务步数上限拦住。
+ */
+export function exitLoopModel(mode: "one_changed" | "always_changed"): Jkm {
+  const q3: Jki = { id: "Q3", q: 0, trigger: { any: ["Q2"] }, sources: { seed: 0, s: ["Q2"], ex: ["K"] }, publish: { [mode]: mode === "one_changed" ? [1] : [0, 1] } };
+  return jkm("M_EXIT", jks("G1", [...inputs("Q1"), toggle("Q2", "Q1", "Q3"), q3], { transaction_any: ["Q1"] }));
 }
 
 /** 输入入口：q=1，trigger.any=[]。 */
@@ -52,7 +87,7 @@ export function shuffled(data: Jkm, rng: Random): Jkm {
 
 /**
  * 一个随机的合法模型：根下有输入与普通节点，事务子结构 G1.G1，同步子结构 G1.G2。
- * 覆盖事务、JKS all、提交到范围外、JKI all 与七种 publish。
+ * 覆盖事务、JKS all、事务推进到事务登记的 JKS 以外、JKI all 与七种 publish。
  */
 export function randomModel(rng: Random): Jkm {
   const node = (id: string, triggers: string[], pool: string[]): Jki => {

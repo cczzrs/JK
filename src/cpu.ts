@@ -2,18 +2,38 @@
  * CPU 后端：JKRD7 §4—§7 的串行参考执行（默认后端）。
  *
  * 一次一个处理单元；事件优先；同一通知按订阅者绝对路径的顺序投递；JKS 整合
- * （any／all／transaction／transaction_any）；事务用局部序列执行，结束时统一提交。
+ * （any／all／transaction／transaction_any）；事务在事务事件 FIFO 与事务任务 FIFO 中
+ * 一直执行到本次触发的事件和任务都处理完；事务中满足的事务登记形成嵌套事务，逐层执行（第 6 节）。
  * batch=true 时节点任务按 §7.5 的可并行批执行，执行记录不变。
- * 只执行单 queue 模型（§9.3）。
+ * 只执行单 thread 模型（§9.3）。
  */
 
 import {
-  type Bit, GATED_TYPES, type Jki, type Model, type Snapshot, type SnapshotEvent, type SnapshotTask,
-  checkSnapshot, depth, hasEx, publishMode, publishes, segments, sortPaths, isInputEntry,
+  type Bit, GATED_TYPES, type Jki, type Model, type Snapshot, type SnapshotTask,
+  checkSnapshot, hasEx, publishMode, publishes, segments, sortPaths, isInputEntry,
 } from "./model.ts";
 import type { RecordEntry } from "./record.ts";
 
 export class Unsupported extends Error {}
+
+/** 事务的运行上限（JKRD7 §6.4）。两个后端的默认值相同；属于运行配置，不属于模型。 */
+export const TX_LIMITS = {
+  /** 一个顶层事务（含其中的嵌套事务）最多投递的事件数与执行的节点任务数之和。 */
+  steps: 100_000,
+  /** 事务最多嵌套的层数（顶层事务为第 1 层）。 */
+  depth: 8,
+} as const;
+
+export const TX_LIMIT_MESSAGES = { steps: "事务超过步数上限", depth: "事务嵌套超过层数上限" } as const;
+
+/** 超过事务的运行上限。执行器停在出错的那一步之前，已产生的执行记录保留。 */
+export class TxLimit extends Error {
+  readonly limit: "steps" | "depth";
+  constructor(limit: "steps" | "depth") {
+    super(TX_LIMIT_MESSAGES[limit] + "（JKRD7 §6.4）");
+    this.limit = limit;
+  }
+}
 
 /** 简单的先进先出队列。 */
 export class Fifo<T> {
@@ -47,13 +67,6 @@ export class Fifo<T> {
   }
 }
 
-/** 事件项：committed 的事件带接收者列表（§6.3、§9.5）。 */
-export interface EventItem {
-  source: string;
-  receivers: string[] | null;
-  out: boolean;
-}
-
 export type TaskItem = { kind: "node"; node: string } | { kind: "tx"; g: string; prereqs: string[] };
 
 /** 运行日志：执行记录的四种项，加上处理单元、事务等实现细节（不进入执行记录）。 */
@@ -63,20 +76,20 @@ export type LogEntry =
   | { kind: "q"; path: string; from: Bit; to: Bit }
   | { kind: "output"; path: string; values: Bit[] }
   | { kind: "unit"; n: number; unit: "event" | "node" | "tx"; path: string }
-  | { kind: "tx_enqueue"; g: string; prereqs: string[] }
-  | { kind: "tx"; g: string; prereqs: string[] }
-  | { kind: "commit"; g: string; count: number };
+  /** depth：事务任务进入的层；0 为 thread 的任务 FIFO，k 为第 k 层事务的事务任务 FIFO。 */
+  | { kind: "tx_enqueue"; g: string; prereqs: string[]; depth: number }
+  /** depth：事务所在的层，顶层事务为 1。 */
+  | { kind: "tx"; g: string; prereqs: string[]; depth: number }
+  | { kind: "tx_end"; g: string; depth: number };
 
-/** 一个进行中的事务：局部序列与暂存的范围外投递（§6.3）。 */
+/** 一个执行中的事务（一层）：事务事件 FIFO 与事务任务 FIFO（§6.2）。任务可以是嵌套事务任务（§6.3）。 */
 class Tx {
-  readonly events = new Fifo<EventItem>();
+  /** 事件项是来源 JKI 的绝对路径。 */
+  readonly events = new Fifo<string>();
   readonly tasks = new Fifo<TaskItem>();
-  readonly committed: EventItem[] = [];
-  readonly target: string;
-  readonly scope: Set<string>;
-  constructor(target: string, scope: Set<string>) {
-    this.target = target;
-    this.scope = scope;
+  readonly depth: number;
+  constructor(depth: number) {
+    this.depth = depth;
   }
 }
 
@@ -87,18 +100,26 @@ export interface CpuOptions {
   batch?: boolean;
   /** 一次 run() 的处理单元上限。 */
   maxUnits?: number;
+  /** 事务的步数上限与嵌套层数上限（§6.4），默认 TX_LIMITS。 */
+  txSteps?: number;
+  txDepth?: number;
 }
 
 export class CpuExecutor {
   readonly m: Model;
-  readonly queue: string | undefined;
+  readonly thread: string | undefined;
   readonly batch: boolean;
   readonly maxUnits: number;
+  readonly txSteps: number;
+  readonly txDepth: number;
+  /** 当前顶层事务已用的步数。 */
+  private steps = 0;
   q = new Map<string, Bit>();
   readonly triggerAll = new Map<string, (Bit | null)[]>();
   /** 键为 `${JKS 路径}|${类型}`，值为本轮已到达的前置（按到达顺序）。 */
   readonly rounds = new Map<string, string[]>();
-  events = new Fifo<EventItem>();
+  /** 事件项是来源 JKI 的绝对路径。 */
+  events = new Fifo<string>();
   tasks = new Fifo<TaskItem>();
   readonly watch: Set<string>;
   readonly read: string[];
@@ -109,15 +130,17 @@ export class CpuExecutor {
 
   constructor(model: Model, options: CpuOptions = {}) {
     if (model.errors.length) throw new Error("模型未通过静态检查：\n" + model.errors.join("\n"));
-    const queue = model.singleQueue();
-    if (queue === null) {
-      const names = [...new Set([...model.jks.values()].map((g) => g.queue))].sort();
-      throw new Unsupported(`使用了多个 queue ${JSON.stringify(names)}；queue 之间的调度由队列模块规定（JKRD7 §7.4、§9.3）`);
+    const thread = model.singleThread();
+    if (thread === null) {
+      const names = [...new Set([...model.jks.values()].map((g) => g.thread))].sort();
+      throw new Unsupported(`使用了多个 thread ${JSON.stringify(names)}；thread 之间的调度由 thread 模块规定（JKRD7 §7.4、§9.3）`);
     }
     this.m = model;
-    this.queue = queue;
+    this.thread = thread;
     this.batch = options.batch ?? false;
     this.maxUnits = options.maxUnits ?? 100000;
+    this.txSteps = options.txSteps ?? TX_LIMITS.steps;
+    this.txDepth = options.txDepth ?? TX_LIMITS.depth;
     for (const [p, node] of model.jki) {
       this.q.set(p, node.q);
       if ("all" in node.trigger) this.triggerAll.set(p, [...node.runtime!.trigger_all!]);
@@ -148,7 +171,7 @@ export class CpuExecutor {
     const path = this.abs(ref);
     if (!isInputEntry(this.m, path)) throw new Error(`${ref} 不是输入入口（JKRD7 §3.2、§9.1）`);
     this.log.push({ kind: "inject", path });
-    this.events.push({ source: path, receivers: null, out: true });
+    this.events.push(path);
   }
 
   /** 一个处理单元（批执行时，一批中的每个任务各算一个单元）。没有可处理的单元时返回 false。 */
@@ -161,7 +184,7 @@ export class CpuExecutor {
         this.tasks.shift();
         this.units += 1;
         this.log.push({ kind: "unit", n: this.units, unit: "tx", path: head.g });
-        this.runTx(head.g, head.prereqs);
+        this.runTx(head.g, head.prereqs, 1);
       } else {
         this.runBatch(this.takeBatch(this.tasks), null);
       }
@@ -176,50 +199,36 @@ export class CpuExecutor {
     const start = this.units;
     while (this.step()) {
       if (this.units - start > this.maxUnits) {
-        throw new Error("超过处理单元上限；事务范围以外的环由结构自身负责终止（JKRD7 §6.2）");
+        throw new Error("超过处理单元上限；环是否终止由结构自身负责（JKRD7 §6.4）");
       }
     }
   }
 
   private eventUnit(): void {
     this.units += 1;
-    this.log.push({ kind: "unit", n: this.units, unit: "event", path: this.events.peek().source });
+    this.log.push({ kind: "unit", n: this.units, unit: "event", path: this.events.peek() });
     this.deliver(this.events.shift(), null);
   }
 
   // -- 投递（§7.3）与整合（§5.3） ---------------------------------------------
 
-  private deliver(item: EventItem, tx: Tx | null): void {
-    const { source, receivers, out } = item;
-    if (tx === null && out && this.watch.has(source)) {
+  /** 投递一条事件；事务执行期间（tx 不为 null）形成的任务和事件进入事务 FIFO。 */
+  private deliver(source: string, tx: Tx | null): void {
+    if (this.watch.has(source)) { // 输出模块：投递时读取（§9.1）；事务内也在投递时读取（§6.2）
       const values = this.read.map((p) => this.q.get(p)!);
       this.outputs.push({ source, values });
       this.log.push({ kind: "output", path: source, values });
     }
-    if (receivers !== null) { // 事务提交的事件：只投给记录的接收者
-      for (const sub of receivers) this.receive(sub, source, null);
-      return;
-    }
     const reg = this.m.regOf.get(source);
     const gate = reg && GATED_TYPES.has(reg[1]) ? reg : null;
     if (gate) this.feed(gate[0], gate[1], source, tx); // §7.3 第 2 步：先整合
-    const deferred: string[] = [];
     for (const sub of this.m.subscribers.get(source) ?? []) { // 第 3 步：再照常投递
       if (gate && this.m.gated(gate[0], sub)) continue;
-      this.offer(sub, source, tx, deferred);
+      this.receive(sub, source, tx);
     }
-    if (tx !== null && (deferred.length || this.watch.has(source))) {
-      tx.committed.push({ source, receivers: deferred, out: true });
-    }
-  }
-
-  private offer(sub: string, source: string, tx: Tx | null, deferred: string[]): void {
-    if (tx !== null && !tx.scope.has(sub)) deferred.push(sub);
-    else this.receive(sub, source, tx);
   }
 
   private feed(g: string, kind: string, source: string, tx: Tx | null): void {
-    const inline = tx !== null && depth(g) > depth(tx.target) && g.startsWith(tx.target + ".");
     let order: string[];
     if (kind === "transaction_any") {
       order = [source];
@@ -230,21 +239,19 @@ export class CpuExecutor {
       order = [...record];
       record.length = 0;
     }
-    if (kind === "all" || inline) {
+    if (kind === "all") {
       this.release(g, order, tx);
-    } else {
-      this.log.push({ kind: "tx_enqueue", g, prereqs: order });
-      this.tasks.push({ kind: "tx", g, prereqs: order });
+    } else { // 事务任务：不在事务中时进入 thread；事务中进入当前事务的事务任务 FIFO，成为嵌套事务（§6.3）
+      this.log.push({ kind: "tx_enqueue", g, prereqs: order, depth: tx ? tx.depth : 0 });
+      (tx ? tx.tasks : this.tasks).push({ kind: "tx", g, prereqs: order });
     }
   }
 
   private release(g: string, order: string[], tx: Tx | null): void {
     for (const prereq of order) {
-      const deferred: string[] = [];
       for (const sub of this.m.subscribers.get(prereq) ?? []) {
-        if (this.m.gated(g, sub)) this.offer(sub, prereq, tx, deferred);
+        if (this.m.gated(g, sub)) this.receive(sub, prereq, tx);
       }
-      if (tx !== null && deferred.length) tx.committed.push({ source: prereq, receivers: deferred, out: false });
     }
   }
 
@@ -267,22 +274,22 @@ export class CpuExecutor {
 
   private emit(path: string, tx: Tx | null): void {
     this.log.push({ kind: "notify", path });
-    (tx ? tx.events : this.events).push({ source: path, receivers: null, out: true });
+    (tx ? tx.events : this.events).push(path);
   }
 
-  // -- 任务（§4.3、§6.3）与可并行批（§7.5） --------------------------------------
+  // -- 任务（§4.3、§6.2）与可并行批（§7.5） --------------------------------------
 
-  private takeBatch(queue: Fifo<TaskItem>): string[] {
-    const first = queue.shift() as { kind: "node"; node: string };
+  private takeBatch(fifo: Fifo<TaskItem>): string[] {
+    const first = fifo.shift() as { kind: "node"; node: string };
     if (!this.batch) return [first.node];
     const batch = [first.node];
     const written = new Set([first.node]);
-    while (queue.length && queue.peek().kind === "node") {
-      const path = (queue.peek() as { node: string }).node;
+    while (fifo.length && fifo.peek().kind === "node") {
+      const path = (fifo.peek() as { node: string }).node;
       if (written.has(path) || this.m.sourceRefs.get(path)!.some((s) => written.has(s))) break;
       batch.push(path);
       written.add(path);
-      queue.shift();
+      fifo.shift();
     }
     return batch;
   }
@@ -307,6 +314,8 @@ export class CpuExecutor {
       if (tx === null) {
         this.units += 1;
         this.log.push({ kind: "unit", n: this.units, unit: "node", path });
+      } else {
+        this.txStep();
       }
       if (publish) this.emit(path, tx);
       this.q.set(path, acc);
@@ -315,22 +324,40 @@ export class CpuExecutor {
         if (tx === null) {
           while (this.events.length) this.eventUnit();
         } else {
-          while (tx.events.length) this.deliver(tx.events.shift(), tx);
+          while (tx.events.length) {
+            this.txStep();
+            this.deliver(tx.events.shift(), tx);
+          }
         }
       }
     }
   }
 
-  private runTx(g: string, order: string[]): void {
-    const tx = new Tx(g, this.m.range.get(g)!);
-    this.log.push({ kind: "tx", g, prereqs: order });
+  /** §6.4：事务中每投递一条事件、执行一个节点任务算一步。 */
+  private txStep(): void {
+    if (this.steps >= this.txSteps) throw new TxLimit("steps");
+    this.steps += 1;
+  }
+
+  /** §6.2：一直执行到本层的事务事件 FIFO 与事务任务 FIFO 都为空；嵌套事务任务在高一层执行（§6.3）。 */
+  private runTx(g: string, order: string[], depth: number): void {
+    if (depth > this.txDepth) throw new TxLimit("depth");
+    if (depth === 1) this.steps = 0;
+    const tx = new Tx(depth);
+    this.log.push({ kind: "tx", g, prereqs: order, depth });
     this.release(g, order, tx);
     while (tx.events.length || tx.tasks.length) {
-      if (tx.events.length) this.deliver(tx.events.shift(), tx);
-      else this.runBatch(this.takeBatch(tx.tasks), tx);
+      if (tx.events.length) {
+        this.txStep();
+        this.deliver(tx.events.shift(), tx);
+      } else if (tx.tasks.peek().kind === "tx") {
+        const nested = tx.tasks.shift() as { kind: "tx"; g: string; prereqs: string[] };
+        this.runTx(nested.g, nested.prereqs, depth + 1);
+      } else {
+        this.runBatch(this.takeBatch(tx.tasks), tx);
+      }
     }
-    this.events.push(...tx.committed);
-    this.log.push({ kind: "commit", g, count: tx.committed.length });
+    this.log.push({ kind: "tx_end", g, depth });
   }
 
   // -- 执行记录（§9.4）与快照（§9.5） --------------------------------------------
@@ -347,8 +374,6 @@ export class CpuExecutor {
   }
 
   snapshot(name = "S1"): Snapshot {
-    const event = (item: EventItem): SnapshotEvent =>
-      item.receivers === null ? { source: item.source } : { source: item.source, to: [...item.receivers], out: item.out };
     const task = (item: TaskItem): SnapshotTask =>
       item.kind === "node" ? { node: item.node } : { tx: item.g, prereqs: [...item.prereqs] };
     const rounds: Snapshot["rounds"] = {};
@@ -364,11 +389,11 @@ export class CpuExecutor {
       const r = this.triggerAll.get(p)!;
       if (r.some((v) => v !== null)) triggerAll[p] = [...r];
     }
-    const queues: Snapshot["queues"] = {};
-    if (this.queue !== undefined) {
-      queues[this.queue] = { events: this.events.toArray().map(event), tasks: this.tasks.toArray().map(task) };
+    const threads: Snapshot["threads"] = {};
+    if (this.thread !== undefined) {
+      threads[this.thread] = { events: this.events.toArray().map((source) => ({ source })), tasks: this.tasks.toArray().map(task) };
     }
-    return { snapshot: name, jkm: this.m.name, version: "7.0.0", q, trigger_all: triggerAll, rounds, queues };
+    return { snapshot: name, jkm: this.m.name, version: "7.0.0", q, trigger_all: triggerAll, rounds, threads };
   }
 
   loadSnapshot(snap: Snapshot): void {
@@ -386,11 +411,9 @@ export class CpuExecutor {
       const saved = snap.rounds[g]?.[kind as "all" | "transaction"] ?? [];
       record.splice(0, record.length, ...saved);
     }
-    const fifo = (this.queue !== undefined ? snap.queues[this.queue] : undefined) ?? { events: [], tasks: [] };
+    const fifo = (this.thread !== undefined ? snap.threads[this.thread] : undefined) ?? { events: [], tasks: [] };
     this.events = new Fifo();
-    for (const e of fifo.events) {
-      this.events.push("to" in e ? { source: e.source, receivers: [...e.to], out: e.out } : { source: e.source, receivers: null, out: true });
-    }
+    for (const e of fifo.events) this.events.push(e.source);
     this.tasks = new Fifo();
     for (const t of fifo.tasks) {
       this.tasks.push("node" in t ? { kind: "node", node: t.node } : { kind: "tx", g: t.tx, prereqs: [...t.prereqs] });

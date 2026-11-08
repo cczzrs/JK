@@ -4,12 +4,14 @@
  */
 
 import { Model, type RunScript, type Snapshot, docBlock, docModels } from "../model.ts";
-import { CpuExecutor } from "../cpu.ts";
+import { CpuExecutor, type CpuOptions, TxLimit } from "../cpu.ts";
 import { runScriptCpu } from "../executor.ts";
 import { bitsToInt, formatRecords, formatSnapshot } from "../record.ts";
 import { GpuExecutor, type GpuInstance, type GpuOptions } from "../gpu/backend.ts";
 import { type CaseContext, type CaseResult, DOC_RUNS } from "./cases.ts";
-import { ASCII_READ, ASCII_WATCH, asciiBatches, clone, randomBatches, randomModel, runBatches } from "./fixtures.ts";
+import {
+  ASCII_READ, ASCII_WATCH, asciiBatches, clone, exitLoopModel, inlineModel, nestOrderModel, randomBatches, randomModel, runBatches,
+} from "./fixtures.ts";
 import { Random } from "./random.ts";
 
 /** CPU 后端按 GPU 实例的方式运行：可选起始快照，然后逐批注入并运行到静止。 */
@@ -61,7 +63,13 @@ export async function runGpuCases(ctx: CaseContext, device: GPUDevice, log: (lin
     for (const [name, inj, watch, read] of DOC_RUNS) {
       bad += (await compare(device, models.get(name), [{ batches: [inj] }], watch, read)).bad;
     }
-    check("GPU：第 10 节模型", bad === 0, `M_FLOW、M_PATH、M_SYNC、M_TX、M_NEST、M_REG 共 ${DOC_RUNS.length} 个，执行记录或结束快照不同的有 ${bad} 个`);
+    bad += (await compare(device, inlineModel(), [{ batches: [["G1.Q1", "G1.Q1"]] }, { batches: [["G1.Q1"], ["G1.Q1"]] }],
+      ["G3.Q2"], ["G1.Q2", "G2.Q2", "G3.Q2"])).bad;
+    bad += (await compare(device, nestOrderModel(), [{ batches: [["G1.Q1"]] }, { batches: [["G1.Q1", "G1.Q1"]] }])).bad;
+    bad += (await compare(device, exitLoopModel("one_changed"), [{ batches: [["G1.Q1"], ["G1.Q1", "G1.Q1"]] }])).bad;
+    check("GPU：第 10 节模型", bad === 0,
+      `M_FLOW、M_PATH、M_SYNC、M_TX、M_NEST、M_REG 共 ${DOC_RUNS.length} 个，另加嵌套事务 M_INLINE、M_NEST2 与带退出结构的环 M_EXIT，`
+      + `执行记录或结束快照不同的有 ${bad} 个`);
   }
 
   // 运行脚本（§9.4）
@@ -116,8 +124,8 @@ export async function runGpuCases(ctx: CaseContext, device: GPUDevice, log: (lin
       for (const item of batches[0]) cpu.inject(item);
       for (let k = rng.randint(0, 25); k > 0; k--) cpu.step();
       const snap = JSON.parse(JSON.stringify(cpu.snapshot())) as Snapshot;
-      const queue = Object.values(snap.queues)[0];
-      if (queue && (queue.events.length || queue.tasks.length)) pending++;
+      const thread = Object.values(snap.threads)[0];
+      if (thread && (thread.events.length || thread.tasks.length)) pending++;
       bad += (await compare(device, data, [{ start: snap, batches: [[], ...batches.slice(1)] }])).bad;
     }
     check("GPU：从快照继续", bad === 0,
@@ -135,12 +143,32 @@ export async function runGpuCases(ctx: CaseContext, device: GPUDevice, log: (lin
     const limited = await GpuExecutor.create(device, new Model(ctx.ascii, "ascii"), ASCII_WATCH, ASCII_READ, { stepLimit: 10 });
     const [stepped] = await limited.run([{ batches: [["G1.Q1"]] }]);
     limited.destroy();
+    // 事务的上限（JKRD7 §6.4）：GPU 与 CPU 停在同一步，报告同样的错误，已有记录相同
+    const txLimit = async (data: unknown, cpuOptions: CpuOptions, gpuOptions: GpuOptions, code: number) => {
+      const ref = new CpuExecutor(new Model(data, "cpu"), cpuOptions);
+      ref.inject("G1.Q1");
+      let message = "";
+      try {
+        ref.run();
+      } catch (e) {
+        if (!(e instanceof TxLimit)) throw e;
+        message = e.message;
+      }
+      const gpuLimit = await GpuExecutor.create(device, new Model(data, "gpu"), [], [], gpuOptions);
+      const [r] = await gpuLimit.run([{ batches: [["G1.Q1"]] }]);
+      gpuLimit.destroy();
+      return { same: r.error?.code === code && message.startsWith(r.error.message) && formatRecords(r.records) === formatRecords(ref.record()),
+        message: r.error?.message ?? "无" };
+    };
+    const txSteps = await txLimit(exitLoopModel("always_changed"), { txSteps: 50 }, { txSteps: 50 }, 9);
+    const txDepth = await txLimit(inlineModel(), { txDepth: 2 }, { capacity: { depth: 2 } }, 8);
     const ok = overflow.error?.code === 1 && overflow.snapshot === null && normal.error === null
-      && formatRecords(normal.records) === formatRecords(cpu.record()) && stepped.error?.code === 6;
+      && formatRecords(normal.records) === formatRecords(cpu.record()) && stepped.error?.code === 6 && txSteps.same && txDepth.same;
     check("GPU：容量与错误", ok,
       `事件 FIFO 容量设为 6 时，一批 9 个输入的实例报告“${overflow.error?.message ?? "无"}”并停下，同一次运行中的另一个实例`
       + `${normal.error === null && formatRecords(normal.records) === formatRecords(cpu.record()) ? "不受影响，记录与 CPU 相同" : "受到影响"}；`
-      + `步数上限设为 10 时报告“${stepped.error?.message ?? "无"}”`);
+      + `步数上限设为 10 时报告“${stepped.error?.message ?? "无"}”；事务步数上限设为 50、嵌套层数上限设为 2 时，分别报告`
+      + `“${txSteps.message}”“${txDepth.message}”，${txSteps.same && txDepth.same ? "停下的位置与已有记录都与 CPU 相同" : "与 CPU 不同"}`);
   }
 
   return results;
@@ -155,7 +183,7 @@ export async function gpuThroughput(ctx: CaseContext, device: GPUDevice, count =
   const instances = Array.from({ length: count }, () => ({
     batches: [Array.from({ length: 3 }, () => `G1.Q${rng.randint(1, 10)}`)],
   }));
-  const capacity = { events: 32, tasks: 32, localEvents: 32, localTasks: 32, committed: 32, records: 1024 };
+  const capacity = { events: 32, tasks: 32, localEvents: 32, localTasks: 32, depth: 1, records: 1024 };
   const gpu = await GpuExecutor.create(device, new Model(ctx.ascii, "ascii"), ASCII_WATCH, ASCII_READ, { capacity });
   await gpu.run(instances.slice(0, 64)); // 预热
   const t0 = performance.now();

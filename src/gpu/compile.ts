@@ -3,10 +3,11 @@
  * 每个实例的状态布局与记录布局（§4、§5）。主机端与 WGSL 内核共用这里的偏移。
  *
  * 节点编号 = JKRD7 §7.3 的路径顺序，所以订阅者列表天然有序，每个 JKS 的成员 JKI
- * 是一段连续编号，事务范围与整合判定只需比较区间。
+ * 是一段连续编号，整合判定只需比较区间。
  */
 
 import { type Model, PUBLISH_MODES, comparePaths, hasEx, isInputEntry, publishMode, segments, triggerOf } from "../model.ts";
+import { TX_LIMITS, TX_LIMIT_MESSAGES } from "../cpu.ts";
 
 export const NONE = 0xffffffff;
 export const GATE_NONE = 0;
@@ -21,16 +22,15 @@ export const F_EX = 2;
 export const F_INPUT = 4;
 export const F_WATCH = 8;
 
-/** 每个实例状态区开头的头部字（WebGPU.md §4）。 */
+/**
+ * 每个实例状态区开头的头部字（WebGPU.md §5）。MODE 是当前事务层数：0 表示不在事务中。
+ * 各层事务 FIFO 的位置在状态区的 LV 段（每层 4 个字：事件头、事件数、任务头、任务数）。
+ */
 export const H = {
-  STATUS: 0, MODE: 1, EV_HEAD: 2, EV_LEN: 3, TK_HEAD: 4, TK_LEN: 5, TX_G: 6,
-  LEV_HEAD: 7, LEV_LEN: 8, LTK_HEAD: 9, LTK_LEN: 10, CM_LEN: 11, INJ_POS: 12, INJ_LEN: 13, STEPS: 14, BATCH: 15,
+  STATUS: 0, MODE: 1, EV_HEAD: 2, EV_LEN: 3, TK_HEAD: 4, TK_LEN: 5, INJ_POS: 6, INJ_LEN: 7, STEPS: 8, BATCH: 9,
+  TX_STEPS: 10,
 } as const;
-export const HEADER_WORDS = 16;
-
-/** 事件项标志：带接收者列表（事务提交的事件）、out。 */
-export const EVF_RECV = 1;
-export const EVF_OUT = 2;
+export const HEADER_WORDS = 11;
 
 /** 记录字的种类（高 2 位）；低 28 位是节点编号。 */
 export const REC_INJECT = 0;
@@ -43,26 +43,29 @@ export const NODE_BITS = 28;
 export const ERRORS: Record<number, string> = {
   1: "事件 FIFO 溢出",
   2: "任务 FIFO 溢出",
-  3: "事务局部事件序列溢出",
-  4: "事务局部任务序列溢出",
-  5: "事务提交列表溢出",
+  3: "事务事件 FIFO 溢出",
+  4: "事务任务 FIFO 溢出",
   6: "超过一批的步数上限",
   7: "记录缓冲溢出",
+  8: TX_LIMIT_MESSAGES.depth,
+  9: TX_LIMIT_MESSAGES.steps,
 };
 
 /** 每个实例的容量（项数）。容量是运行配置，不属于模型。 */
 export interface Capacity {
   events: number;
   tasks: number;
+  /** 每一层的事务事件 FIFO 与事务任务 FIFO（JKRD7 §6.2）。 */
   localEvents: number;
   localTasks: number;
-  committed: number;
+  /** 事务嵌套的层数上限（JKRD7 §6.3、§6.4），默认与 CPU 后端相同。 */
+  depth: number;
   /** 每次调度可写入的记录字数；不足一步的最大记录量时自动加大。 */
   records: number;
 }
 
 export const DEFAULT_CAPACITY: Capacity = {
-  events: 64, tasks: 64, localEvents: 64, localTasks: 64, committed: 64, records: 2048,
+  events: 64, tasks: 64, localEvents: 64, localTasks: 64, depth: TX_LIMITS.depth, records: 2048,
 };
 
 /** 模型的结构数组（与观察、容量无关）。 */
@@ -86,7 +89,6 @@ export class Compiled {
   readonly jksIndex = new Map<string, number>();
   readonly jksLo: number[] = [];
   readonly jksHi: number[] = [];
-  readonly jksDepth: number[] = [];
   readonly regJks: number[];
   readonly regGate: number[];
   readonly regRound: number[];
@@ -102,16 +104,16 @@ export class Compiled {
   readonly maxOrder: number;
   /** 全部 all／transaction 登记中最大的前置数，至少 1（用于记录量上界）。 */
   readonly maxRound: number;
-  readonly queue: string | undefined;
+  readonly thread: string | undefined;
   readonly name: string | null;
   readonly model: Model;
 
   constructor(model: Model) {
     this.model = model;
     if (model.errors.length) throw new Error("模型未通过静态检查：\n" + model.errors.join("\n"));
-    const queue = model.singleQueue();
-    if (queue === null) throw new Error("GPU 后端只执行单 queue 模型（JKRD7 §9.3）");
-    this.queue = queue;
+    const thread = model.singleThread();
+    if (thread === null) throw new Error("GPU 后端只执行单 thread 模型（JKRD7 §9.3）");
+    this.thread = thread;
     this.name = model.name;
     const nodes = [...model.jki.keys()].sort(comparePaths);
     if (nodes.length >= 2 ** NODE_BITS) throw new Error("节点数超过 GPU 后端的编号范围");
@@ -148,7 +150,7 @@ export class Compiled {
     }
     this.nSlots = slots;
 
-    // JKS：成员 JKI 的编号区间、层数
+    // JKS：成员 JKI 的编号区间
     const groups = [...model.jks.keys()].sort((a, b) => segments(a).length - segments(b).length || comparePaths(a, b));
     this.jksPaths = groups;
     groups.forEach((g, k) => this.jksIndex.set(g, k));
@@ -159,7 +161,6 @@ export class Compiled {
       if (members.some((v, k) => v !== lo + k)) throw new Error(`${g} 的成员编号不连续`);
       this.jksLo.push(lo);
       this.jksHi.push(hi);
-      this.jksDepth.push(segments(g).length);
     }
 
     // 登记：节点 → JKS、整合类型、轮编号
@@ -211,21 +212,11 @@ export class Compiled {
     this.maxFan = maxFan;
   }
 
-  /** JKI i 是否是 JKS g 的成员且不是 g 的前置（受整合的订阅者／事务范围）。 */
+  /** JKI i 是否是 JKS g 的成员且不是 g 的前置（受整合的订阅者，§5.3）。 */
   inScope(g: number, i: number): boolean {
     return this.jksLo[g] <= i && i < this.jksHi[g] && this.regJks[i] !== g;
   }
 
-  /** 出边 e 指向的订阅者编号。 */
-  subOf(e: number): number {
-    return this.sub[e] & 0x7fffffff;
-  }
-
-  /** 来源 x 指向订阅者 s 的出边编号；不存在时为 -1。 */
-  edge(x: number, s: number): number {
-    for (let e = this.subOff[x]; e < this.subOff[x + 1]; e++) if (this.subOf(e) === s) return e;
-    return -1;
-  }
 }
 
 /** 一次运行的布局：模型缓冲区内各段的偏移、每个实例的状态与记录布局。 */
@@ -237,14 +228,13 @@ export interface Layout {
   /** 模型缓冲区的段偏移（字）。 */
   m: Record<
     "FLAGS" | "SEED" | "PUB" | "SRC_OFF" | "SRC" | "SLOT_BASE" | "SLOT_LEN" | "SUB_OFF" | "SUB" | "SUB_SLOT"
-    | "REG_JKS" | "REG_GATE" | "REG_ROUND" | "ROUND_NEED" | "ROUND_BASE" | "JKS_LO" | "JKS_HI" | "JKS_DEPTH" | "READ",
+    | "REG_JKS" | "REG_GATE" | "REG_ROUND" | "ROUND_NEED" | "ROUND_BASE" | "JKS_LO" | "JKS_HI" | "READ",
     number
   >;
   modelData: Uint32Array;
   /** 状态区的段偏移（字，相对实例开头）。 */
-  s: Record<"Q" | "SLOT" | "ROUND" | "EV" | "TK" | "LEV" | "LTK" | "CM", number>;
+  s: Record<"Q" | "SLOT" | "ROUND" | "EV" | "TK" | "LV" | "LEV" | "LTK", number>;
   stateWords: number;
-  evStride: number;
   tkStride: number;
   outWords: number;
   /** 一个微步最多写入的记录字数。 */
@@ -269,7 +259,7 @@ export function layout(c: Compiled, watch: readonly string[], read: readonly str
     ["SLOT_BASE", c.slotBase], ["SLOT_LEN", c.slotLen], ["SUB_OFF", c.subOff], ["SUB", c.sub], ["SUB_SLOT", c.subSlot],
     ["REG_JKS", c.regJks], ["REG_GATE", c.regGate], ["REG_ROUND", c.regRound],
     ["ROUND_NEED", c.roundNeed], ["ROUND_BASE", c.roundBase],
-    ["JKS_LO", c.jksLo], ["JKS_HI", c.jksHi], ["JKS_DEPTH", c.jksDepth], ["READ", r],
+    ["JKS_LO", c.jksLo], ["JKS_HI", c.jksHi], ["READ", r],
   ];
   const m = {} as Layout["m"];
   const words: number[] = [];
@@ -280,13 +270,12 @@ export function layout(c: Compiled, watch: readonly string[], read: readonly str
   if (!words.length) words.push(0);
   const modelData = new Uint32Array(words.map((v) => v >>> 0));
 
-  const evStride = 3 + c.maxFan;
   const tkStride = 3 + c.maxOrder;
   const s = {} as Layout["s"];
   let off = HEADER_WORDS;
   const segs: [keyof Layout["s"], number][] = [
-    ["Q", c.n], ["SLOT", c.nSlots], ["ROUND", c.roundWords], ["EV", cap.events * evStride], ["TK", cap.tasks * tkStride],
-    ["LEV", cap.localEvents], ["LTK", cap.localTasks], ["CM", cap.committed * evStride],
+    ["Q", c.n], ["SLOT", c.nSlots], ["ROUND", c.roundWords], ["EV", cap.events], ["TK", cap.tasks * tkStride],
+    ["LV", 4 * cap.depth], ["LEV", cap.depth * cap.localEvents], ["LTK", cap.depth * cap.localTasks * tkStride],
   ];
   for (const [name, size] of segs) {
     s[name] = off;
@@ -297,5 +286,5 @@ export function layout(c: Compiled, watch: readonly string[], read: readonly str
   // 事务开始 = 放行时每个订阅者至多一条通知
   const maxRecStep = 1 + outWords + (c.maxRound + 1) * c.maxFan + 2;
   const recWords = 2 + Math.max(cap.records, maxRecStep);
-  return { c, cap, watch: w, read: r, m, modelData, s, stateWords: off, evStride, tkStride, outWords, maxRecStep, recWords };
+  return { c, cap, watch: w, read: r, m, modelData, s, stateWords: off, tkStride, outWords, maxRecStep, recWords };
 }

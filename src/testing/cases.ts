@@ -1,13 +1,13 @@
 /** JKRD7 §11.2 的验收案例（CPU 后端）。命令行见 tools/reference.ts。 */
 
 import { type Jki, type Jkm, type RunScript, type Snapshot, Model, docBlock, docFragment, docModels } from "../model.ts";
-import { CpuExecutor, Unsupported } from "../cpu.ts";
+import { CpuExecutor, TxLimit, Unsupported } from "../cpu.ts";
 import { bitsToInt, formatRecords } from "../record.ts";
 import { runScriptCpu } from "../executor.ts";
 import { Random } from "./random.ts";
 import {
-  ASCII_READ, ASCII_WATCH, asciiBatches, clone, deepEqual, inputs, jkm, jks, randomBatches, randomModel, run, runBatches,
-  shuffled,
+  ASCII_READ, ASCII_WATCH, asciiBatches, clone, deepEqual, exitLoopModel, inlineModel, inputs, jkm, jks, nestOrderModel,
+  randomBatches, randomModel, run, runBatches, shuffled,
 } from "./fixtures.ts";
 
 export interface CaseResult {
@@ -107,14 +107,14 @@ export function runCases(ctx: CaseContext): CaseResult[] {
       `事务任务 ${r.count("tx")} 个，下一轮已记录 ${JSON.stringify(left)}`);
   }
 
-  // 事务传播、统一提交、不满足 publish 不推进、多实例顺序执行（M_TX）
+  // 事务传播、事务内投递、不满足 publish 不推进、多实例顺序执行（M_TX）
   {
     const data = model("M_TX");
     const r = run(data, ["G1.Q10"], { watch: ["G2.Q101"], read: ["G2.Q102"] });
     check("事务传播（M_TX）", r.count("tx") === 1 && deepEqual(r.writes("G2.Q101"), [1]) && deepEqual(r.writes("G2.Q102"), [1]),
       `事务任务 ${r.count("tx")} 个，Q101 ${JSON.stringify(r.writes("G2.Q101"))}，Q102 ${JSON.stringify(r.writes("G2.Q102"))}`);
-    check("统一提交", deepEqual(r.outputs, [{ source: "G2.Q101", values: [1] }]),
-      `范围外接收者收到 Q101 的通知时读到 Q102=${r.outputs[0]?.values[0] ?? null}`);
+    check("事务内投递", deepEqual(r.outputs, [{ source: "G2.Q101", values: [0] }]),
+      `输出模块在事务内收到 Q101 的通知，此时 Q102 尚未计算，读到 Q102=${r.outputs[0]?.values[0] ?? null}`);
     const blocked = clone(data);
     (blocked.roots[0].members[0] as Jki).q = 0;
     (blocked.roots[1].members.find((m) => m.id === "Q101") as Jki).publish = { one: [1] };
@@ -122,8 +122,8 @@ export function runCases(ctx: CaseContext): CaseResult[] {
     check("不满足 publish 不推进", deepEqual(rb.writes("G2.Q101"), [0]) && rb.writes("G2.Q102").length === 0,
       `Q101 ${JSON.stringify(rb.writes("G2.Q101"))}，Q102 ${JSON.stringify(rb.writes("G2.Q102"))}`);
     const r2 = run(data, ["G1.Q10", "G1.Q10"]);
-    const seq = r2.log.flatMap((e) => (e.kind === "tx" || e.kind === "commit" ? [e.kind] : e.kind === "q" ? [e.path] : []));
-    check("多实例顺序执行", deepEqual(seq, [...["tx", "G2.Q101", "G2.Q102", "commit"], ...["tx", "G2.Q101", "G2.Q102", "commit"]]),
+    const seq = r2.log.flatMap((e) => (e.kind === "tx" || e.kind === "tx_end" ? [e.kind] : e.kind === "q" ? [e.path] : []));
+    check("多实例顺序执行", deepEqual(seq, [...["tx", "G2.Q101", "G2.Q102", "tx_end"], ...["tx", "G2.Q101", "G2.Q102", "tx_end"]]),
       `执行记录 ${JSON.stringify(seq)}`);
   }
 
@@ -132,9 +132,11 @@ export function runCases(ctx: CaseContext): CaseResult[] {
     const r = run(model("M_NEST"), ["G1.Q10"]);
     const names = ["G2.G1.Q101", "G2.G1.Q102", "G2.G2.Q1", "G2.Q201"];
     const values = names.map((n) => r.writes(n));
-    const targets = r.log.flatMap((e) => (e.kind === "tx" ? [e.g] : []));
-    check("嵌套事务（M_NEST）", deepEqual(targets, ["G2"]) && values.every((v) => deepEqual(v, [1])),
-      `事务任务 ${JSON.stringify(targets)}，结果 ${JSON.stringify(values)}`);
+    const targets = r.log.flatMap((e) => (e.kind === "tx" ? [`${e.g}@${e.depth}`] : []));
+    const fromThread = r.log.flatMap((e) => (e.kind === "tx_enqueue" && e.depth === 0 ? [e.g] : []));
+    check("嵌套事务（M_NEST）", deepEqual(fromThread, ["G2"]) && deepEqual(targets, ["G2@1", "G2.G1@2"])
+      && values.every((v) => deepEqual(v, [1])),
+      `进入 thread 的事务任务 ${JSON.stringify(fromThread)}，执行的事务（JKS@层）${JSON.stringify(targets)}，结果 ${JSON.stringify(values)}`);
   }
 
   // 先整合后照常投递
@@ -144,7 +146,7 @@ export function runCases(ctx: CaseContext): CaseResult[] {
       if (runtime) q3.runtime = runtime;
       const g = jks("G1", [...inputs("Q1", "Q2"), q3,
         { id: "Q4", q: 0, trigger: { any: ["Q2"] }, sources: { seed: 0, s: ["Q2"], ex: ["K"] } }], { all: ["Q1", "Q2"] });
-      const h = jks("G2", [{ id: "Q1", q: 0, trigger: { any: ["G1.Q2"] }, sources: { seed: 0, s: ["G1.Q2"], ex: ["K"] } }], {});
+      const h = jks("G2", [{ id: "Q1", q: 0, trigger: { any: ["G1.Q2"] }, sources: { seed: 0, s: ["G1.Q2"], ex: ["K"] } }], { any: ["Q1"] });
       return run(jkm("M_ORDER", g, h), ["G1.Q1", "G1.Q2"]);
     };
     const r = build({ any: ["Q1"] });
@@ -158,8 +160,8 @@ export function runCases(ctx: CaseContext): CaseResult[] {
   // 路径排序
   {
     const g = jks("G1", [...inputs("Q1"),
-      jks("G10", [{ id: "Q1", q: 1, trigger: { any: ["G1.Q1"] } }], {}),
-      jks("G2", [{ id: "Q1", q: 1, trigger: { any: ["G1.Q1"] } }], {}),
+      jks("G10", [{ id: "Q1", q: 1, trigger: { any: ["G1.Q1"] } }], { any: ["Q1"] }),
+      jks("G2", [{ id: "Q1", q: 1, trigger: { any: ["G1.Q1"] } }], { any: ["Q1"] }),
       { id: "Q2", q: 1, trigger: { any: ["Q1"] } }], { any: ["Q1"] });
     const got = run(jkm("M_SORT", g), ["G1.Q1"]).notifications();
     check("路径排序", deepEqual(got, ["G1.Q2", "G1.G2.Q1", "G1.G10.Q1"]), `投递顺序 ${JSON.stringify(got)}`);
@@ -221,7 +223,7 @@ export function runCases(ctx: CaseContext): CaseResult[] {
       `登记改为 any 时，同时输入 0、1 的输出为 ${hex(wrong)}，应为 ["0x30","0x31"]`);
   }
 
-  // 多 queue 暂不支持
+  // 多 thread 暂不支持
   {
     let ok = true;
     try {
@@ -231,9 +233,9 @@ export function runCases(ctx: CaseContext): CaseResult[] {
       else throw e;
     }
     const data = jkm("M_MULTI", jks("G1", inputs("Q1"), { any: ["Q1"] }), jks("G2", inputs("Q1"), { any: ["Q1"] }));
-    data.queues = ["a", "b"];
-    data.roots[0].queue = "a";
-    data.roots[1].queue = "b";
+    data.threads = ["a", "b"];
+    data.roots[0].thread = "a";
+    data.roots[1].thread = "b";
     let refused = false;
     try {
       new CpuExecutor(new Model(data, "multi"));
@@ -241,33 +243,56 @@ export function runCases(ctx: CaseContext): CaseResult[] {
       if (e instanceof Unsupported) refused = true;
       else throw e;
     }
-    check("多 queue 暂不支持", ok && refused, "单 queue 可执行；两个 queue 的模型被明确拒绝（§9.3）");
+    check("多 thread 暂不支持", ok && refused, "单 thread 可执行；两个 thread 的模型被明确拒绝（§9.3）");
   }
 
-  // 范围内成员在事务外执行（§6.2）
+  // 事务外的普通执行（§6.1）
   {
     const nodeUnit = (r: CpuExecutor, path: string) => r.log.some((e) => e.kind === "unit" && e.unit === "node" && e.path === path);
     const mixed = jks("G1", [...inputs("Q1", "Q2"),
       { id: "Q3", q: 0, trigger: { any: ["Q1", "Q2"] }, sources: { seed: 0, s: ["Q1"], ex: ["K"] } }],
     { transaction: ["Q1"], any: ["Q2"] });
     const r1 = run(jkm("MIX", mixed), ["G1.Q2"]);
-    const ancestor = jks("G1", [...inputs("Q1", "Q2"), jks("G1", [
-      { id: "Q1", q: 0, trigger: { any: ["G1.Q1"] } },
-      { id: "Q2", q: 0, trigger: { any: ["Q1"] } },
-      { id: "Q3", q: 0, trigger: { any: ["Q2"] }, sources: { seed: 1, s: ["Q2"], ex: ["K"] } },
-    ], { transaction: ["Q1"] })], { any: ["Q1"], all: ["Q2", "G1.G1.Q2"] });
-    const r2 = new CpuExecutor(new Model(jkm("ANC", ancestor)));
-    r2.inject("G1.Q1");
-    r2.run();
-    r2.inject("G1.Q2");
-    r2.run();
-    const entry = jks("G1", [...inputs("Q1"),
-      jks("G1", [{ id: "Q1", q: 1, trigger: { any: [] } }], { any: ["Q1"] }),
-      { id: "Q2", q: 0, trigger: { any: ["Q1", "G1.G1.Q1"] }, sources: { seed: 1, s: ["Q1"], ex: ["K"] } }],
-    { transaction: ["Q1"] });
-    const r3 = run(jkm("ENT", entry), ["G1.G1.Q1"]);
-    check("范围内成员在事务外执行（§6.2）", nodeUnit(r1, "G1.Q3") && nodeUnit(r2, "G1.G1.Q3") && nodeUnit(r3, "G1.Q2"),
-      "经同一 JKS 的 any 登记、祖先的 all 登记、范围内的输入入口进入范围的通知，都在事务之外处理");
+    check("事务外的普通执行（§6.1）", nodeUnit(r1, "G1.Q3") && r1.count("tx") === 0,
+      "经同一 JKS 的 any 登记放行的通知，在事务之外作为普通节点任务执行");
+  }
+
+  // 嵌套事务（§6.3）
+  {
+    const r = run(inlineModel(), ["G1.Q1"], { watch: ["G3.Q2"], read: ["G1.Q2", "G2.Q2", "G3.Q2"] });
+    const txs = r.log.flatMap((e) => (e.kind === "tx" ? [`${e.g}@${e.depth}`] : []));
+    const fromThread = r.log.filter((e) => e.kind === "tx_enqueue" && e.depth === 0).length;
+    const layered = deepEqual(txs, ["G1@1", "G2@2", "G3@3"]) && fromThread === 1
+      && deepEqual(r.outputs, [{ source: "G3.Q2", values: [1, 1, 1] }]);
+    const order = run(nestOrderModel(), ["G1.Q1"]).log.flatMap((e) => (e.kind === "q" ? [e.path] : []));
+    const ok = layered && deepEqual(order, ["G1.Q2", "G1.Q3", "G2.Q2", "G2.Q3", "G1.Q4"]);
+    check("嵌套事务（§6.3）", ok,
+      `M_INLINE 只有 ${fromThread} 个事务任务进入 thread，执行的事务（JKS@层）${JSON.stringify(txs)}；`
+      + `M_NEST2 的节点任务顺序 ${JSON.stringify(order)}，嵌套事务连续执行完，外层才继续`);
+  }
+
+  // 事务的退出与上限（§6.4）
+  {
+    const exit = run(exitLoopModel("one_changed"), ["G1.Q1", "G1.Q1"]);
+    const loops = exit.writes("G1.Q2");
+    const limited = (data: Jkm, options: { txSteps?: number; txDepth?: number }) => {
+      const r = new CpuExecutor(new Model(data, "limit"), options);
+      r.inject("G1.Q1");
+      try {
+        r.run();
+        return { r, limit: null };
+      } catch (e) {
+        if (e instanceof TxLimit) return { r, limit: e.limit };
+        throw e;
+      }
+    };
+    const steps = limited(exitLoopModel("always_changed"), { txSteps: 50 });
+    const depth = limited(inlineModel(), { txDepth: 2 });
+    const ok = deepEqual(loops, [1, 0, 1, 0]) && steps.limit === "steps" && depth.limit === "depth"
+      && depth.r.log.filter((e) => e.kind === "tx").length === 2;
+    check("事务的退出与上限（§6.4）", ok,
+      `环上有退出结构时，每次请求循环两次后退出，Q2 依次为 ${JSON.stringify(loops)}；永不退出的环在步数上限 50 处停下`
+      + `（${steps.limit ?? "未停下"}，已有 ${steps.r.record().length} 条记录）；嵌套层数上限为 2 时，第 3 层事务开始前停下（${depth.limit ?? "未停下"}）`);
   }
 
   // 1 bit 寄存器（M_REG）
@@ -330,7 +355,7 @@ export function runCases(ctx: CaseContext): CaseResult[] {
     const r = engine();
     r.inject("G1.Q10");
     r.inject("G1.Q10");
-    while (!r.log.some((e) => e.kind === "commit")) r.step();
+    while (!r.log.some((e) => e.kind === "tx_end")) r.step();
     const snap = r.snapshot("S1");
     const cut = r.record().length;
     r.run();

@@ -1,5 +1,5 @@
 /**
- * JKRD7 规则模型：加载 JKM、解析引用、静态检查（JKRD7 §2、§3、§5、§6.2、§8），
+ * JKRD7 规则模型：加载 JKM、解析引用、静态检查（JKRD7 §2、§3、§5、§6.4、§8），
  * 以及运行脚本（§9.4）与快照（§9.5）的检查。执行见 cpu.ts 与 gpu/。
  *
  * 只依赖语言本身，命令行（Node）与浏览器共用。
@@ -10,8 +10,10 @@ export const VERSION = "7.0.0";
 const Q_ID = /^Q[1-9][0-9]*$/;
 const G_ID = /^G[1-9][0-9]*$/;
 const JKI_FIELDS = ["id", "q", "trigger", "sources", "publish", "pro", "runtime"];
-const JKS_FIELDS = ["id", "members", "trigger", "queue", "pro", "runtime"];
-const JKM_FIELDS = ["jkm", "version", "queues", "roots"];
+/** §2 第 3 条的书写顺序；pro、runtime 可省略（§5.1）。 */
+const JKS_FIELDS = ["id", "thread", "trigger", "pro", "runtime", "members"];
+const JKS_REQUIRED = ["id", "thread", "trigger", "members"];
+const JKM_FIELDS = ["jkm", "version", "threads", "roots"];
 
 /** §4.4：七种 publish 模式及其固定集合。顺序即编译后的模式编号。 */
 export const PUBLISH = {
@@ -53,17 +55,17 @@ export interface Jki {
 
 export interface Jks {
   id: string;
-  members: (Jki | Jks)[];
+  thread: string;
   trigger: Partial<Record<RegistrationType, string[]>>;
-  queue: string;
-  pro: { tag?: string[] };
-  runtime: Record<string, never>;
+  pro?: { tag?: string[] };
+  runtime?: Record<string, never>;
+  members: (Jki | Jks)[];
 }
 
 export interface Jkm {
   jkm: string;
   version: string;
-  queues: string[];
+  threads: string[];
   roots: Jks[];
 }
 
@@ -76,7 +78,7 @@ export interface RunScript {
 }
 
 /** §9.5 快照中的事件项与任务项。 */
-export type SnapshotEvent = { source: string } | { source: string; to: string[]; out: boolean };
+export type SnapshotEvent = { source: string };
 export type SnapshotTask = { node: string } | { tx: string; prereqs: string[] };
 
 export interface Snapshot {
@@ -86,7 +88,7 @@ export interface Snapshot {
   q: Record<string, Bit>;
   trigger_all: Record<string, (Bit | null)[]>;
   rounds: Record<string, Partial<Record<"all" | "transaction", string[]>>>;
-  queues: Record<string, { events: SnapshotEvent[]; tasks: SnapshotTask[] }>;
+  threads: Record<string, { events: SnapshotEvent[]; tasks: SnapshotTask[] }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -203,7 +205,7 @@ export function checkJki(node: unknown, where: string, errors: string[]): void {
   for (const field of ["id", "q", "trigger"]) {
     if (!(field in node)) err(`缺少必填字段 ${field}（§3）`);
   }
-  if ("id" in node && !(typeof node.id === "string" && Q_ID.test(node.id))) err("id 必须是 Q＋正整数（§3）");
+  if ("id" in node && !(typeof node.id === "string" && Q_ID.test(node.id))) err("id 必须是 Q＋不带前导零的正整数（§3）");
   if ("q" in node && !isBit(node.q)) err("q 必须是整数 0 或 1（§2 第 2 条）");
 
   let mode: string | null = null;
@@ -309,7 +311,7 @@ export class Model {
   readonly jki = new Map<string, Jki>();
   /** 绝对路径 → JKS（按书写顺序登记）。 */
   readonly jks = new Map<string, Jks>();
-  queues: string[] = [];
+  threads: string[] = [];
 
   /** JKS → 全部后代 JKI。 */
   readonly members = new Map<string, Set<string>>();
@@ -323,8 +325,8 @@ export class Model {
   readonly prereqs = new Map<string, Set<string>>();
   /** 前置 JKI → [登记它的 JKS, 登记类型]。 */
   readonly regOf = new Map<string, [string, string]>();
-  /** 带事务登记的 JKS → 事务范围（§6.2）。 */
-  readonly range = new Map<string, Set<string>>();
+  /** 带 transaction 或 transaction_any 登记的 JKS（第 6 节）。 */
+  readonly txGroups = new Set<string>();
   /** JKI → 订阅者，按 §7.3 路径顺序。 */
   readonly subscribers = new Map<string, string[]>();
 
@@ -348,11 +350,11 @@ export class Model {
     return typeof path === "string" && this.jki.has(path);
   }
 
-  /** 全部 JKS 共用的 queue；多个 queue 时返回 null。 */
-  singleQueue(): string | null | undefined {
-    const queues = new Set([...this.jks.values()].map((g) => g.queue));
-    if (queues.size > 1) return null;
-    return [...queues][0];
+  /** 全部 JKS 共用的 thread；多个 thread 时返回 null。 */
+  singleThread(): string | null | undefined {
+    const threads = new Set([...this.jks.values()].map((g) => g.thread));
+    if (threads.size > 1) return null;
+    return [...threads][0];
   }
 
   // -- 加载 --------------------------------------------------------------
@@ -368,15 +370,15 @@ export class Model {
     }
     if (!(typeof data.jkm === "string" && data.jkm !== "")) this.err("jkm 必须是非空字符串");
     if (data.version !== VERSION) this.err(`version 必须是 "${VERSION}"`);
-    const queues = data.queues;
-    if (!(strList(queues, false) && new Set(queues).size === queues.length)) {
-      this.err("queues 必须是非空、无重复的字符串数组（§8.1）");
+    const threads = data.threads;
+    if (!(strList(threads, false) && new Set(threads).size === threads.length)) {
+      this.err("threads 必须是非空、无重复的数组，元素为非空字符串（§8.1、§2 第 6 条）");
     } else {
-      this.queues = [...queues];
+      this.threads = [...threads];
     }
     const roots = data.roots;
-    if (!Array.isArray(roots)) {
-      this.err("roots 必须是数组");
+    if (!(Array.isArray(roots) && roots.length)) {
+      this.err("roots 必须是非空数组（§8.1）");
       return;
     }
     const seen = new Set<unknown>();
@@ -393,23 +395,23 @@ export class Model {
 
   private walk(obj: Obj, prefix: string, where: string): void {
     const extra = extraKeys(obj, JKS_FIELDS);
-    const missing = JKS_FIELDS.filter((f) => !(f in obj));
-    if (extra.length || missing.length) {
-      this.err(`${where}: JKS 必须恰好有六个字段（§5.1），多出 ${show(extra)}，缺少 ${show(missing)}`);
-    }
+    const missing = JKS_REQUIRED.filter((f) => !(f in obj));
+    if (extra.length) this.err(`${where}: JKS 含未批准字段 ${show(extra)}（§2 第 5 条、§5.1）`);
+    if (missing.length) this.err(`${where}: JKS 缺少必填字段 ${show(missing)}（§5.1）`);
     const id = obj.id;
     if (!(typeof id === "string" && G_ID.test(id))) {
-      this.err(`${where}: JKS id 必须是 G＋正整数（§5.1），得到 ${show(id)}`);
+      this.err(`${where}: JKS id 必须是 G＋不带前导零的正整数（§5.1），得到 ${show(id)}`);
       return;
     }
     const path = prefix ? `${prefix}.${id}` : id;
     where = path;
     this.register(path, obj as unknown as Jks, this.jks);
     if (!isObj(obj.trigger)) this.err(`${where}: trigger 必须是对象`);
-    if (this.queues.length && !this.queues.includes(obj.queue as string)) {
-      this.err(`${where}: queue 必须是 JKM.queues 中声明的名称（§8.1），得到 ${show(obj.queue)}`);
+    else if (Object.keys(obj.trigger).length === 0) this.err(`${where}: JKS.trigger 至少要有一个登记（§5.1、§5.2）`);
+    if (this.threads.length && !this.threads.includes(obj.thread as string)) {
+      this.err(`${where}: thread 必须是 JKM.threads 中声明的名称（§8.1），得到 ${show(obj.thread)}`);
     }
-    const pro = obj.pro;
+    const pro = "pro" in obj ? obj.pro : {};
     if (!isObj(pro)) {
       this.err(`${where}: JKS.pro 必须是对象（§5.1）`);
     } else {
@@ -417,8 +419,8 @@ export class Model {
       if (extraP.length) this.err(`${where}: JKS.pro 含未批准字段 ${show(extraP)}，已批准的只有 tag（§5.1）`);
       if ("tag" in pro && !strList(pro.tag)) this.err(`${where}: JKS.pro.tag 必须是非空字符串组成的数组（§5.1）`);
     }
-    if (!(isObj(obj.runtime) && Object.keys(obj.runtime).length === 0)) {
-      this.err(`${where}: JKS.runtime 内部格式未定义，必须是 {}（§5.1）`);
+    if ("runtime" in obj && !(isObj(obj.runtime) && Object.keys(obj.runtime).length === 0)) {
+      this.err(`${where}: JKS.runtime 内部格式未定义，只能省略或写 {}（§5.1）`);
     }
     const members = obj.members;
     if (!(Array.isArray(members) && members.length)) {
@@ -505,50 +507,36 @@ export class Model {
           this.err(`${where}：必须是非空的前置 ID 数组（§5.2）`);
           continue;
         }
-        const paths = this.resolveAll(refs, g, where);
+        const nested = refs.filter((ref) => ref.includes("."));
+        for (const ref of nested) {
+          this.err(`${where}：${ref} 不是短 ID；登记只能写本层直接成员的短 ID，不能登记嵌套成员（§5.2）`);
+        }
+        const paths = this.resolveAll(refs.filter((ref) => !ref.includes(".")), g, where);
         for (const p of paths) {
-          if (!this.members.get(g)!.has(p)) {
-            this.err(`${where}：前置 ID ${p} 不是本结构的成员 JKI（§5.2）`);
-          } else if (prereqs.has(p)) {
+          if (prereqs.has(p)) {
             this.err(`${where}：${p} 在同一 JKS.trigger 中重复登记（§5.2）`);
-          } else if (this.regOf.has(p)) {
-            this.err(`${where}：${p} 已登记在 ${this.regOf.get(p)![0]}；同一 JKI 被多个 JKS 登记暂不支持（§9.3 第 1 项）`);
           } else {
             prereqs.add(p);
             this.regOf.set(p, [g, kind]);
           }
         }
         kinds.set(kind, paths);
+        if (TX_TYPES.has(kind)) this.txGroups.add(g);
       }
     }
 
     for (const [path, node] of this.jki) {
-      if ("any" in node.trigger && node.trigger.any.length === 0 && !this.regOf.has(path)) {
-        this.err(`${path}：trigger.any=[] 只允许用于已登记的输入入口（§3.2）`);
+      if ("any" in node.trigger && node.trigger.any.length === 0) {
+        if (path.split(".").length !== 2) {
+          this.err(`${path}：trigger.any=[] 只允许用于根 JKS 的直接成员；子 JKS 的入口必须写明上游（§3.2）`);
+        } else if (!this.regOf.has(path)) {
+          this.err(`${path}：trigger.any=[] 只允许用于已登记的输入入口（§3.2）`);
+        }
       }
       const jksid = node.pro?.jksid;
       if (jksid !== undefined && !this.jks.has(jksid)) {
         this.err(`${path}：pro.jksid 必须是实际 JKS 的绝对路径（§3），得到 ${show(jksid)}`);
       }
-    }
-
-    for (const [g, kinds] of this.regTypes) {
-      if (![...kinds.keys()].some((k) => TX_TYPES.has(k))) continue;
-      const members = this.members.get(g)!;
-      const prereqs = this.prereqs.get(g)!;
-      const scope = new Set([...members].filter((p) => !prereqs.has(p)));
-      this.range.set(g, scope);
-      for (const s of sortPaths(scope)) {
-        for (const x of this.triggerRefs.get(s)!) {
-          if (!members.has(x)) {
-            this.err(`${g}：事务范围内的 ${s} 被范围外的 ${x} 触发，外部上游只能接到前置成员上（§6.2）`);
-          }
-        }
-      }
-      const edges = new Map<string, string[]>();
-      for (const s of scope) edges.set(s, this.triggerRefs.get(s)!.filter((x) => scope.has(x)));
-      const cycle = findCycle(edges);
-      if (cycle) this.err(`${g}：事务范围内的触发连接成环 ${cycle.join(" → ")}（§6.2）`);
     }
 
     for (const [s, refs] of this.triggerRefs) {
@@ -559,7 +547,50 @@ export class Model {
     }
     for (const list of this.subscribers.values()) list.sort(comparePaths);
 
-    // §6.2：纯通知环（any、空 EX、在不变的 q 上发布、连接不受整合）
+    // §6.4：从事务（事务登记的前置的受整合订阅者）沿订阅关系可达的环，必须有退出结构
+    const reach = new Set<string>();
+    for (const g of this.txGroups) {
+      for (const [kind, prereqs] of this.regTypes.get(g)!) {
+        if (!TX_TYPES.has(kind)) continue;
+        for (const p of prereqs) {
+          for (const s of this.subscribers.get(p) ?? []) if (this.gated(g, s)) reach.add(s);
+        }
+      }
+    }
+    const stack = [...reach];
+    while (stack.length) {
+      for (const s of this.subscribers.get(stack.pop()!) ?? []) {
+        if (!reach.has(s)) {
+          reach.add(s);
+          stack.push(s);
+        }
+      }
+    }
+    // “环外”＝不与该节点经触发连接互相到达（不在同一个强连通分量中），或从事务不可达
+    const comp = components(reach,
+      (x) => (this.subscribers.get(x) ?? []).filter((y) => reach.has(y)),
+      (x) => this.triggerRefs.get(x)!.filter((y) => reach.has(y)));
+    const outside = (y: string, x: string) => !comp.has(y) || comp.get(y) !== comp.get(x);
+    const exitNode = (x: string) => {
+      const node = this.jki.get(x)!;
+      const mode = publishMode(node);
+      if (hasEx(node) ? mode !== "always" : !publishes(mode, null, node.q)) return true; // 发布取决于结果，或从不发布
+      return "all" in node.trigger && this.triggerRefs.get(x)!.some((y) => outside(y, x)); // 要等环外的来源
+    };
+    const exitEdge = (x: string, s: string) => { // 经 all／transaction 整合，且该登记有环外的前置
+      const reg = this.regOf.get(x);
+      if (!reg || (reg[1] !== "all" && reg[1] !== "transaction") || !this.gated(reg[0], s)) return false;
+      return this.regTypes.get(reg[0])!.get(reg[1])!.some((p) => outside(p, x));
+    };
+    const txEdges = new Map<string, string[]>();
+    for (const s of reach) {
+      if (exitNode(s)) continue;
+      txEdges.set(s, this.triggerRefs.get(s)!.filter((x) => reach.has(x) && !exitNode(x) && !exitEdge(x, s)));
+    }
+    const txCycle = findCycle(txEdges);
+    if (txCycle) this.err(`从事务可达的环 ${txCycle.join(" → ")} 上没有退出结构：事务将永不结束（§6.4）`);
+
+    // §6.4：纯通知环（any、空 EX、在不变的 q 上发布、连接不受整合）
     const loud = (node: Jki) => {
       const mode = publishMode(node);
       return "any" in node.trigger && !hasEx(node)
@@ -576,7 +607,7 @@ export class Model {
       edges.set(s, this.triggerRefs.get(s)!.filter((x) => quiet.has(x) && ungated(x, s)));
     }
     const cycle = findCycle(edges);
-    if (cycle) this.err(`纯通知环 ${cycle.join(" → ")}：永不终止，并使全部任务得不到执行（§6.2）`);
+    if (cycle) this.err(`纯通知环 ${cycle.join(" → ")}：永不终止，并使全部任务得不到执行（§6.4）`);
   }
 
   private resolveAll(refs: unknown[], layer: string, where: string): string[] {
@@ -588,6 +619,47 @@ export class Model {
     }
     return paths;
   }
+}
+
+/** 强连通分量（Kosaraju，迭代实现）：节点 → 分量编号。next 为出边，prev 为入边，都限于 nodes 内。 */
+function components(nodes: Set<string>, next: (x: string) => string[], prev: (x: string) => string[]): Map<string, number> {
+  const order: string[] = [];
+  const seen = new Set<string>();
+  for (const start of sortPaths(nodes)) {
+    if (seen.has(start)) continue;
+    seen.add(start);
+    const stack: [string, string[], number][] = [[start, next(start), 0]];
+    while (stack.length) {
+      const top = stack[stack.length - 1];
+      if (top[2] < top[1].length) {
+        const y = top[1][top[2]++];
+        if (!seen.has(y)) {
+          seen.add(y);
+          stack.push([y, next(y), 0]);
+        }
+      } else {
+        order.push(top[0]);
+        stack.pop();
+      }
+    }
+  }
+  const comp = new Map<string, number>();
+  let count = 0;
+  for (let i = order.length - 1; i >= 0; i--) {
+    if (comp.has(order[i])) continue;
+    const stack = [order[i]];
+    comp.set(order[i], count);
+    while (stack.length) {
+      for (const y of prev(stack.pop()!)) {
+        if (!comp.has(y)) {
+          comp.set(y, count);
+          stack.push(y);
+        }
+      }
+    }
+    count++;
+  }
+  return comp;
 }
 
 /** edges：节点 → 触发它的节点。返回一个环，没有环时返回 null。 */
@@ -621,13 +693,13 @@ function findCycle(edges: Map<string, string[]>): string[] | null {
 // ---------------------------------------------------------------------------
 
 const RUN_FIELDS = ["run", "model", "observe", "batches"];
-const SNAPSHOT_FIELDS = ["snapshot", "jkm", "version", "q", "trigger_all", "rounds", "queues"];
+const SNAPSHOT_FIELDS = ["snapshot", "jkm", "version", "q", "trigger_all", "rounds", "threads"];
 
 function exactKeys(value: unknown, fields: readonly string[]): value is Obj {
   return isObj(value) && Object.keys(value).length === fields.length && fields.every((f) => f in value);
 }
 
-/** §3.2：输入入口是 trigger.any=[] 且已被登记的 JKI。 */
+/** §3.2：输入入口是 trigger.any=[] 且已被根 JKS 登记的直接成员（静态检查保证只出现在根 JKS 中）。 */
 export function isInputEntry(model: Model, path: unknown): boolean {
   if (!model.isJkiPath(path)) return false;
   const node = model.jki.get(path)!;
@@ -691,23 +763,18 @@ export function checkSnapshot(snap: unknown, model: Model): string[] {
       if (!ok) errors.push(`rounds 中 ${ref}.${kind} 的记录不合法：只能列出未到齐的本轮前置（§9.5）`);
     }
   }
-  const queues = snap.queues;
-  if (!(isObj(queues) && Object.keys(queues).every((k) => model.queues.includes(k)))) {
-    return [...errors, "queues 的键必须是 JKM.queues 中声明的名称"];
+  const threads = snap.threads;
+  if (!(isObj(threads) && Object.keys(threads).every((k) => model.threads.includes(k)))) {
+    return [...errors, "threads 的键必须是 JKM.threads 中声明的名称"];
   }
-  for (const [name, fifo] of Object.entries(queues)) {
+  for (const [name, fifo] of Object.entries(threads)) {
     if (!exactKeys(fifo, ["events", "tasks"]) || !Array.isArray(fifo.events) || !Array.isArray(fifo.tasks)) {
-      errors.push(`queues.${name} 必须是 {events, tasks}`);
+      errors.push(`threads.${name} 必须是 {events, tasks}`);
       continue;
     }
     for (const item of fifo.events as unknown[]) {
-      let ok = isObj(item) && model.isJkiPath(item.source);
-      if (ok && exactKeys(item, ["source", "to", "out"])) {
-        ok = Array.isArray(item.to) && item.to.every((r) => model.isJkiPath(r)) && typeof item.out === "boolean";
-      } else if (ok) {
-        ok = exactKeys(item, ["source"]);
-      }
-      if (!ok) errors.push(`queues.${name}.events 中的事件项不合法：${show(item)}`);
+      const ok = exactKeys(item, ["source"]) && model.isJkiPath(item.source);
+      if (!ok) errors.push(`threads.${name}.events 中的事件项不合法：${show(item)}`);
     }
     for (const item of fifo.tasks as unknown[]) {
       let ok = false;
@@ -715,10 +782,10 @@ export function checkSnapshot(snap: unknown, model: Model): string[] {
         ok = model.isJkiPath(item.node) && hasEx(model.jki.get(item.node)!);
       } else if (exactKeys(item, ["tx", "prereqs"])) {
         const g = item.tx;
-        ok = typeof g === "string" && model.range.has(g) && strList(item.prereqs, false)
+        ok = typeof g === "string" && model.txGroups.has(g) && strList(item.prereqs, false)
           && item.prereqs.every((r) => model.prereqs.get(g)!.has(r));
       }
-      if (!ok) errors.push(`queues.${name}.tasks 中的任务项不合法：${show(item)}`);
+      if (!ok) errors.push(`threads.${name}.tasks 中的任务项不合法：${show(item)}`);
     }
   }
   return errors;

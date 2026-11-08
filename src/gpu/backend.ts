@@ -7,10 +7,10 @@
  */
 
 import { type Bit, type Model, type RunScript, type Snapshot, checkSnapshot } from "../model.ts";
-import { compareRoundKeys } from "../cpu.ts";
+import { TX_LIMITS, compareRoundKeys } from "../cpu.ts";
 import type { RecordEntry } from "../record.ts";
 import {
-  type Capacity, Compiled, ERRORS, EVF_OUT, EVF_RECV, F_INPUT, H, type Layout, NONE, REC_INJECT, REC_NOTIFY, REC_Q, layout,
+  type Capacity, Compiled, ERRORS, F_INPUT, H, type Layout, NONE, REC_INJECT, REC_NOTIFY, REC_Q, layout,
 } from "./compile.ts";
 import { PARAM_WORDS, WORKGROUP_SIZE, kernelSource } from "./kernel.ts";
 
@@ -20,6 +20,8 @@ export interface GpuOptions {
   budget?: number;
   /** 每批的微步上限；超过时报错并停下该实例。 */
   stepLimit?: number;
+  /** 事务的步数上限（JKRD7 §6.4），默认与 CPU 后端相同。 */
+  txSteps?: number;
 }
 
 export interface GpuInstance {
@@ -60,6 +62,7 @@ export class GpuExecutor {
   readonly c: Compiled;
   readonly budget: number;
   readonly stepLimit: number;
+  readonly txSteps: number;
   readonly pipeline: GPUComputePipeline;
   readonly modelBuffer: GPUBuffer;
   readonly source: string;
@@ -73,6 +76,7 @@ export class GpuExecutor {
     this.source = source;
     this.budget = options.budget ?? 4096;
     this.stepLimit = options.stepLimit ?? 1_000_000;
+    this.txSteps = options.txSteps ?? TX_LIMITS.steps;
     this.modelBuffer = device.createBuffer({
       size: l.modelData.byteLength, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
@@ -175,7 +179,7 @@ export class GpuExecutor {
         });
         device.queue.writeBuffer(inBuf, 0, input);
         for (;;) {
-          device.queue.writeBuffer(paramBuf, 0, new Uint32Array([n, b, this.budget, this.stepLimit, inWords, 0, 0, 0]));
+          device.queue.writeBuffer(paramBuf, 0, new Uint32Array([n, b, this.budget, this.stepLimit, inWords, this.txSteps, 0, 0]));
           const encoder = device.createCommandEncoder();
           const pass = encoder.beginComputePass();
           pass.setPipeline(this.pipeline);
@@ -269,25 +273,10 @@ export class GpuExecutor {
       st[b] = saved.length;
       saved.forEach((p, k) => (st[b + 1 + k] = idx(p)));
     });
-    const fifo = (c.queue !== undefined ? snap.queues[c.queue] : undefined) ?? { events: [], tasks: [] };
+    const fifo = (c.thread !== undefined ? snap.threads[c.thread] : undefined) ?? { events: [], tasks: [] };
     if (fifo.events.length > l.cap.events) throw new Error("快照中的事件数超过 GPU 事件 FIFO 容量");
     if (fifo.tasks.length > l.cap.tasks) throw new Error("快照中的任务数超过 GPU 任务 FIFO 容量");
-    fifo.events.forEach((e, k) => {
-      const o = l.s.EV + k * l.evStride;
-      const x = idx(e.source);
-      st[o] = x;
-      if ("to" in e) {
-        st[o + 1] = EVF_RECV | (e.out ? EVF_OUT : 0);
-        st[o + 2] = e.to.length;
-        e.to.forEach((r, j) => {
-          const edge = c.edge(x, idx(r));
-          if (edge < 0) throw new Error(`快照事件中的接收者 ${r} 不是 ${e.source} 的订阅者`);
-          st[o + 3 + j] = edge;
-        });
-      } else {
-        st[o + 1] = EVF_OUT;
-      }
-    });
+    fifo.events.forEach((e, k) => (st[l.s.EV + k] = idx(e.source)));
     st[H.EV_LEN] = fifo.events.length;
     fifo.tasks.forEach((t, k) => {
       const o = l.s.TK + k * l.tkStride;
@@ -325,26 +314,17 @@ export class GpuExecutor {
       const b = l.s.ROUND + c.roundBase[r];
       if (st[b]) (rounds[g] ??= {})[kind] = Array.from({ length: st[b] }, (_, k) => c.paths[st[b + 1 + k]]);
     }
-    const events: Snapshot["queues"][string]["events"] = [];
-    for (let k = 0; k < st[H.EV_LEN]; k++) {
-      const o = l.s.EV + ((st[H.EV_HEAD] + k) % l.cap.events) * l.evStride;
-      const source = c.paths[st[o]];
-      if (st[o + 1] & EVF_RECV) {
-        const to = Array.from({ length: st[o + 2] }, (_, j) => c.paths[c.subOf(st[o + 3 + j])]);
-        events.push({ source, to, out: Boolean(st[o + 1] & EVF_OUT) });
-      } else {
-        events.push({ source });
-      }
-    }
-    const tasks: Snapshot["queues"][string]["tasks"] = [];
+    const events: Snapshot["threads"][string]["events"] = [];
+    for (let k = 0; k < st[H.EV_LEN]; k++) events.push({ source: c.paths[st[l.s.EV + (st[H.EV_HEAD] + k) % l.cap.events]] });
+    const tasks: Snapshot["threads"][string]["tasks"] = [];
     for (let k = 0; k < st[H.TK_LEN]; k++) {
       const o = l.s.TK + ((st[H.TK_HEAD] + k) % l.cap.tasks) * l.tkStride;
       if (st[o] === 0) tasks.push({ node: c.paths[st[o + 1]] });
       else tasks.push({ tx: c.jksPaths[st[o + 1]], prereqs: Array.from({ length: st[o + 2] }, (_, j) => c.paths[st[o + 3 + j]]) });
     }
-    const queues: Snapshot["queues"] = {};
-    if (c.queue !== undefined) queues[c.queue] = { events, tasks };
-    return { snapshot: name, jkm: c.name, version: "7.0.0", q, trigger_all: triggerAll, rounds, queues };
+    const threads: Snapshot["threads"] = {};
+    if (c.thread !== undefined) threads[c.thread] = { events, tasks };
+    return { snapshot: name, jkm: c.name, version: "7.0.0", q, trigger_all: triggerAll, rounds, threads };
   }
 }
 

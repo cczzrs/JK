@@ -1,8 +1,8 @@
 {
   "status": "passed",
-  "generated_at_utc": "2026-11-07T00:41:07+00:00",
+  "generated_at_utc": "2026-11-08T03:14:45+00:00",
   "semantics": "JKRD7 §4–§7 serial reference (CPU backend): one unit at a time, event-first, path-ordered delivery, JKS integration, transactions with local sequences and a single commit; §7.5 batches; §9.4 run scripts and records; §9.5 snapshots",
-  "scope": "single-queue models; CPU backend in TypeScript on Node; GPU backend is checked separately (reports/gpu-run.json)",
+  "scope": "single-thread models; CPU backend in TypeScript on Node; GPU backend is checked separately (reports/gpu-run.json)",
   "cases": [
     {
       "case": "计算与 seed（M_FLOW）",
@@ -40,9 +40,9 @@
       "detail": "事务任务 1 个，Q101 [1]，Q102 [1]"
     },
     {
-      "case": "统一提交",
+      "case": "事务内投递",
       "passed": true,
-      "detail": "范围外接收者收到 Q101 的通知时读到 Q102=1"
+      "detail": "输出模块在事务内收到 Q101 的通知，此时 Q102 尚未计算，读到 Q102=0"
     },
     {
       "case": "不满足 publish 不推进",
@@ -52,12 +52,12 @@
     {
       "case": "多实例顺序执行",
       "passed": true,
-      "detail": "执行记录 [\"tx\",\"G2.Q101\",\"G2.Q102\",\"commit\",\"tx\",\"G2.Q101\",\"G2.Q102\",\"commit\"]"
+      "detail": "执行记录 [\"tx\",\"G2.Q101\",\"G2.Q102\",\"tx_end\",\"tx\",\"G2.Q101\",\"G2.Q102\",\"tx_end\"]"
     },
     {
       "case": "嵌套事务（M_NEST）",
       "passed": true,
-      "detail": "事务任务 [\"G2\"]，结果 [[1],[1],[1],[1]]"
+      "detail": "进入 thread 的事务任务 [\"G2\"]，执行的事务（JKS@层）[\"G2@1\",\"G2.G1@2\"]，结果 [[1],[1],[1],[1]]"
     },
     {
       "case": "先整合后照常投递",
@@ -95,14 +95,24 @@
       "detail": "登记改为 any 时，同时输入 0、1 的输出为 [\"0x31\"]，应为 [\"0x30\",\"0x31\"]"
     },
     {
-      "case": "多 queue 暂不支持",
+      "case": "多 thread 暂不支持",
       "passed": true,
-      "detail": "单 queue 可执行；两个 queue 的模型被明确拒绝（§9.3）"
+      "detail": "单 thread 可执行；两个 thread 的模型被明确拒绝（§9.3）"
     },
     {
-      "case": "范围内成员在事务外执行（§6.2）",
+      "case": "事务外的普通执行（§6.1）",
       "passed": true,
-      "detail": "经同一 JKS 的 any 登记、祖先的 all 登记、范围内的输入入口进入范围的通知，都在事务之外处理"
+      "detail": "经同一 JKS 的 any 登记放行的通知，在事务之外作为普通节点任务执行"
+    },
+    {
+      "case": "嵌套事务（§6.3）",
+      "passed": true,
+      "detail": "M_INLINE 只有 1 个事务任务进入 thread，执行的事务（JKS@层）[\"G1@1\",\"G2@2\",\"G3@3\"]；M_NEST2 的节点任务顺序 [\"G1.Q2\",\"G1.Q3\",\"G2.Q2\",\"G2.Q3\",\"G1.Q4\"]，嵌套事务连续执行完，外层才继续"
+    },
+    {
+      "case": "事务的退出与上限（§6.4）",
+      "passed": true,
+      "detail": "环上有退出结构时，每次请求循环两次后退出，Q2 依次为 [1,0,1,0]；永不退出的环在步数上限 50 处停下（steps，已有 51 条记录）；嵌套层数上限为 2 时，第 3 层事务开始前停下（depth）"
     },
     {
       "case": "1 bit 寄存器（M_REG）",
@@ -112,7 +122,7 @@
     {
       "case": "可并行批（§7.5）",
       "passed": true,
-      "detail": "第 10 节模型一致；十选一 100 组、随机模型 300 个，记录不同的分别有 0、0 组；随机模型共 2060 批，平均每批 1.86 个任务，最大 5；十选一单次请求的批大小 [4,4]"
+      "detail": "第 10 节模型一致；十选一 100 组、随机模型 300 个，记录不同的分别有 0、0 组；随机模型共 2041 批，平均每批 1.87 个任务，最大 5；十选一单次请求的批大小 [4,4]"
     },
     {
       "case": "运行脚本（§9.4）",
@@ -126,19 +136,19 @@
     }
   ],
   "sha256": {
-    "JKRD7.md": "c9dad0b26af0a54c84f7f5f2e3911e0b778ed215732dcb9ba3171d048a6409ff",
-    "assets/ascii-bit-design/digits.jkm.json": "017d9f72328699643b9dc8cd105ef36957616d62493ea9a7da984c95ffd907ce",
-    "tools/reference.ts": "81aa2fc74b14be332d29f1d85b1f7c751a67b26dca8a0087aa04f1a3ae17ee96",
-    "src/model.ts": "b94155d09d008083b078bbfd9b0b82f744b8df67cc8c8d9b44294e7e234a1d7b",
+    "JKRD7.md": "9eee8f2b2a4ab38ae9ef7d18cbaeb359ae93ca81c02724a9d0ae0e5ca49dccd9",
+    "assets/ascii-bit-design/digits.jkm.json": "e6b32e6b70407359c680bb2758b084d665a10c54e2bdd5cf299eb1eedf0b8765",
+    "tools/reference.ts": "606994bd9b947a6824a6ba024994b8fbb0ba6537b7692e8b9e99c8575fe3ff67",
+    "src/model.ts": "c19963946d33ef43c0ea634944351bc4c38373e0fa7522488fbcf329e7dd9805",
     "src/record.ts": "10cabb8a103842fb6350a7be4e67dca9c9812f7e6a05d2796f53acd046808550",
-    "src/cpu.ts": "b3a2ecc10b5a0db6740846d7d79aeefba93fadb8eccfa90814d94bcd70e0d59f",
+    "src/cpu.ts": "d122b84c72ac0e97497aeb0e85684bbf4176b8decc467023dccc95741c06af93",
     "src/executor.ts": "aedcc64322e19a108e5197bd75f4886d5d809cc9a4617c09db61814116bfa8f4",
-    "src/gpu/compile.ts": "b2ba48e61c13c4de686e330eca6b768762f495ad855473d79a7792a19eb190c5",
-    "src/gpu/kernel.ts": "b0c61a4ab0f1bae08faa983d747e302f7cb7b1d75e899a1846162f741562893d",
-    "src/gpu/backend.ts": "67c5a416bf5ebef0fa34ac9fe3a0a7d7cc299851dff0fab4138b02193febfba6",
-    "src/testing/cases.ts": "aee1939a5d022b428ece956fc01370d2d3880d3337dac0aa4d33e0d65f07c548",
-    "src/testing/fixtures.ts": "2e88f0ee30bf70827dad97ea4e895cc50d23f4ecc85c69c6ce0fe844fe7accfc",
+    "src/gpu/compile.ts": "7872f0f2a88a7924ba5959a0a119d32ce0438ef14568202171979b4fcfa904ea",
+    "src/gpu/kernel.ts": "99a113332311eb2a9c0312e3453ba8ebf088509831c4a60b95035d05ff6efb54",
+    "src/gpu/backend.ts": "50a45b00d4dd9918079eb598d700151a1bb69c3b65fedbbacf6b3cb852e8ac4e",
+    "src/testing/cases.ts": "69809555a25b6441614ab8c27df646ad882ca5390fe9056b21faa0ef2b82f57b",
+    "src/testing/fixtures.ts": "2a478a712ea4ea4a3c6e306c185960ef52974987197231de01cade7063331d51",
     "src/testing/random.ts": "690b7384041ec9d52a2feb99bb8c988f36a2363abbe85d1ed6a00f9308b73fa4",
-    "src/testing/static.ts": "73f09f642461b7a0a8b0e3321fb832efef7df9eea6cbb91688c8dbc625d4176f"
+    "src/testing/static.ts": "d3c923cf25d0d3b7ef36b449fe5ecd2a4e2e49e4103c8889c9d6c25d43095705"
   }
 }

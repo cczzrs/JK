@@ -1,6 +1,6 @@
 {
   "status": "passed",
-  "generated_at_utc": "2026-11-07T00:46:17+00:00",
+  "generated_at_utc": "2026-11-08T03:14:53+00:00",
   "scope": "JKRD7 §2/§3/§5/§6.2/§8 static rules, document JSON, model asset, fixtures, links and index; no execution (see reports/reference-run.json and reports/gpu-run.json)",
   "checks": [
     {
@@ -76,15 +76,27 @@
       "passed": true
     },
     {
-      "check": "正例：事务范围以外成环",
+      "check": "正例：从事务不可达的环",
       "passed": true
     },
     {
-      "check": "正例：前置为嵌套成员（绝对路径）",
+      "check": "正例：事务登记的 JKS 的成员由外部触发",
       "passed": true
     },
     {
-      "check": "正例：显式空对象、ack 登记、JKS.pro.tag 与 pro.jksid",
+      "check": "正例：事务可达的环：publish 退出",
+      "passed": true
+    },
+    {
+      "check": "正例：事务可达的环：all 等环外来源",
+      "passed": true
+    },
+    {
+      "check": "正例：事务可达的环：JKS all 有环外前置",
+      "passed": true
+    },
+    {
+      "check": "正例：显式空对象（含 JKS 的 pro、runtime）、ack 登记、JKS.pro.tag 与 pro.jksid",
       "passed": true
     },
     {
@@ -156,7 +168,59 @@
       "passed": true
     },
     {
-      "check": "负例：JKS 缺字段",
+      "check": "负例：JKS 缺 thread",
+      "passed": true
+    },
+    {
+      "check": "负例：JKS 缺 trigger",
+      "passed": true
+    },
+    {
+      "check": "负例：JKS 多出字段",
+      "passed": true
+    },
+    {
+      "check": "负例：JKS.trigger 没有登记",
+      "passed": true
+    },
+    {
+      "check": "负例：JKS.pro 为 null",
+      "passed": true
+    },
+    {
+      "check": "负例：JKS.runtime 为 null",
+      "passed": true
+    },
+    {
+      "check": "负例：roots 为空",
+      "passed": true
+    },
+    {
+      "check": "负例：JKI id 带前导零",
+      "passed": true
+    },
+    {
+      "check": "负例：JKS id 带前导零",
+      "passed": true
+    },
+    {
+      "check": "负例：threads 含空串",
+      "passed": true
+    },
+    {
+      "check": "负例：trigger 含空串",
+      "passed": true
+    },
+    {
+      "check": "负例：sources.s 含空串",
+      "passed": true
+    },
+    {
+      "check": "负例：pro.tag 含空串",
+      "passed": true
+    },
+    {
+      "check": "负例：登记含空串",
       "passed": true
     },
     {
@@ -172,7 +236,7 @@
       "passed": true
     },
     {
-      "check": "负例：queue 未声明",
+      "check": "负例：thread 未声明",
       "passed": true
     },
     {
@@ -184,7 +248,7 @@
       "passed": true
     },
     {
-      "check": "负例：queues 重复",
+      "check": "负例：threads 重复",
       "passed": true
     },
     {
@@ -228,11 +292,19 @@
       "passed": true
     },
     {
-      "check": "负例：跨类型重复登记",
+      "check": "负例：登记直接成员写绝对路径",
       "passed": true
     },
     {
-      "check": "负例：同一 JKI 被两个 JKS 登记",
+      "check": "负例：登记嵌套成员",
+      "passed": true
+    },
+    {
+      "check": "负例：登记短 ID 不在本层",
+      "passed": true
+    },
+    {
+      "check": "负例：跨类型重复登记",
       "passed": true
     },
     {
@@ -240,11 +312,15 @@
       "passed": true
     },
     {
-      "check": "负例：事务范围被外部触发",
+      "check": "负例：子 JKS 中的待对接入口",
       "passed": true
     },
     {
-      "check": "负例：事务范围成环",
+      "check": "负例：事务内没有退出结构的环",
+      "passed": true
+    },
+    {
+      "check": "负例：事务下游成环",
       "passed": true
     },
     {
@@ -274,23 +350,23 @@
   ],
   "errors": [],
   "sha256": {
-    "AGENTS.md": "996c294e2923d659bc58a5612345c1cc93c872e3142fc588a61adfdd91e6561a",
-    "JKRD7.md": "c9dad0b26af0a54c84f7f5f2e3911e0b778ed215732dcb9ba3171d048a6409ff",
-    "README.md": "285d1c5e4aae10e70bf305ad2eb6274deeb6662b0be0b91745c5ba42599c5ae5",
-    "TypeScript.md": "124e24167eac5eed1f8fe3fa278677b4ca26789689f53a9bbf69417ed46a1e53",
-    "WebGPU.md": "c2d3df3d8bd48f3b4b600609e7580a17a22617e2a1d054a7313ad446656d20ae",
-    "assets/ascii-bit-design/digits.jkm.json": "017d9f72328699643b9dc8cd105ef36957616d62493ea9a7da984c95ffd907ce",
+    "AGENTS.md": "50ad3a13cc45fbcbb7b0f5100f6ba6394153b791776f9096bf2cc6163f496889",
+    "JKRD7.md": "9eee8f2b2a4ab38ae9ef7d18cbaeb359ae93ca81c02724a9d0ae0e5ca49dccd9",
+    "README.md": "d385193b14acb292b4f1796b8f2cc553e9a0fdd31751c708e50fff8e20259d3d",
+    "TypeScript.md": "2ef1a26ab393399a2913dc051c00f3b9b8917e8305943819021c34242005889e",
+    "WebGPU.md": "2ecaa4564dfef9d2440b11e9e380296f0f9c9be7f715cb54fae282ed0a4f863e",
+    "assets/ascii-bit-design/digits.jkm.json": "e6b32e6b70407359c680bb2758b084d665a10c54e2bdd5cf299eb1eedf0b8765",
     "assets/jks-factory-v7-design/JKI.FACTORY.json": "410729692fba6f0e70c69ec78436c27923c4e6de6fb0ed244ce378eeacda19d8",
     "assets/jks-factory-v7-design/RAM.FACTORY.json": "9ec8a03b18c4552d3db4ec42fddbfdfe39f3fd6e29a5d06675ba727f61c42f8f",
     "assets/jks-factory-v7-design/design-contract.json": "1e2f03cf60e4c4f233aaa9f361827debd2b17997653fce593effac4649d67c54",
     "assets/jks-factory-v7-design/generation-example.json": "f1b5561b14982b07b1ce41edb0285a1402e2b1f0f6eacba35199e60214b6c648",
-    "docs/jkrd7-maintenance.md": "0a37c39feb56a754d74db3cf4d8fb8d917671ae6534a5345b9398c6af4c9c905",
+    "docs/jkrd7-maintenance.md": "8b1a265ada7a90279a490b9b682c34c928bd0188e47b2f312994507fcf1483ad",
     "docs/jkrd7-proposal-2026-11-05.md": "050f4b365a837e3b23f0167bbf6997e98601ce760bc98689128b5f8f3491e269",
     "docs/jkrd7-proposal-2026-11-06.md": "9fcbd3027b60425e3a803a49803c66b24986f6036073a7786c23a1ac175d4e03",
     "docs/modules/factory-pending.md": "e8139c930aa319f881d2ffcdeafeac86492a8ecfce65cda7fa020ba346718dc3",
-    "jk.config.json": "f49ceec7fbe31a33120204033a26a3c47ff8d3437733a021d6f0bd758b39cbcf",
-    "src/model.ts": "b94155d09d008083b078bbfd9b0b82f744b8df67cc8c8d9b44294e7e234a1d7b",
-    "src/testing/static.ts": "73f09f642461b7a0a8b0e3321fb832efef7df9eea6cbb91688c8dbc625d4176f",
+    "jk.config.json": "a2b7f42638dc681d8136508a62fcd8087356630a7a8858c4394bf0826d517304",
+    "src/model.ts": "c19963946d33ef43c0ea634944351bc4c38373e0fa7522488fbcf329e7dd9805",
+    "src/testing/static.ts": "d3c923cf25d0d3b7ef36b449fe5ecd2a4e2e49e4103c8889c9d6c25d43095705",
     "tools/validate.ts": "bab7ee5f4c4c3e97dd7ba6b19aba458b2e67b8867469f559e8f392965148afb1"
   }
 }

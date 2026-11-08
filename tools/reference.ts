@@ -87,7 +87,7 @@ function main(): number {
       semantics: "JKRD7 §4–§7 serial reference (CPU backend): one unit at a time, event-first, path-ordered delivery, "
         + "JKS integration, transactions with local sequences and a single commit; §7.5 batches; "
         + "§9.4 run scripts and records; §9.5 snapshots",
-      scope: "single-queue models; CPU backend in TypeScript on Node; GPU backend is checked separately (reports/gpu-run.json)",
+      scope: "single-thread models; CPU backend in TypeScript on Node; GPU backend is checked separately (reports/gpu-run.json)",
       cases: results,
       sha256: Object.fromEntries(files.map((p) => [p, sha256(p)])),
     };

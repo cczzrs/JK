@@ -138,7 +138,7 @@ async function main(): Promise<number> {
       generated_at_utc: nowUtc(),
       semantics: "GPU backend (WebGPU, one invocation per instance, serial micro-steps of JKRD7 §7) compared byte for byte "
         + "with the CPU backend in the same page: records, end-of-run snapshots, snapshot resume, capacity errors",
-      scope: "single-queue models; this machine's Chrome and GPU only; throughput figures are indicative, not a benchmark",
+      scope: "single-thread models; this machine's Chrome and GPU only; throughput figures are indicative, not a benchmark",
       adapter: result.adapter,
       limits: result.limits,
       user_agent: result.userAgent,

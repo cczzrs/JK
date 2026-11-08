@@ -11,4 +11,4 @@
   - `node tools/validate.ts`
   - `node tools/reference.ts`
   - `node tools/gpu.ts`（改动 GPU 后端或执行语义时运行）
-- 这些检查通过，只说明在本机已核对的范围内两个后端与规则一致。不说明恢复流程、多 queue 调度、其他浏览器或其他 GPU 已经验证。
+- 这些检查通过，只说明在本机已核对的范围内两个后端与规则一致。不说明恢复流程、多 thread 调度、其他浏览器或其他 GPU 已经验证。
