@@ -6,10 +6,12 @@
  * 一直执行到本次触发的事件和任务都处理完；事务中满足的事务登记形成嵌套事务，逐层执行（第 6 节）。
  * batch=true 时节点任务按 §7.5 的可并行批执行，执行记录不变。
  * 只执行单 thread 模型（§9.3）。
+ * trace 回调可以接收执行细节（FIFO 的追加与取出、登记的整合、每次到达、每次计算），只供展示观察，
+ * 不进入运行日志和执行记录，也不改变执行。
  */
 
 import {
-  type Bit, GATED_TYPES, type Jki, type Model, type Snapshot, type SnapshotTask,
+  type Bit, GATED_TYPES, type Jki, type Model, type PublishMode, type Snapshot, type SnapshotTask,
   checkSnapshot, hasEx, publishMode, publishes, segments, sortPaths, isInputEntry,
 } from "./model.ts";
 import type { RecordEntry } from "./record.ts";
@@ -82,6 +84,30 @@ export type LogEntry =
   | { kind: "tx"; g: string; prereqs: string[]; depth: number }
   | { kind: "tx_end"; g: string; depth: number };
 
+/**
+ * 执行细节（可选，供展示页逐步显示）：只是观察，不进入运行日志和执行记录，也不改变执行。
+ * depth：0 为 thread 的 FIFO，k 为第 k 层事务的事务 FIFO。
+ */
+export type DetailEntry =
+  /** 一项追加到 FIFO。 */
+  | { kind: "push"; fifo: "events" | "tasks"; depth: number; item: string | TaskItem }
+  /** 取出 FIFO 队首，开始投递这条事件或执行这个任务。 */
+  | { kind: "take"; fifo: "events" | "tasks"; depth: number; item: string | TaskItem }
+  /** 前置的一次到达记入 JKS 的登记（§5.3、§5.4）；record 为记入后的本轮记录，complete 表示到齐。 */
+  | { kind: "feed"; g: string; type: string; source: string; record: string[]; complete: boolean; depth: number }
+  /**
+   * 一次到达（§4.1）。gated：经整合放行；all：trigger.all 的记录（更新后、重置前）；
+   * outcome：wait 未齐备，task 形成节点任务，notify 空 EX 发布，none 空 EX 不发布。
+   */
+  | { kind: "receive"; path: string; source: string; gated: boolean; all: (Bit | null)[] | null; outcome: "wait" | "task" | "notify" | "none"; depth: number }
+  /** 一次计算（§4.2、§4.4）：x 为执行入口读到的来源值，acc 为每一项运算之后的值。 */
+  | { kind: "compute"; path: string; qBefore: Bit; start: Bit; x: Bit[]; acc: Bit[]; mode: PublishMode; publish: boolean; depth: number };
+
+/** 交给 trace 的项：运行日志项与执行细节，按执行顺序。 */
+export type TraceEntry = LogEntry | DetailEntry;
+
+type ComputeDetail = Omit<Extract<DetailEntry, { kind: "compute" }>, "kind" | "path" | "depth">;
+
 /** 一个执行中的事务（一层）：事务事件 FIFO 与事务任务 FIFO（§6.2）。任务可以是嵌套事务任务（§6.3）。 */
 class Tx {
   /** 事件项是来源 JKI 的绝对路径。 */
@@ -94,8 +120,6 @@ class Tx {
 }
 
 export interface CpuOptions {
-  watch?: readonly string[];
-  read?: readonly string[];
   /** 按 §7.5 的可并行批执行节点任务。 */
   batch?: boolean;
   /** 一次 run() 的处理单元上限。 */
@@ -103,6 +127,8 @@ export interface CpuOptions {
   /** 事务的步数上限与嵌套层数上限（§6.4），默认 TX_LIMITS。 */
   txSteps?: number;
   txDepth?: number;
+  /** 执行细节的接收者（展示用，可选）。 */
+  trace?: (entry: TraceEntry) => void;
 }
 
 export class CpuExecutor {
@@ -121,12 +147,15 @@ export class CpuExecutor {
   /** 事件项是来源 JKI 的绝对路径。 */
   events = new Fifo<string>();
   tasks = new Fifo<TaskItem>();
-  readonly watch: Set<string>;
-  readonly read: string[];
+  /** 输出列表（JKM.output，§8.1）：输出模块订阅其中每个成员，按这个顺序读取它们的 q。 */
+  readonly output: readonly string[];
+  private readonly watched: Set<string>;
   readonly log: LogEntry[] = [];
   readonly outputs: { source: string; values: Bit[] }[] = [];
   units = 0;
   readonly batchSizes: number[] = [];
+  /** 执行细节的接收者；可以随时换掉或设为 undefined。 */
+  trace: ((entry: TraceEntry) => void) | undefined;
 
   constructor(model: Model, options: CpuOptions = {}) {
     if (model.errors.length) throw new Error("模型未通过静态检查：\n" + model.errors.join("\n"));
@@ -141,6 +170,7 @@ export class CpuExecutor {
     this.maxUnits = options.maxUnits ?? 100000;
     this.txSteps = options.txSteps ?? TX_LIMITS.steps;
     this.txDepth = options.txDepth ?? TX_LIMITS.depth;
+    this.trace = options.trace;
     for (const [p, node] of model.jki) {
       this.q.set(p, node.q);
       if ("all" in node.trigger) this.triggerAll.set(p, [...node.runtime!.trigger_all!]);
@@ -150,8 +180,8 @@ export class CpuExecutor {
         if (kind === "all" || kind === "transaction") this.rounds.set(`${g}|${kind}`, []);
       }
     }
-    this.watch = new Set((options.watch ?? []).map((x) => this.abs(x)));
-    this.read = (options.read ?? []).map((x) => this.abs(x));
+    this.output = [...model.output];
+    this.watched = new Set(model.output);
   }
 
   // -- 小工具 -------------------------------------------------------------
@@ -165,13 +195,20 @@ export class CpuExecutor {
     return this.m.jki.get(path)!;
   }
 
+  /** 写入运行日志，同时交给 trace。 */
+  private note(entry: LogEntry): void {
+    this.log.push(entry);
+    this.trace?.(entry);
+  }
+
   // -- 外部接口（§9.1） ------------------------------------------------------
 
   inject(ref: string): void {
     const path = this.abs(ref);
     if (!isInputEntry(this.m, path)) throw new Error(`${ref} 不是输入入口（JKRD7 §3.2、§9.1）`);
-    this.log.push({ kind: "inject", path });
+    this.note({ kind: "inject", path });
     this.events.push(path);
+    this.trace?.({ kind: "push", fifo: "events", depth: 0, item: path });
   }
 
   /** 一个处理单元（批执行时，一批中的每个任务各算一个单元）。没有可处理的单元时返回 false。 */
@@ -183,7 +220,8 @@ export class CpuExecutor {
       if (head.kind === "tx") {
         this.tasks.shift();
         this.units += 1;
-        this.log.push({ kind: "unit", n: this.units, unit: "tx", path: head.g });
+        this.note({ kind: "unit", n: this.units, unit: "tx", path: head.g });
+        this.trace?.({ kind: "take", fifo: "tasks", depth: 0, item: head });
         this.runTx(head.g, head.prereqs, 1);
       } else {
         this.runBatch(this.takeBatch(this.tasks), null);
@@ -206,7 +244,9 @@ export class CpuExecutor {
 
   private eventUnit(): void {
     this.units += 1;
-    this.log.push({ kind: "unit", n: this.units, unit: "event", path: this.events.peek() });
+    const source = this.events.peek();
+    this.note({ kind: "unit", n: this.units, unit: "event", path: source });
+    this.trace?.({ kind: "take", fifo: "events", depth: 0, item: source });
     this.deliver(this.events.shift(), null);
   }
 
@@ -214,10 +254,10 @@ export class CpuExecutor {
 
   /** 投递一条事件；事务执行期间（tx 不为 null）形成的任务和事件进入事务 FIFO。 */
   private deliver(source: string, tx: Tx | null): void {
-    if (this.watch.has(source)) { // 输出模块：投递时读取（§9.1）；事务内也在投递时读取（§6.2）
-      const values = this.read.map((p) => this.q.get(p)!);
+    if (this.watched.has(source)) { // 输出模块：投递时按 output 的顺序读取（§9.1）；事务内也在投递时读取（§6.2）
+      const values = this.output.map((p) => this.q.get(p)!);
       this.outputs.push({ source, values });
-      this.log.push({ kind: "output", path: source, values });
+      this.note({ kind: "output", path: source, values });
     }
     const reg = this.m.regOf.get(source);
     const gate = reg && GATED_TYPES.has(reg[1]) ? reg : null;
@@ -229,52 +269,71 @@ export class CpuExecutor {
   }
 
   private feed(g: string, kind: string, source: string, tx: Tx | null): void {
+    const depth = tx ? tx.depth : 0;
     let order: string[];
     if (kind === "transaction_any") {
       order = [source];
+      this.trace?.({ kind: "feed", g, type: kind, source, record: [source], complete: true, depth });
     } else {
       const record = this.rounds.get(`${g}|${kind}`)!;
       if (!record.includes(source)) record.push(source);
-      if (record.length < this.m.regTypes.get(g)!.get(kind)!.length) return;
+      const complete = record.length >= this.m.regTypes.get(g)!.get(kind)!.length;
+      this.trace?.({ kind: "feed", g, type: kind, source, record: [...record], complete, depth });
+      if (!complete) return;
       order = [...record];
       record.length = 0;
     }
     if (kind === "all") {
       this.release(g, order, tx);
     } else { // 事务任务：不在事务中时进入 thread；事务中进入当前事务的事务任务 FIFO，成为嵌套事务（§6.3）
-      this.log.push({ kind: "tx_enqueue", g, prereqs: order, depth: tx ? tx.depth : 0 });
-      (tx ? tx.tasks : this.tasks).push({ kind: "tx", g, prereqs: order });
+      this.note({ kind: "tx_enqueue", g, prereqs: order, depth });
+      const item: TaskItem = { kind: "tx", g, prereqs: order };
+      (tx ? tx.tasks : this.tasks).push(item);
+      this.trace?.({ kind: "push", fifo: "tasks", depth, item });
     }
   }
 
   private release(g: string, order: string[], tx: Tx | null): void {
     for (const prereq of order) {
       for (const sub of this.m.subscribers.get(prereq) ?? []) {
-        if (this.m.gated(g, sub)) this.receive(sub, prereq, tx);
+        if (this.m.gated(g, sub)) this.receive(sub, prereq, tx, true);
       }
     }
   }
 
   /** §4.1：一次到达。 */
-  private receive(path: string, source: string, tx: Tx | null): void {
+  private receive(path: string, source: string, tx: Tx | null, gated = false): void {
     const node = this.node(path);
+    const depth = tx ? tx.depth : 0;
+    let all: (Bit | null)[] | null = null;
     if ("all" in node.trigger) {
       const record = this.triggerAll.get(path)!;
       const i = this.m.triggerRefs.get(path)!.indexOf(source);
       record[i] = record[i] === null ? 0 : 1;
-      if (record.some((v) => v === null)) return;
+      if (this.trace) all = [...record];
+      if (record.some((v) => v === null)) {
+        this.trace?.({ kind: "receive", path, source, gated, all, outcome: "wait", depth });
+        return;
+      }
       record.fill(null);
     }
     if (hasEx(node)) {
-      (tx ? tx.tasks : this.tasks).push({ kind: "node", node: path });
+      this.trace?.({ kind: "receive", path, source, gated, all, outcome: "task", depth });
+      const item: TaskItem = { kind: "node", node: path };
+      (tx ? tx.tasks : this.tasks).push(item);
+      this.trace?.({ kind: "push", fifo: "tasks", depth, item });
     } else if (publishes(publishMode(node), null, this.q.get(path)!)) {
+      this.trace?.({ kind: "receive", path, source, gated, all, outcome: "notify", depth });
       this.emit(path, tx);
+    } else {
+      this.trace?.({ kind: "receive", path, source, gated, all, outcome: "none", depth });
     }
   }
 
   private emit(path: string, tx: Tx | null): void {
-    this.log.push({ kind: "notify", path });
+    this.note({ kind: "notify", path });
     (tx ? tx.events : this.events).push(path);
+    this.trace?.({ kind: "push", fifo: "events", depth: tx ? tx.depth : 0, item: path });
   }
 
   // -- 任务（§4.3、§6.2）与可并行批（§7.5） --------------------------------------
@@ -294,39 +353,54 @@ export class CpuExecutor {
     return batch;
   }
 
-  private compute(path: string): [Bit, Bit, boolean] {
+  private compute(path: string): [Bit, Bit, boolean, ComputeDetail | undefined] {
     const node = this.node(path);
     const sources = node.sources!;
     const qBefore = this.q.get(path)!;
-    let acc: Bit = sources.seed ?? qBefore;
+    const start: Bit = sources.seed ?? qBefore;
+    let acc: Bit = start;
     const refs = this.m.sourceRefs.get(path)!;
+    const x: Bit[] | undefined = this.trace ? [] : undefined;
+    const steps: Bit[] | undefined = this.trace ? [] : undefined;
     sources.ex!.forEach((op, i) => {
-      const x = this.q.get(refs[i])!;
-      acc = (op === "J" ? acc & x : acc ^ x) as Bit;
+      const value = this.q.get(refs[i])!;
+      acc = (op === "J" ? acc & value : acc ^ value) as Bit;
+      x?.push(value);
+      steps?.push(acc);
     });
-    return [qBefore, acc, publishes(publishMode(node), qBefore, acc)];
+    const mode = publishMode(node);
+    const publish = publishes(mode, qBefore, acc);
+    return [qBefore, acc, publish, x && steps ? { qBefore, start, x, acc: steps, mode, publish } : undefined];
   }
 
   private runBatch(batch: string[], tx: Tx | null): void {
     const results = batch.map((p) => [p, ...this.compute(p)] as const); // 全部从批开始时的 q 计算
     this.batchSizes.push(batch.length);
-    for (const [path, qBefore, acc, publish] of results) {
+    const depth = tx ? tx.depth : 0;
+    for (const [path, qBefore, acc, publish, detail] of results) {
       if (tx === null) {
         this.units += 1;
-        this.log.push({ kind: "unit", n: this.units, unit: "node", path });
+        this.note({ kind: "unit", n: this.units, unit: "node", path });
       } else {
         this.txStep();
       }
+      const trace = this.trace;
+      if (trace) {
+        trace({ kind: "take", fifo: "tasks", depth, item: { kind: "node", node: path } });
+        if (detail) trace({ kind: "compute", path, depth, ...detail });
+      }
       if (publish) this.emit(path, tx);
       this.q.set(path, acc);
-      this.log.push({ kind: "q", path, from: qBefore, to: acc });
+      this.note({ kind: "q", path, from: qBefore, to: acc });
       if (this.batch) { // 批内每个任务之后先排空事件
         if (tx === null) {
           while (this.events.length) this.eventUnit();
         } else {
           while (tx.events.length) {
             this.txStep();
-            this.deliver(tx.events.shift(), tx);
+            const source = tx.events.shift();
+            this.trace?.({ kind: "take", fifo: "events", depth, item: source });
+            this.deliver(source, tx);
           }
         }
       }
@@ -344,20 +418,23 @@ export class CpuExecutor {
     if (depth > this.txDepth) throw new TxLimit("depth");
     if (depth === 1) this.steps = 0;
     const tx = new Tx(depth);
-    this.log.push({ kind: "tx", g, prereqs: order, depth });
+    this.note({ kind: "tx", g, prereqs: order, depth });
     this.release(g, order, tx);
     while (tx.events.length || tx.tasks.length) {
       if (tx.events.length) {
         this.txStep();
-        this.deliver(tx.events.shift(), tx);
+        const source = tx.events.shift();
+        this.trace?.({ kind: "take", fifo: "events", depth, item: source });
+        this.deliver(source, tx);
       } else if (tx.tasks.peek().kind === "tx") {
         const nested = tx.tasks.shift() as { kind: "tx"; g: string; prereqs: string[] };
+        this.trace?.({ kind: "take", fifo: "tasks", depth, item: nested });
         this.runTx(nested.g, nested.prereqs, depth + 1);
       } else {
         this.runBatch(this.takeBatch(tx.tasks), tx);
       }
     }
-    this.log.push({ kind: "tx_end", g, depth });
+    this.note({ kind: "tx_end", g, depth });
   }
 
   // -- 执行记录（§9.4）与快照（§9.5） --------------------------------------------
@@ -368,7 +445,7 @@ export class CpuExecutor {
       if (e.kind === "inject") out.push({ inject: e.path });
       else if (e.kind === "notify") out.push({ notify: e.path });
       else if (e.kind === "q") out.push({ q: e.path, from: e.from, to: e.to });
-      else if (e.kind === "output") out.push({ output: e.path, values: e.values });
+      else if (e.kind === "output") out.push({ output: e.path, values: this.m.groupOutput(e.values) });
     }
     return out;
   }

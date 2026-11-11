@@ -1,7 +1,7 @@
 /**
  * JKRD7 静态检查（JKRD7 §11.1）。
  *
- * 检查 JKRD7.md 中的全部 JSON 块、十选一模型附件、§2/§3/§5/§6.2/§8 规则的负例与正例、
+ * 检查 JKRD7.md 中的全部 JSON 块、十选一模型附件、§2/§3/§5/§6.4/§8 规则的负例与正例、
  * 待适配工厂附件的 JSON 语法、本地 Markdown 链接和 jk.config.json 中的路径。不执行模型。
  *
  *   node tools/validate.ts [--write-report]
@@ -12,6 +12,7 @@ import { dirname, resolve } from "node:path";
 import { Model, checkJki, checkRunScript, checkSnapshot, isObj, jsonBlocks } from "../src/model.ts";
 import { NEGATIVE, POSITIVE } from "../src/testing/static.ts";
 import { ROOT, exists, nowUtc, readJson, readText, rel, sha256, writeText } from "./common.ts";
+import { EXAMPLES_FILE, examplesText } from "./examples.ts";
 
 const DOC_MODELS = ["M1", "M_FLOW", "M_PATH", "M_SYNC", "M_TX", "M_NEST", "M_REG"];
 const MODEL_ASSETS = ["assets/ascii-bit-design/digits.jkm.json"];
@@ -117,6 +118,18 @@ class Checker {
     this.record("本地链接", problems);
   }
 
+  /** 展示页的内置示例文件与 JKRD7 第 10 节、十选一附件逐项相同。 */
+  examples(): void {
+    this.files.add(EXAMPLES_FILE);
+    const problems: string[] = [];
+    if (!exists(EXAMPLES_FILE)) {
+      problems.push(`${EXAMPLES_FILE} 不存在，请运行 node tools/examples.ts`);
+    } else {
+      if (readText(EXAMPLES_FILE) !== examplesText()) problems.push(`${EXAMPLES_FILE} 与 JKRD7、附件不一致，请运行 node tools/examples.ts 重新生成`);
+    }
+    this.record("展示页示例文件", problems);
+  }
+
   config(): void {
     const data = readJson<Record<string, unknown>>("jk.config.json");
     const problems: string[] = [];
@@ -134,6 +147,7 @@ class Checker {
     this.assets();
     this.fixtures();
     this.links();
+    this.examples();
     this.config();
     return this.errors;
   }
@@ -151,7 +165,7 @@ function main(): number {
     const report = {
       status: errors.length ? "failed" : "passed",
       generated_at_utc: nowUtc(),
-      scope: "JKRD7 §2/§3/§5/§6.2/§8 static rules, document JSON, model asset, fixtures, links and index; "
+      scope: "JKRD7 §2/§3/§5/§6.4/§8 static rules, document JSON, model asset, fixtures, links and index; "
         + "no execution (see reports/reference-run.json and reports/gpu-run.json)",
       checks: checker.items,
       errors,

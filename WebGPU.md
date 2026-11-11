@@ -22,7 +22,7 @@
 | 计算与展示一体 | 实例状态保存在 GPU 缓冲区中，展示层可以直接读取（§11 第 2 阶段） | 用户要求 |
 | 确定性 | 决定顺序时不用原子操作，结果不依赖线程调度 | §7.1—§7.3 |
 | 容量 | 缓冲区容量固定。溢出时报错并停下该实例，不丢事件，不改顺序 | §9.2 |
-| 范围 | 只执行单 thread 模型 | §9.3 第 2 项 |
+| 范围 | 只执行单 thread 模型 | §9.3 第 1 项 |
 | 浏览器限制 | 单次调度不能运行太久；只有 32 位整数；每个着色器阶段的存储缓冲区数量有限 | WebGPU 规范 |
 
 ## 2. 两个后端
@@ -37,7 +37,7 @@
 | 用法 | CPU | GPU |
 | --- | --- | --- |
 | 运行一个运行脚本 | `runScriptCpu(script, model, { batch, start })` | `GpuExecutor.runScript(device, model, script, start)` |
-| 许多实例 | 逐个创建 `CpuExecutor` | `GpuExecutor.create(device, model, watch, read).run(instances)` |
+| 许多实例 | 逐个创建 `CpuExecutor` | `GpuExecutor.create(device, model).run(instances)` |
 | 命令行 | `node tools/reference.ts --script …` | `node tools/gpu.ts --script …` |
 
 ## 3. 并行度从哪里来
@@ -87,7 +87,7 @@ CPU 后端的批执行模式给出了单个实例内部的并行度：
 
 | 段 | 每项对应 | 内容 |
 | --- | --- | --- |
-| FLAGS | 节点 | 第 0 位 all，第 1 位有 EX，第 2 位是输入入口，第 3 位被观察（watch） |
+| FLAGS | 节点 | 第 0 位 all，第 1 位有 EX，第 2 位是输入入口，第 3 位是输出成员（JKM.output） |
 | SEED | 节点 | 0、1，或 NONE（没有 seed） |
 | PUB | 节点 | publish 模式编号 0—6，顺序同 JKRD7 §4.4 |
 | SRC_OFF／SRC | 节点／边 | 计算来源（CSR）。低 31 位是来源编号，最高位 0 表示 J、1 表示 K |
@@ -96,10 +96,10 @@ CPU 后端的批执行模式给出了单个实例内部的并行度：
 | REG_JKS／REG_GATE／REG_ROUND | 节点 | 前置登记在哪个 JKS、哪种整合（无、all、transaction、transaction_any）、哪个轮 |
 | ROUND_NEED／ROUND_BASE | 轮 | 前置个数，以及该轮记录在状态区中的位置 |
 | JKS_LO／JKS_HI | JKS | 成员区间 |
-| READ | 观察项 | 运行脚本的 observe.read |
+| OUTPUT | 输出成员 | JKM.output 的节点编号，按组顺序与组内顺序展平（JKRD7 §8.1） |
 
-- ack、pre、post、comp、frame 按 any 处理（JKRD7 §5.2），编译为无整合。
-- 十选一编译后有 28 个节点、16 条计算来源边、107 条订阅边、9 个到达记录槽，没有轮（transaction_any 不需要轮）。模型缓冲区共 522 个字。
+- out、ack、pre、post、comp、frame 不整合（JKRD7 §5.2），编译为无整合。
+- 十选一编译后有 28 个节点、16 条计算来源边、107 条订阅边、9 个到达记录槽、9 个输出成员，没有轮（transaction_any 不需要轮）。模型缓冲区共 523 个字。
 
 ## 5. 实例状态
 
@@ -138,7 +138,7 @@ CPU 后端的批执行模式给出了单个实例内部的并行度：
 - 记录字的高 2 位表示种类：inject、notify、q、output。
 - 低 28 位是节点编号，所以节点数上限是 2²⁸。
 - q 记录用第 28、29 位存 from 和 to。
-- output 记录后面跟着 read 中各节点的 q，按位打包，每 32 个占一个字。
+- output 记录后面跟着 OUTPUT 中各节点的 q，按位打包，每 32 个占一个字；主机解码时按 output 的组分组，写成 §9.4 的 values 对象。
 
 ## 6. 内核：微步
 
@@ -170,7 +170,7 @@ CPU 后端的批执行模式给出了单个实例内部的并行度：
 
 投递一条事件，按 JKRD7 §7.3 依次进行：
 
-1. 来源被观察时，写 output 记录，事务中也一样。读到的是此刻 read 中各节点的 q。
+1. 来源被观察时，写 output 记录，事务中也一样。读到的是此刻 OUTPUT 中各节点的 q。
 2. 如果来源是某个 all／transaction／transaction_any 登记的前置，先整合：
    - 更新轮记录；
    - 到齐后，all 立即放行；
@@ -232,7 +232,7 @@ CPU 后端的批执行模式给出了单个实例内部的并行度：
 
 代码在 [src/gpu/backend.ts](src/gpu/backend.ts)。
 
-**建立**：`GpuExecutor.create(device, model, watch, read, options)` 依次完成以下步骤：
+**建立**：`GpuExecutor.create(device, model, options)` 依次完成以下步骤：
 
 1. 编译模型，确定布局；
 2. 生成 WGSL；
@@ -316,7 +316,7 @@ CPU 后端的批执行模式给出了单个实例内部的并行度：
 | 阶段 | 内容 | 验收 |
 | --- | --- | --- |
 | 1（已完成） | 编译器、每个调用执行一个实例的内核、主机调度、快照编码与解码、错误报告 | 第 9 节 |
-| 2 | 展示：页面直接读取 GPU 状态缓冲区，显示 q、通知与输出，计算和展示用同一个设备 | 显示内容与执行记录一致 |
+| 2（部分完成） | 展示：计算和展示用同一个设备（已完成：`web/show/` 的 3D 场景与 GPU 对拍共用设备，交互执行用 CPU 后端，见 docs/web-show.md）；页面直接读取 GPU 状态缓冲区，显示 q、通知与输出（未做） | 显示内容与执行记录一致（`tools/show.ts`） |
 | 3 | 实例内并行：一个 workgroup 执行一个实例，事件按波次投递，节点任务按 JKRD7 §7.5 分批 | 执行记录仍与 CPU 逐字节相同；两种粒度的记录相同 |
 | 4 | 节省资源：可选只写 output 记录；q 按位打包；按模型估计各 FIFO 容量 | 记录不变；内存与回传量下降 |
 | 5 | 跨平台验收：Safari、Firefox；NVIDIA、AMD、Intel；Windows、Linux；手机 | 各平台对拍通过 |
@@ -357,11 +357,11 @@ CPU 后端的批执行模式给出了单个实例内部的并行度：
 
 | 事项 | 影响 | 处理 |
 | --- | --- | --- |
-| 多个 thread 之间的调度未定（JKRD7 §9.3 第 2 项） | 多 thread 模型无法确定执行顺序 | 只支持单 thread，编译时拒绝多 thread 模型 |
+| 多个 thread 之间的调度未定（JKRD7 §9.3 第 1 项） | 多 thread 模型无法确定执行顺序 | 只支持单 thread，编译时拒绝多 thread 模型 |
 | 浏览器与 GPU 的实现差异 | 其他平台上的结果尚未验证 | 第 5 阶段逐个平台对拍 |
 | 容量按模型而定 | 默认 64 项对大模型可能不够，对小模型又浪费内存 | 溢出时报错；第 4 阶段按模型估计 |
 | 有退出结构但实际不退出的环 | 事务不结束 | 事务步数上限，超出时报错 |
 | 从事务不可达的环 | 实例不静止 | 每批步数上限，超出时报错 |
 | 单个实例的延迟 | 每批至少一次调度与回读 | 少量实例用 CPU 后端 |
 | Node 的去类型功能仍属实验功能 | 本机服务依赖它 | 如有变化，改用 esbuild 等转换工具（待定） |
-| 展示层的形式（页面布局、交互方式） | 第 2 阶段无法开始 | 待用户确定 |
+| 展示层的形式（页面布局、交互方式） | — | 已定（用户 2026-11-08）：展示页 `web/show/` 的 JKM 工作区，见 docs/web-show.md。页面直接读取 GPU 状态缓冲区待处理；GPU 单步依赖 README C5，随快照延后 |

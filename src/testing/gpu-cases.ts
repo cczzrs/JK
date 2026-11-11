@@ -10,13 +10,13 @@ import { bitsToInt, formatRecords, formatSnapshot } from "../record.ts";
 import { GpuExecutor, type GpuInstance, type GpuOptions } from "../gpu/backend.ts";
 import { type CaseContext, type CaseResult, DOC_RUNS } from "./cases.ts";
 import {
-  ASCII_READ, ASCII_WATCH, asciiBatches, clone, exitLoopModel, inlineModel, nestOrderModel, randomBatches, randomModel, runBatches,
+  ASCII_DONE, asciiBatches, clone, exitLoopModel, inlineModel, nestOrderModel, randomBatches, randomModel, runBatches,
 } from "./fixtures.ts";
 import { Random } from "./random.ts";
 
 /** CPU 后端按 GPU 实例的方式运行：可选起始快照，然后逐批注入并运行到静止。 */
-function cpuInstance(data: unknown, inst: GpuInstance, watch: readonly string[], read: readonly string[]): CpuExecutor {
-  const ref = new CpuExecutor(new Model(data, "cpu"), { watch, read });
+function cpuInstance(data: unknown, inst: GpuInstance): CpuExecutor {
+  const ref = new CpuExecutor(new Model(data, "cpu"));
   if (inst.start) ref.loadSnapshot(inst.start);
   for (const batch of inst.batches) {
     for (const item of batch) ref.inject(item);
@@ -26,15 +26,15 @@ function cpuInstance(data: unknown, inst: GpuInstance, watch: readonly string[],
 }
 
 /** 在 GPU 上执行一组实例，并与 CPU 逐个比较执行记录和结束时的快照。返回不一致的实例数。 */
-async function compare(device: GPUDevice, data: unknown, instances: GpuInstance[], watch: readonly string[] = [],
-  read: readonly string[] = [], options: GpuOptions = {}): Promise<{ bad: number; gpu: GpuExecutor; firstBad?: string }> {
-  const gpu = await GpuExecutor.create(device, new Model(data, "gpu"), watch, read, options);
+async function compare(device: GPUDevice, data: unknown, instances: GpuInstance[],
+  options: GpuOptions = {}): Promise<{ bad: number; gpu: GpuExecutor; firstBad?: string }> {
+  const gpu = await GpuExecutor.create(device, new Model(data, "gpu"), options);
   try {
     const results = await gpu.run(instances);
     let bad = 0;
     let firstBad: string | undefined;
     instances.forEach((inst, i) => {
-      const cpu = cpuInstance(data, inst, watch, read);
+      const cpu = cpuInstance(data, inst);
       const r = results[i];
       const sameRecords = formatRecords(cpu.record()) === formatRecords(r.records);
       const sameSnap = r.snapshot !== null && formatSnapshot(cpu.snapshot("S1")) === formatSnapshot(r.snapshot);
@@ -60,11 +60,10 @@ export async function runGpuCases(ctx: CaseContext, device: GPUDevice, log: (lin
   // 第 10 节模型
   {
     let bad = 0;
-    for (const [name, inj, watch, read] of DOC_RUNS) {
-      bad += (await compare(device, models.get(name), [{ batches: [inj] }], watch, read)).bad;
+    for (const [name, inj] of DOC_RUNS) {
+      bad += (await compare(device, models.get(name), [{ batches: [inj] }])).bad;
     }
-    bad += (await compare(device, inlineModel(), [{ batches: [["G1.Q1", "G1.Q1"]] }, { batches: [["G1.Q1"], ["G1.Q1"]] }],
-      ["G3.Q2"], ["G1.Q2", "G2.Q2", "G3.Q2"])).bad;
+    bad += (await compare(device, inlineModel(), [{ batches: [["G1.Q1", "G1.Q1"]] }, { batches: [["G1.Q1"], ["G1.Q1"]] }])).bad;
     bad += (await compare(device, nestOrderModel(), [{ batches: [["G1.Q1"]] }, { batches: [["G1.Q1", "G1.Q1"]] }])).bad;
     bad += (await compare(device, exitLoopModel("one_changed"), [{ batches: [["G1.Q1"], ["G1.Q1", "G1.Q1"]] }])).bad;
     check("GPU：第 10 节模型", bad === 0,
@@ -78,17 +77,17 @@ export async function runGpuCases(ctx: CaseContext, device: GPUDevice, log: (lin
     const data = ctx.loadModel(script.model);
     const cpu = runScriptCpu(script, data);
     const gpu = await GpuExecutor.runScript(device, new Model(data, script.model), script);
-    const codes = gpu.records.flatMap((e) => ("output" in e ? [bitsToInt(e.values)] : []));
+    const codes = gpu.records.flatMap((e) => ("output" in e && e.output === ASCII_DONE ? [bitsToInt(e.values.data)] : []));
     const same = formatRecords(cpu.record()) === formatRecords(gpu.records);
     check("GPU：运行脚本（§9.4）", same && JSON.stringify(codes) === JSON.stringify([0x30, 0x31, 0x39]),
-      `输出 ${JSON.stringify(codes.map((c) => "0x" + c.toString(16)))}，${gpu.records.length} 条执行记录${same ? "与 CPU 逐字节相同" : "与 CPU 不同"}`);
+      `Q24 的输出记录 ${JSON.stringify(codes.map((c) => "0x" + c.toString(16)))}，${gpu.records.length} 条执行记录${same ? "与 CPU 逐字节相同" : "与 CPU 不同"}`);
   }
 
   // 十选一：一次运行 1000 个实例
   {
     const rng = new Random(11);
     const instances = Array.from({ length: 1000 }, () => ({ batches: asciiBatches(rng) }));
-    const { bad, gpu, firstBad } = await compare(device, ctx.ascii, instances, ASCII_WATCH, ASCII_READ);
+    const { bad, gpu, firstBad } = await compare(device, ctx.ascii, instances);
     check("GPU：十选一多实例", bad === 0,
       `一次运行 ${instances.length} 个实例（各自 1—3 批、每批 1—4 个重叠请求），与 CPU 不同的有 ${bad} 个${firstBad ? `（${firstBad}）` : ""}；`
       + `调度 ${gpu.stats.dispatches} 次`);
@@ -113,8 +112,7 @@ export async function runGpuCases(ctx: CaseContext, device: GPUDevice, log: (lin
   {
     const docSnap = docBlock<Snapshot>(ctx.doc, "snapshot");
     const tx = models.get("M_TX")!;
-    let bad = (await compare(device, tx, [{ start: docSnap, batches: [[]] }, { start: docSnap, batches: [[], ["G1.Q10"]] }],
-      ["G2.Q101"], ["G2.Q102"])).bad;
+    let bad = (await compare(device, tx, [{ start: docSnap, batches: [[]] }, { start: docSnap, batches: [[], ["G1.Q10"]] }])).bad;
     const rng = new Random(17);
     let pending = 0;
     for (let i = 0; i < 150; i++) {
@@ -134,13 +132,13 @@ export async function runGpuCases(ctx: CaseContext, device: GPUDevice, log: (lin
 
   // 容量与错误
   {
-    const gpu = await GpuExecutor.create(device, new Model(ctx.ascii, "ascii"), ASCII_WATCH, ASCII_READ, { capacity: { events: 6 } });
+    const gpu = await GpuExecutor.create(device, new Model(ctx.ascii, "ascii"), { capacity: { events: 6 } });
     const many = Array.from({ length: 9 }, (_, d) => `G1.Q${d + 1}`);
     const instances: GpuInstance[] = [{ batches: [many] }, { batches: [["G1.Q4"]] }];
     const [overflow, normal] = await gpu.run(instances);
     gpu.destroy();
-    const cpu = runBatches(ctx.ascii, [["G1.Q4"]], { watch: ASCII_WATCH, read: ASCII_READ });
-    const limited = await GpuExecutor.create(device, new Model(ctx.ascii, "ascii"), ASCII_WATCH, ASCII_READ, { stepLimit: 10 });
+    const cpu = runBatches(ctx.ascii, [["G1.Q4"]]);
+    const limited = await GpuExecutor.create(device, new Model(ctx.ascii, "ascii"), { stepLimit: 10 });
     const [stepped] = await limited.run([{ batches: [["G1.Q1"]] }]);
     limited.destroy();
     // 事务的上限（JKRD7 §6.4）：GPU 与 CPU 停在同一步，报告同样的错误，已有记录相同
@@ -154,7 +152,7 @@ export async function runGpuCases(ctx: CaseContext, device: GPUDevice, log: (lin
         if (!(e instanceof TxLimit)) throw e;
         message = e.message;
       }
-      const gpuLimit = await GpuExecutor.create(device, new Model(data, "gpu"), [], [], gpuOptions);
+      const gpuLimit = await GpuExecutor.create(device, new Model(data, "gpu"), gpuOptions);
       const [r] = await gpuLimit.run([{ batches: [["G1.Q1"]] }]);
       gpuLimit.destroy();
       return { same: r.error?.code === code && message.startsWith(r.error.message) && formatRecords(r.records) === formatRecords(ref.record()),
@@ -184,7 +182,7 @@ export async function gpuThroughput(ctx: CaseContext, device: GPUDevice, count =
     batches: [Array.from({ length: 3 }, () => `G1.Q${rng.randint(1, 10)}`)],
   }));
   const capacity = { events: 32, tasks: 32, localEvents: 32, localTasks: 32, depth: 1, records: 1024 };
-  const gpu = await GpuExecutor.create(device, new Model(ctx.ascii, "ascii"), ASCII_WATCH, ASCII_READ, { capacity });
+  const gpu = await GpuExecutor.create(device, new Model(ctx.ascii, "ascii"), { capacity });
   await gpu.run(instances.slice(0, 64)); // 预热
   const t0 = performance.now();
   const results = await gpu.run(instances);
@@ -194,7 +192,7 @@ export async function gpuThroughput(ctx: CaseContext, device: GPUDevice, count =
   gpu.destroy();
   const data = clone(ctx.ascii);
   const t1 = performance.now();
-  const cpu = instances.map((inst) => runBatches(data, inst.batches, { watch: ASCII_WATCH, read: ASCII_READ }));
+  const cpu = instances.map((inst) => runBatches(data, inst.batches));
   const cpuMs = performance.now() - t1;
   const same = cpu.every((c, i) => formatRecords(c.record()) === formatRecords(results[i].records));
   return { instances: count, gpuMs, kernelMs, decodeMs, cpuMs, dispatches, same, bytesPerInstance };

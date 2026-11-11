@@ -26,7 +26,7 @@ export function kernelSource(l: Layout): string {
     ["TK_STRIDE", l.tkStride],
     ...Object.entries(l.m).map(([k, v]) => [`M_${k}`, v] as [string, number]),
     ...Object.entries(l.s).map(([k, v]) => [`S_${k}`, v] as [string, number]),
-    ["STATE_WORDS", l.stateWords], ["READ_N", l.read.length], ["OUT_WORDS", l.outWords],
+    ["STATE_WORDS", l.stateWords], ["OUTPUT_N", l.output.length], ["OUT_WORDS", l.outWords],
     ["MAX_REC_STEP", l.maxRecStep], ["REC_WORDS", l.recWords], ["REC_CAP", l.recWords - 2],
     ...Object.entries(H).map(([k, v]) => [`H_${k}`, v] as [string, number]),
     ["HEADER_WORDS", HEADER_WORDS],
@@ -209,8 +209,8 @@ fn output(src: u32) {
   rec((REC_OUTPUT << 30u) | src);
   for (var w = 0u; w < OUT_WORDS; w++) {
     var bits = 0u;
-    for (var k = w * 32u; k < min(READ_N, w * 32u + 32u); k++) {
-      bits = bits | (ld(S_Q + M[M_READ + k]) << (k - w * 32u));
+    for (var k = w * 32u; k < min(OUTPUT_N, w * 32u + 32u); k++) {
+      bits = bits | (ld(S_Q + M[M_OUTPUT + k]) << (k - w * 32u));
     }
     rec(bits);
   }
@@ -251,7 +251,7 @@ fn feed(g: u32, gate: u32, src: u32, tx: bool) {
 
 // 投递一条事件；事务执行期间（tx）形成的任务和事件进入事务 FIFO
 fn deliver(src: u32, tx: bool) {
-  if ((M[M_FLAGS + src] & F_WATCH) != 0u) { output(src); } // 输出模块在投递时读取，事务内也一样（§6.2）
+  if ((M[M_FLAGS + src] & F_WATCH) != 0u) { output(src); } // output 成员：输出模块在投递时读取，事务内也一样（§6.2、§9.1）
   let gate = M[M_REG_GATE + src];
   if (gate != GATE_NONE) { feed(M[M_REG_JKS + src], gate, src, tx); } // 先整合
   for (var e = M[M_SUB_OFF + src]; e < M[M_SUB_OFF + src + 1u]; e++) { // 再照常投递

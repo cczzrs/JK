@@ -1,0 +1,1465 @@
+/* JKM 桌面窗口样式。 */
+#app[data-workspace="jkm"] {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#app[data-workspace="jkm"] > header {
+  display: none;
+}
+
+#jkm-panel {
+  min-width: 0;
+  min-height: 0;
+  color: var(--cosmic-fg);
+  background: var(--cosmic-desktop-bg);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+#jkm-panel [hidden] {
+  display: none !important;
+}
+
+/* 就绪前隐藏窗口区：外观所需的 CSS 变量由脚本按 config.ts 设置，设置完成前只显示深色背景。 */
+#jkm-panel:not([data-ready]) {
+  visibility: hidden;
+}
+
+#jkm-panel::selection,
+#jkm-panel *::selection {
+  color: var(--cosmic-selection-text);
+  background: var(--cosmic-selection-bg);
+}
+
+#jkm-panel .cosmic-shell {
+  display: grid;
+  grid-template-columns: minmax(0, calc((100% - var(--cosmic-rail-width) - 10px) * var(--cosmic-split))) 10px minmax(0, 1fr) var(--cosmic-rail-width);
+  grid-template-rows: minmax(0, 1fr);
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#jkm-panel .cosmic-scene-area {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#jkm-panel #cosmic-splitter {
+  position: relative;
+  width: 10px;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+#jkm-panel #cosmic-splitter::after {
+  content: "";
+  position: absolute;
+  top: calc(50% - 22px);
+  left: 3px;
+  width: 4px;
+  height: 44px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--cosmic-fg) 24%, transparent);
+}
+
+#jkm-panel #cosmic-splitter:hover::after {
+  background: var(--cosmic-hover);
+}
+
+#jkm-panel #cosmic-splitter:focus-visible::after {
+  background: var(--cosmic-focus);
+}
+
+#jkm-panel .cosmic-desktop {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--cosmic-fg) 24%, transparent) transparent;
+}
+
+#jkm-panel .cosmic-canvas {
+  position: relative;
+  width: 100%;
+  height: var(--canvas-height);
+  min-width: 100%;
+  min-height: 100%;
+}
+
+#jkm-panel .cosmic-rail {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, calc((100% - var(--cosmic-rail-splitter-size)) * var(--cosmic-rail-menu-ratio))) var(--cosmic-rail-splitter-size) minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  padding: 10px 6px;
+  border-left: 1px solid color-mix(in srgb, var(--cosmic-border-color) 8%, transparent);
+  background: transparent;
+  color: var(--cosmic-fg);
+  z-index: 2;
+}
+
+#jkm-panel .cosmic-menu,
+#jkm-panel .cosmic-dock {
+  --rail-panel-item-width: max(var(--cosmic-rail-item-min-width), calc(var(--rail-panel-icon-size) + 14px), calc(var(--rail-panel-font-size) * 2.5 + 12px));
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--rail-panel-item-width)), 1fr));
+  align-content: start;
+  gap: 5px;
+  min-width: 0;
+  min-height: 0;
+  padding: 7px 3px;
+  border: 1px solid color-mix(in srgb, var(--cosmic-border-color) 14%, transparent);
+  border-radius: var(--rail-panel-radius);
+  background: color-mix(in srgb, var(--rail-panel-bg) calc(var(--rail-panel-alpha) * 100%), transparent);
+  backdrop-filter: blur(var(--cosmic-glass-blur));
+  color: var(--rail-panel-fg);
+  font-size: var(--rail-panel-font-size);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--rail-panel-fg) 24%, transparent) transparent;
+}
+
+#jkm-panel .cosmic-menu {
+  grid-row: 1;
+  max-height: none;
+}
+
+#jkm-panel .cosmic-brand {
+  grid-column: 1 / -1;
+  padding: 7px 0 2px;
+  color: inherit;
+  text-align: center;
+  font-size: calc(var(--rail-panel-font-size) * 1.16);
+  font-weight: 750;
+  letter-spacing: 1.5px;
+}
+
+#jkm-panel .cosmic-model {
+  grid-column: 1 / -1;
+  padding: 2px 1px 10px;
+  color: color-mix(in srgb, var(--rail-panel-fg) 76%, transparent);
+  font: calc(var(--rail-panel-font-size) * 0.75)/1.5 ui-monospace, monospace;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+#jkm-panel .cosmic-model > span,
+#jkm-panel .cosmic-model > small {
+  display: block;
+}
+
+#jkm-panel .cosmic-model > small {
+  margin-top: 4px;
+  font-size: calc(var(--rail-panel-font-size) * 0.67);
+}
+
+/* Apply each text opacity once, independently of the adjacent vector icon. */
+#jkm-panel :is(.cosmic-menu, .cosmic-dock) :is([data-cosmic-command], [data-cosmic-toggle]) > span,
+#jkm-panel .cosmic-brand,
+#jkm-panel .cosmic-model > :is(span, small) {
+  opacity: var(--rail-panel-font-alpha);
+}
+
+#jkm-panel .cosmic-dock {
+  position: relative;
+  grid-row: 3;
+  box-shadow: 0 6px 18px #0002;
+}
+
+#jkm-panel :is(#cosmic-rail-resize, #cosmic-rail-splitter) {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#jkm-panel #cosmic-rail-resize {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  bottom: 0;
+  left: -5px;
+  width: 10px;
+  cursor: col-resize;
+}
+
+#jkm-panel #cosmic-rail-splitter {
+  z-index: 3;
+  grid-row: 2;
+  align-self: stretch;
+  width: 100%;
+  cursor: row-resize;
+}
+
+#jkm-panel :is(#cosmic-rail-resize, #cosmic-rail-splitter)::after {
+  content: "";
+  position: absolute;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--cosmic-fg) 30%, transparent);
+  pointer-events: none;
+}
+
+#jkm-panel #cosmic-rail-resize::after {
+  top: calc(50% - 24px);
+  left: 4px;
+  width: 2px;
+  height: 48px;
+}
+
+#jkm-panel #cosmic-rail-splitter::after {
+  top: calc(50% - 2px);
+  left: calc(50% - 18px);
+  width: 36px;
+  height: 4px;
+}
+
+#jkm-panel :is(#cosmic-rail-resize, #cosmic-rail-splitter):hover {
+  background: color-mix(in srgb, var(--cosmic-hover) 9%, transparent);
+}
+
+#jkm-panel :is(#cosmic-rail-resize, #cosmic-rail-splitter):hover::after {
+  background: var(--cosmic-hover);
+}
+
+#jkm-panel :is(#cosmic-rail-resize, #cosmic-rail-splitter):focus-visible {
+  background: color-mix(in srgb, var(--cosmic-focus) 9%, transparent);
+}
+
+#jkm-panel :is(#cosmic-rail-resize, #cosmic-rail-splitter):focus-visible::after {
+  background: var(--cosmic-focus);
+}
+
+#jkm-panel .cosmic-rail :is(.cosmic-menu, .cosmic-dock) > button:is([data-cosmic-command], [data-cosmic-toggle]) {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  padding: 7px 2px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--rail-panel-fg);
+  font-size: var(--rail-panel-font-size);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#jkm-panel .cosmic-rail :is(.cosmic-menu, .cosmic-dock) > button:is([data-cosmic-command], [data-cosmic-toggle]):hover {
+  background: color-mix(in srgb, var(--cosmic-hover) 10%, transparent);
+  color: var(--rail-panel-fg);
+}
+
+#jkm-panel .cosmic-rail :is(.cosmic-menu, .cosmic-dock) > button:is([data-cosmic-command], [data-cosmic-toggle])[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--cosmic-accent) 34%, transparent);
+  background: color-mix(in srgb, var(--cosmic-accent) 12%, transparent);
+  color: var(--rail-panel-fg);
+}
+
+#jkm-panel .cosmic-rail :is(.cosmic-menu, .cosmic-dock) > button:is([data-cosmic-command], [data-cosmic-toggle])[aria-pressed="true"]:hover {
+  background: color-mix(in srgb, var(--cosmic-hover) 6%, color-mix(in srgb, var(--cosmic-accent) 12%, transparent));
+}
+
+#jkm-panel .cosmic-rail :is(.cosmic-menu, .cosmic-dock) > button:is([data-cosmic-command], [data-cosmic-toggle])[aria-pressed="true"]::before {
+  content: "";
+  position: absolute;
+  top: calc(50% - 7px);
+  left: 0;
+  width: 3px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--cosmic-accent);
+}
+
+#jkm-panel .cosmic-icon {
+  display: block;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+
+#jkm-panel :is(.cosmic-menu, .cosmic-dock) .cosmic-icon {
+  width: var(--rail-panel-icon-size);
+  height: var(--rail-panel-icon-size);
+  max-width: 100%;
+  color: var(--rail-panel-icon-fg);
+  opacity: var(--rail-panel-icon-alpha);
+}
+
+#jkm-panel .cosmic-window {
+  --cosmic-border: color-mix(in srgb, var(--cosmic-border-color) 17%, transparent);
+  --cosmic-muted: color-mix(in srgb, var(--window-fg) 68%, transparent);
+  --cosmic-field: color-mix(in srgb, var(--window-fg) 5%, transparent);
+  position: absolute;
+  inset: auto;
+  left: var(--window-x);
+  top: var(--window-y);
+  z-index: var(--window-z);
+  display: flex;
+  flex-direction: column;
+  width: var(--window-width);
+  height: var(--window-height);
+  min-width: 0;
+  min-height: 42px;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--window-radius);
+  outline: 1px solid var(--cosmic-border);
+  outline-offset: -1px;
+  background: color-mix(in srgb, var(--window-bg) calc(var(--window-alpha) * 100%), transparent);
+  color: var(--window-fg);
+  font-size: calc(13px * var(--window-font-scale));
+  box-shadow: 0 9px 28px #0003, 0 2px 7px #0002;
+  backdrop-filter: blur(var(--cosmic-glass-blur));
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--window-fg) 24%, transparent) transparent;
+}
+
+#jkm-panel .cosmic-window.is-active {
+  outline-color: color-mix(in srgb, var(--cosmic-accent) 58%, transparent);
+}
+
+#jkm-panel .cosmic-window:focus-within {
+  outline-color: color-mix(in srgb, var(--cosmic-focus) 58%, transparent);
+}
+
+/* Floating tools stay usable above the scene without altering its renderer. */
+#jkm-panel .cosmic-scene-area > [data-cosmic-window="scene"] {
+  z-index: 0;
+}
+#jkm-panel .cosmic-scene-area > [data-window-zone="scene"]:not([data-cosmic-window="scene"]) {
+  z-index: calc(50 + var(--window-z));
+}
+
+#jkm-panel .cosmic-window-header {
+  display: flex;
+  flex: 0 0 42px;
+  align-items: center;
+  gap: 4px;
+  height: 42px;
+  min-width: 0;
+  padding: 0 7px 0 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--cosmic-border-color) 10%, transparent);
+  background: color-mix(in srgb, var(--window-fg) 4%, transparent);
+  color: var(--window-fg);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#jkm-panel .cosmic-window-title {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 100%;
+  padding: 0 3px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  font-size: calc(13px * var(--window-font-scale));
+  font-weight: 600;
+  text-align: left;
+  cursor: grab;
+  touch-action: none;
+}
+
+#jkm-panel .cosmic-window-title:active {
+  cursor: grabbing;
+}
+
+#jkm-panel .cosmic-window-title > span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#jkm-panel .cosmic-window-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
+}
+
+#jkm-panel .cosmic-window-actions > button {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 28px;
+  padding: 5px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--cosmic-muted);
+}
+
+#jkm-panel .cosmic-window-actions > button:hover {
+  background: color-mix(in srgb, var(--cosmic-hover) 10%, transparent);
+  color: var(--window-fg);
+}
+
+#jkm-panel .cosmic-window-actions .cosmic-icon {
+  width: 16px;
+  height: 16px;
+}
+
+#jkm-panel .cosmic-window-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 12px 14px 18px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  color: var(--window-fg);
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--window-fg) 24%, transparent) transparent;
+  container: cosmic-module / inline-size;
+}
+
+#jkm-panel .cosmic-window[data-collapsed="true"] {
+  height: 42px;
+}
+
+#jkm-panel .cosmic-window[data-collapsed="true"] > .cosmic-window-header {
+  border-bottom-color: transparent;
+}
+
+#jkm-panel .cosmic-window[data-collapsed="true"] > :is(.cosmic-window-body, .cosmic-resize) {
+  display: none;
+}
+
+#jkm-panel .cosmic-window[data-collapsed="true"] [data-window-action="collapse"] .cosmic-icon {
+  transform: rotate(180deg);
+}
+
+#jkm-panel .cosmic-resize {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  padding: 2px;
+  border: 0;
+  border-radius: 4px 0 var(--window-radius) 0;
+  color: var(--cosmic-muted);
+  background: color-mix(in srgb, var(--window-bg) 0%, transparent);
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+#jkm-panel .cosmic-resize:hover {
+  color: var(--cosmic-hover);
+}
+
+/* Retain the existing text hierarchy from style.css. Absolute base sizes apply
+   the owning window's scale once, including windows nested in a full-screen scene.
+   These precede the desktop's existing overrides to preserve the 100% appearance. */
+#jkm-panel .cosmic-window :where(.eyebrow, .node-purpose-tag, .output-publication, .output-row .source, .queue-columns, .history-heading > span, #speed-budget) {
+  font-size: calc(9px * var(--window-font-scale));
+}
+
+#jkm-panel .cosmic-window :where(.tag, #message, .model-validation, .output-status, .output-value.empty, .queue-row, .jkm-queue-limit, .jkm-inspector dt, .inspector-field-label, .inspector-section-number, .inspector-section-note, .inspector-hint) {
+  font-size: calc(10px * var(--window-font-scale));
+}
+
+#jkm-panel .cosmic-window :where(.errors, #inspector, .inspector-path, .node-tree-name, .jkm-inspector dd, .inspector-group > summary, .jkm-queue-empty, #model-pool-status, #node-tags, #node-registration, #gpu-detail) {
+  font-size: calc(11px * var(--window-font-scale));
+}
+
+#jkm-panel .cosmic-window :where(.output-row) {
+  font-size: calc(12px * var(--window-font-scale));
+}
+
+#jkm-panel .cosmic-window :where(.output-value:not(.empty), .jkm-inspector .inspector-state-grid dd) {
+  font-size: calc(15px * var(--window-font-scale));
+}
+
+/* Text and form surfaces inherit each window's configurable foreground. */
+#jkm-panel .cosmic-window :where(p, small, span, label, dt, dd, b, strong, em, code, pre, summary, a, h1, h2, h3, h4) {
+  color: inherit;
+}
+
+#jkm-panel .cosmic-window :is(.muted, .eyebrow, .model-validation, .output-publication, .output-row .source, .history-heading > span, .queue-columns, .queue-row em, .queue-row .values, .jkm-queue-empty, .jkm-queue-limit, .inspector-field-label, .inspector-section-note, .inspector-section-number, .inspector-hint, dt) {
+  color: var(--cosmic-muted);
+}
+
+#jkm-panel .cosmic-window :is(#message, .output-status, #compute-message) {
+  color: var(--cosmic-muted);
+}
+
+#jkm-panel .cosmic-window #message.error {
+  color: #ffb5c1;
+}
+
+#jkm-panel .cosmic-window :is(h1, h2, h3, h4) {
+  overflow-wrap: anywhere;
+}
+
+#jkm-panel .cosmic-window h2 {
+  margin: 0 0 12px;
+  font-size: calc(14px * var(--window-font-scale));
+}
+
+#jkm-panel .cosmic-window p {
+  font-size: calc(12px * var(--window-font-scale));
+  line-height: 1.65;
+}
+
+#jkm-panel .cosmic-window .section,
+#jkm-panel .cosmic-window :is(#node-inspector, #events-queue, #tasks-queue, .history-section) {
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+#jkm-panel .cosmic-window :is(details, label, input, select, textarea, button, .button) {
+  font-size: calc(12px * var(--window-font-scale));
+}
+
+#jkm-panel .cosmic-window details {
+  color: inherit;
+}
+
+#jkm-panel .cosmic-window summary {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#jkm-panel :is(button, summary, input, select, textarea, a, canvas, [tabindex]):focus-visible {
+  outline: 2px solid var(--cosmic-focus);
+  outline-offset: 2px;
+}
+
+#jkm-panel .jkm-inspector .node-tree [role="treeitem"]:focus-visible > .node-tree-row {
+  outline-color: var(--cosmic-focus);
+}
+
+#jkm-panel .cosmic-window :is(.button, button:not(.cosmic-window-title, .cosmic-resize, [data-window-action]), input:not([type="checkbox"], [type="range"]), select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+  border-color: var(--cosmic-border);
+  color: var(--window-fg);
+  background-color: var(--cosmic-field);
+}
+
+#jkm-panel .cosmic-window .button {
+  padding: 7px 10px;
+  border-radius: 7px;
+  white-space: normal;
+  line-height: 1.4;
+}
+
+#jkm-panel .cosmic-window :is(.button, .layout-button):hover {
+  background: color-mix(in srgb, var(--cosmic-hover) 10%, transparent);
+  border-color: color-mix(in srgb, var(--cosmic-hover) 28%, transparent);
+}
+
+#jkm-panel .cosmic-window .button.primary {
+  border-color: color-mix(in srgb, var(--cosmic-accent) 50%, transparent);
+  background: color-mix(in srgb, var(--cosmic-accent) 20%, transparent);
+  color: var(--window-fg);
+  font-weight: 600;
+}
+
+#jkm-panel .cosmic-window .button.primary:hover {
+  background: color-mix(in srgb, var(--cosmic-hover) 10%, color-mix(in srgb, var(--cosmic-accent) 20%, transparent));
+}
+
+#jkm-panel .cosmic-window textarea {
+  min-height: 100px;
+  padding: 9px 10px;
+  line-height: 1.65;
+}
+
+#jkm-panel .cosmic-window :is(input, select, textarea)::placeholder {
+  color: var(--cosmic-muted);
+}
+
+#jkm-panel .cosmic-window :is(input[type="checkbox"], input[type="range"]) {
+  accent-color: var(--cosmic-accent);
+}
+
+#jkm-panel .cosmic-window label {
+  color: var(--cosmic-muted);
+}
+
+#jkm-panel .cosmic-window-body > label {
+  display: block;
+  margin: 12px 0 6px;
+}
+
+#jkm-panel .cosmic-window :is(.v7-field, select) {
+  padding: 8px;
+  border: 1px solid var(--cosmic-border);
+  border-radius: 6px;
+}
+
+#jkm-panel .cosmic-window .errors {
+  border-color: color-mix(in srgb, #ff8396 40%, transparent);
+  color: #ffb5c1;
+  background: #ff839608;
+}
+
+#jkm-panel .cosmic-window .errors:empty {
+  display: none;
+}
+
+#jkm-panel .cosmic-window :is(.tag, .node-purpose-tag) {
+  border-color: var(--cosmic-border);
+  background: var(--cosmic-field);
+  color: var(--cosmic-muted);
+}
+
+#jkm-panel .cosmic-window :is(pre, .inspector-code, .expression) {
+  color: var(--window-fg);
+  background: var(--cosmic-field);
+  border-color: var(--cosmic-border);
+  font-size: calc(11px * var(--window-font-scale));
+}
+
+#jkm-panel .cosmic-window :is(.output-row, .queue-row, .inspector-group) {
+  border-color: color-mix(in srgb, var(--cosmic-border-color) 10%, transparent);
+  color: inherit;
+}
+
+#jkm-panel .cosmic-window .output-value {
+  background: color-mix(in srgb, var(--cosmic-accent) 12%, transparent);
+  color: var(--window-fg);
+}
+
+#jkm-panel .cosmic-window .stats {
+  gap: 12px;
+  margin: 8px 0 16px;
+}
+
+#jkm-panel .cosmic-window .stats > div {
+  flex: 1 1 65px;
+}
+
+#jkm-panel .cosmic-window .stats b {
+  color: var(--window-fg);
+  font-size: calc(24px * var(--window-font-scale));
+}
+
+#jkm-panel .cosmic-window .stats span {
+  margin-top: 4px;
+  color: var(--cosmic-muted);
+  font-size: calc(11px * var(--window-font-scale));
+}
+
+#jkm-panel .cosmic-window .jkm-inspector .inspector-selector {
+  padding: 0 0 12px;
+}
+
+#jkm-panel .cosmic-window .jkm-inspector :is(.node-tree, .node-tree [role="group"], .inspector-code) {
+  border-color: var(--cosmic-border);
+  background: var(--cosmic-field);
+}
+
+#jkm-panel .cosmic-window .jkm-inspector .node-tree {
+  max-height: 240px;
+}
+
+#jkm-panel .cosmic-window .jkm-inspector .node-tree [role="group"] {
+  background: transparent;
+}
+
+#jkm-panel .cosmic-window .jkm-inspector :is(.node-tree-row, .inspector-path, dd, .inspector-current-q) {
+  color: var(--window-fg);
+}
+
+#jkm-panel .cosmic-window .jkm-inspector .node-tree-row:hover {
+  background: color-mix(in srgb, var(--cosmic-hover) 8%, transparent);
+}
+
+#jkm-panel .cosmic-window .jkm-inspector summary:hover {
+  background: color-mix(in srgb, var(--cosmic-hover) 6%, transparent);
+  color: var(--window-fg);
+}
+
+#jkm-panel .cosmic-window .jkm-inspector [aria-selected="true"] > .node-tree-row {
+  border-color: color-mix(in srgb, var(--cosmic-accent) 38%, transparent);
+  background: color-mix(in srgb, var(--cosmic-accent) 14%, transparent);
+  color: var(--window-fg);
+}
+
+#jkm-panel .cosmic-window .jkm-inspector [aria-selected="true"] .node-purpose-tag {
+  color: var(--window-fg);
+  border-color: var(--cosmic-border);
+  background: var(--cosmic-field);
+}
+
+#jkm-panel .cosmic-window .jkm-inspector :is(.node-tree-chevron, .node-tree-leaf),
+#jkm-panel .cosmic-window .jkm-inspector .inspector-group > summary::after {
+  color: var(--cosmic-muted);
+}
+
+#jkm-panel .cosmic-window .jkm-inspector .inspector-group > summary {
+  min-height: 38px;
+}
+
+#jkm-panel .cosmic-window .jkm-inspector .inspector-group-body {
+  padding-left: 0;
+}
+
+#jkm-panel .cosmic-window .jkm-queue-body {
+  padding: 0;
+}
+
+#jkm-panel .cosmic-window .jkm-queue-list {
+  max-height: none;
+}
+
+#jkm-panel .cosmic-window .jkm-queue-records {
+  color: var(--cosmic-muted);
+}
+
+#jkm-panel .cosmic-window #history {
+  max-height: none;
+  margin-top: 10px;
+}
+
+#jkm-panel .cosmic-window .history-row {
+  color: var(--cosmic-muted);
+  font-size: calc(11px * var(--window-font-scale));
+}
+
+#jkm-panel .cosmic-window .history-row b {
+  color: var(--window-fg);
+  overflow-wrap: anywhere;
+}
+
+#jkm-panel .cosmic-window :is(.import-heading, .display-heading, .image-input-heading) {
+  position: static;
+  min-height: 0;
+  margin: 0 0 12px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--cosmic-border);
+  background: transparent;
+  color: inherit;
+  gap: 8px;
+}
+
+#jkm-panel .cosmic-window :is(.model-pool-toolbar, .import-actions, .display-actions, .image-input-tools) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+#jkm-panel .cosmic-window .model-pool-picker {
+  min-width: 0;
+  flex: 1 1 160px;
+}
+
+#jkm-panel .cosmic-window .model-pool-picker select {
+  width: 100%;
+  min-width: 0;
+}
+
+#jkm-panel .cosmic-window .v7-editor {
+  width: 100%;
+  height: 230px;
+  min-height: 100px;
+}
+
+#jkm-panel .cosmic-window :is(.display-body, .image-input-body) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+#jkm-panel .cosmic-window .image-input-fields {
+  padding: 10px;
+  gap: 10px;
+  border-color: var(--cosmic-border);
+  background: var(--cosmic-field);
+}
+
+#jkm-panel .cosmic-window .image-input-fields > label {
+  flex: 1 1 135px;
+  min-width: 0;
+}
+
+#jkm-panel .cosmic-window .image-input-fields :is(input, select) {
+  width: 100%;
+  height: auto;
+  min-height: 34px;
+  min-width: 0;
+  font-size: calc(12px * var(--window-font-scale));
+}
+
+#jkm-panel .cosmic-window .image-input-stage {
+  height: 250px;
+  min-height: 120px;
+  max-width: 100%;
+  border-color: var(--cosmic-border);
+}
+
+#jkm-panel .cosmic-window #output-board {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 14px auto;
+  border: 1px solid var(--cosmic-border);
+  border-radius: 6px;
+}
+
+#jkm-panel .cosmic-window .playback {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+#jkm-panel .cosmic-window .playback-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+#jkm-panel .cosmic-window .playback-main > button {
+  flex: 1 1 auto;
+}
+
+#jkm-panel .cosmic-window .speed {
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  gap: 8px;
+}
+
+#jkm-panel .cosmic-window .speed label {
+  display: flex;
+  justify-content: space-between;
+}
+
+#jkm-panel .cosmic-window :is(.skip, .run-status) {
+  margin: 0;
+  font-size: calc(12px * var(--window-font-scale));
+  color: var(--window-fg);
+}
+
+#jkm-panel .cosmic-appearance-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+#jkm-panel .cosmic-appearance-group,
+#jkm-panel .cosmic-appearance-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+}
+
+#jkm-panel .cosmic-appearance-group {
+  margin: 0;
+  padding: 12px 0 0;
+  border: 0;
+  border-top: 1px solid var(--cosmic-border);
+}
+
+#jkm-panel .cosmic-appearance-group > legend {
+  max-width: 100%;
+  padding: 0 8px 0 0;
+  color: var(--window-fg);
+  font-size: calc(12px * var(--window-font-scale));
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+#jkm-panel .cosmic-appearance-fields > label,
+#jkm-panel .cosmic-appearance-group > label,
+#jkm-panel .cosmic-appearance-field > label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+#jkm-panel .cosmic-window label.network-style-check {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+#jkm-panel .network-style-check > input[type="checkbox"] {
+  width: auto;
+}
+
+#jkm-panel .cosmic-appearance-fields :is(select, input[type="range"]) {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+#jkm-panel .cosmic-window .cosmic-appearance-hint {
+  margin: 0;
+  color: var(--cosmic-muted);
+  font-size: calc(11px * var(--window-font-scale));
+}
+
+#jkm-panel .cosmic-appearance-fields input[type="color"] {
+  width: 46px;
+  height: 30px;
+  padding: 3px;
+  border: 1px solid var(--cosmic-border);
+  border-radius: 6px;
+}
+
+#jkm-panel .cosmic-appearance-fields output {
+  color: var(--window-fg);
+  font: calc(11px * var(--window-font-scale)) ui-monospace, monospace;
+}
+
+/* Draw the configurable scene backdrop once, below the transparent renderer. */
+#jkm-panel [data-cosmic-window="scene"] {
+  background: transparent;
+}
+
+#jkm-panel [data-cosmic-window="scene"] > .cosmic-window-header {
+  background: linear-gradient(color-mix(in srgb, var(--window-fg) 4%, transparent), color-mix(in srgb, var(--window-fg) 4%, transparent)), color-mix(in srgb, var(--window-bg) calc(var(--window-alpha) * 100%), transparent);
+}
+
+#jkm-panel [data-cosmic-window="scene"] > .cosmic-window-body {
+  display: flex;
+  padding: 0;
+  overflow: hidden;
+  container-type: normal;
+  background: radial-gradient(ellipse at 50% 50%, color-mix(in srgb, var(--window-bg) calc(var(--window-alpha) * 100%), transparent), color-mix(in srgb, var(--cosmic-scene-background-edge) calc(var(--window-alpha) * 100%), transparent) 75%);
+}
+
+#jkm-panel [data-cosmic-window="scene"] .main-view {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+}
+
+#jkm-panel [data-cosmic-window="scene"] .main-view.black-background {
+  background: #000;
+}
+
+#jkm-panel [data-cosmic-window="scene"] #viewport {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+#jkm-panel .cosmic-control-section + .cosmic-control-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--cosmic-border-color) 14%, transparent);
+}
+
+#jkm-panel .cosmic-control-section h3 {
+  margin: 0 0 10px;
+  font-size: calc(12px * var(--window-font-scale));
+  font-weight: 650;
+}
+
+#jkm-panel .cosmic-control-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#jkm-panel .cosmic-control-actions .button {
+  flex: 1 1 140px;
+}
+
+#jkm-panel .cosmic-edge-controls {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#jkm-panel .cosmic-edge-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+#jkm-panel .cosmic-edge-control + .cosmic-edge-control {
+  border-top: 1px solid color-mix(in srgb, var(--cosmic-border-color) 14%, transparent);
+}
+
+#jkm-panel .cosmic-edge-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: calc(12px * var(--window-font-scale));
+}
+
+#jkm-panel .cosmic-edge-label > i {
+  flex: 0 0 12px;
+  height: 4px;
+  border-radius: 2px;
+}
+
+#jkm-panel .cosmic-edge-control .button {
+  white-space: nowrap;
+}
+
+#jkm-panel [data-cosmic-window="controls"] #layout-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+#jkm-panel [data-cosmic-window="controls"] .layout-button {
+  flex: 1 1 38px;
+  min-height: 32px;
+  font-size: calc(12px * var(--window-font-scale));
+}
+
+#jkm-panel [data-cosmic-window="controls"] :is(.layout-button, .button)[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--cosmic-accent) 20%, var(--window-bg));
+  color: var(--window-fg);
+  border-color: var(--cosmic-accent);
+  box-shadow: inset 0 0 0 1px var(--cosmic-accent);
+}
+
+#jkm-panel [data-cosmic-window="controls"] #layout-status {
+  position: static;
+  display: block;
+  width: auto;
+  height: auto;
+  margin-top: 8px;
+  overflow: visible;
+  clip-path: none;
+  font-size: calc(11px * var(--window-font-scale));
+  color: var(--cosmic-muted);
+}
+
+#jkm-panel [data-cosmic-window="controls"] .camera-hint {
+  display: block;
+  margin: 10px 0 0;
+  white-space: normal;
+  text-align: left;
+  font-size: calc(11px * var(--window-font-scale));
+  color: var(--cosmic-muted);
+}
+
+#jkm-panel .cosmic-status-list {
+  margin: 0;
+}
+
+#jkm-panel .cosmic-status-list > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+#jkm-panel .cosmic-status-list > div + div {
+  border-top: 1px solid color-mix(in srgb, var(--cosmic-border-color) 12%, transparent);
+}
+
+#jkm-panel .cosmic-status-list :is(dt, dd) {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: calc(12px * var(--window-font-scale));
+}
+
+#jkm-panel .cosmic-status-list dd {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dual-panel full-screen mode shows only the renderer; desktop geometry stays intact. */
+#jkm-panel:has(#cosmic-scene.scene-fullscreen) .cosmic-shell > :not(.cosmic-scene-area),
+#jkm-panel:has(#cosmic-scene.scene-fullscreen) .cosmic-scene-area > :not(#cosmic-scene),
+#jkm-panel:has(#cosmic-scene.scene-fullscreen) .cosmic-window:not(#cosmic-scene) {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#jkm-panel #cosmic-scene.scene-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: 100vw;
+  height: 100dvh;
+  min-width: 0;
+  min-height: 0;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  background: var(--cosmic-desktop-bg);
+}
+
+#jkm-panel #cosmic-scene::backdrop {
+  background: var(--cosmic-desktop-bg);
+}
+
+#jkm-panel #cosmic-scene.scene-fullscreen > :not(.cosmic-window-body) {
+  display: none;
+}
+
+#jkm-panel #cosmic-scene.scene-fullscreen > .cosmic-window-body {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+#jkm-panel #cosmic-scene.scene-fullscreen :is(.main-view, #viewport) {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+/* Single-panel full-screen mode keeps the scene area's visible windows intact. */
+#jkm-panel:has(.cosmic-scene-area.cosmic-panel-fullscreen) .cosmic-shell > :not(.cosmic-scene-area) {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#jkm-panel .cosmic-scene-area.cosmic-panel-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: 100vw;
+  height: 100dvh;
+  min-width: 0;
+  min-height: 0;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  overflow: hidden;
+  background: var(--cosmic-desktop-bg);
+}
+
+#jkm-panel .cosmic-scene-area.cosmic-panel-fullscreen::backdrop {
+  background: var(--cosmic-desktop-bg);
+}
+
+@container cosmic-module (max-width: 260px) {
+  #jkm-panel .cosmic-window .model-pool-toolbar > .button,
+  #jkm-panel .cosmic-window .import-actions > .button {
+    flex: 1 1 100%;
+  }
+
+  #jkm-panel .cosmic-window .jkm-inspector .inspector-state-grid {
+    gap: 6px;
+  }
+
+  #jkm-panel .cosmic-window .image-input-stage {
+    height: 180px;
+  }
+}
+
+@container cosmic-module (min-width: 600px) {
+  #jkm-panel .cosmic-window .image-input-body {
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 0.7fr);
+  }
+}
+
+@media (max-width: 760px) {
+  #app[data-workspace="jkm"] {
+    height: 100dvh;
+    min-height: 0;
+  }
+
+  #jkm-panel .cosmic-shell {
+    grid-template-columns: minmax(0, 1fr) var(--cosmic-rail-width);
+    grid-template-rows: minmax(280px, 45%) minmax(260px, 1fr);
+    overflow-y: auto;
+  }
+
+  #jkm-panel .cosmic-scene-area {
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 280px;
+  }
+
+  #jkm-panel #cosmic-splitter {
+    display: none;
+  }
+
+  #jkm-panel .cosmic-desktop {
+    grid-column: 1;
+    grid-row: 2;
+    min-height: 260px;
+  }
+
+  #jkm-panel .cosmic-rail {
+    position: sticky;
+    top: 0;
+    grid-column: 2;
+    grid-row: 1 / 3;
+    align-self: start;
+    height: 100dvh;
+  }
+}
+
+/* Display modes share the same windows; single mode uses the scene as desktop. */
+#jkm-panel [data-cosmic-command="display-mode"] [data-display-mode-icon] {
+  display: none;
+}
+
+#jkm-panel[data-display-mode="single"] [data-cosmic-command="display-mode"] [data-display-mode-icon="single"],
+#jkm-panel[data-display-mode="dual"] [data-cosmic-command="display-mode"] [data-display-mode-icon="dual"] {
+  display: block;
+}
+
+#jkm-panel[data-display-mode="single"] .cosmic-shell {
+  grid-template-columns: minmax(0, 1fr) var(--cosmic-rail-width);
+  grid-template-rows: minmax(0, 1fr);
+  overflow: hidden;
+}
+
+#jkm-panel[data-display-mode="single"] .cosmic-scene-area {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+#jkm-panel[data-display-mode="single"] :is(#cosmic-splitter, .cosmic-desktop) {
+  display: none;
+}
+
+#jkm-panel[data-display-mode="single"] .cosmic-rail {
+  position: relative;
+  top: auto;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: stretch;
+  height: auto;
+  min-height: 0;
+}
+
+#jkm-panel[data-display-mode="single"] .cosmic-scene-area > [data-cosmic-window="scene"]:not(.scene-fullscreen) {
+  left: 0;
+  top: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--window-radius);
+  outline: 0;
+  box-shadow: none;
+}
+
+#jkm-panel[data-display-mode="single"] [data-cosmic-window="scene"] > .cosmic-window-header {
+  display: none;
+}
+
+/* A saved collapsed scene must still fill the headerless single-mode desktop. */
+#jkm-panel[data-display-mode="single"] [data-cosmic-window="scene"] > .cosmic-window-body {
+  display: flex;
+  border-radius: var(--window-radius);
+}
+
+#jkm-panel[data-display-mode="single"] .cosmic-scene-area > [data-cosmic-window="scene"] > .cosmic-resize {
+  display: none;
+}
+
+#jkm-panel[data-display-mode="single"] [data-cosmic-window="scene"] > .cosmic-window-header > [data-window-drag] {
+  cursor: default;
+  touch-action: auto;
+}
+
+#jkm-panel[data-display-mode="single"] .cosmic-scene-area > .cosmic-window:not([data-cosmic-window="scene"]) {
+  z-index: calc(50 + var(--window-z));
+}
+
+/* 输出列表：全部输出记录，每条一行。 */
+#jkm-panel .cosmic-window .output-list-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-block: 8px;
+}
+
+#jkm-panel .cosmic-window .output-list-toolbar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#jkm-panel .cosmic-window .output-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-inline-start: auto;
+}
+
+#jkm-panel .cosmic-window :is(#output-copy, #output-copy-data) {
+  min-inline-size: 24px;
+  min-block-size: 24px;
+}
+
+#jkm-panel .cosmic-window .output-copy-tip {
+  color: var(--cosmic-accent);
+  font-size: calc(11px * var(--window-font-scale));
+}
+
+#jkm-panel .cosmic-window .output-list-scroll {
+  overflow: auto;
+  max-block-size: 60vh;
+  border: 1px solid var(--cosmic-border);
+  border-radius: 7px;
+}
+
+#jkm-panel .cosmic-window #output-list {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font: calc(11px * var(--window-font-scale)) / 1.7 ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--window-fg);
+}
+
+#jkm-panel .cosmic-window #output-list :is(th, td) {
+  padding: 2px 8px;
+  text-align: start;
+  white-space: nowrap;
+}
+
+#jkm-panel .cosmic-window #output-list th {
+  position: sticky;
+  inset-block-start: 0;
+  color: var(--cosmic-muted);
+  font-weight: 500;
+  background: var(--window-bg);
+}
+
+#jkm-panel .cosmic-window #output-list tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--cosmic-hover) 5%, transparent);
+}
+
+/* 输出渲染：ASCII 二进制模式的文字。 */
+#jkm-panel .cosmic-window .output-ascii {
+  margin: 14px 0;
+  padding: 10px 12px;
+  max-block-size: 40vh;
+  overflow: auto;
+  border: 1px solid var(--cosmic-border);
+  border-radius: 6px;
+  color: var(--window-fg);
+  font: calc(14px * var(--window-font-scale)) / 1.6 ui-monospace, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* 标签页：选中项用下划线标出（不只靠颜色），不改变标签尺寸。 */
+#jkm-panel .cosmic-window .cosmic-tabs {
+  display: flex;
+  gap: 4px;
+  margin-block-end: 8px;
+  overflow-x: auto;
+  border-block-end: 1px solid var(--cosmic-border);
+  scrollbar-width: none;
+}
+
+#jkm-panel .cosmic-window .cosmic-tabs [role="tab"] {
+  position: relative;
+  flex: none;
+  padding: 6px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--cosmic-muted);
+  cursor: pointer;
+}
+
+#jkm-panel .cosmic-window .cosmic-tabs [role="tab"]:hover {
+  color: var(--window-fg);
+}
+
+#jkm-panel .cosmic-window .cosmic-tabs [aria-selected="true"] {
+  color: var(--window-fg);
+}
+
+#jkm-panel .cosmic-window .cosmic-tabs [aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 -1px;
+  border-block-end: 2px solid var(--cosmic-accent);
+}

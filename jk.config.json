@@ -7,14 +7,17 @@
     "instructions": "AGENTS.md",
     "rules_version": "7.0.0"
   },
-  "scope": "JKRD7 design, definitions, static checks, and an executor with a CPU backend (serial reference, default) and a GPU backend (WebGPU)",
+  "scope": "JKRD7 design, definitions, static checks, an executor with a CPU backend (serial reference, default) and a GPU backend (WebGPU), and a display page (web/show)",
   "previous_version_compatibility": false,
   "language": "TypeScript",
   "runtime": {
     "node": ".node-version",
     "package": "package.json",
     "typescript": "tsconfig.json",
-    "gpu_browser": "Chrome (WebGPU)"
+    "gpu_browser": "Chrome (WebGPU)",
+    "browser_dependencies": {
+      "three": "0.180.0 (web/show only)"
+    }
   },
   "documents": {
     "maintenance": "docs/jkrd7-maintenance.md",
@@ -22,7 +25,8 @@
     "proposal_second": "docs/jkrd7-proposal-2026-11-06.md",
     "factory_pending": "docs/modules/factory-pending.md",
     "typescript": "TypeScript.md",
-    "webgpu": "WebGPU.md"
+    "webgpu": "WebGPU.md",
+    "web_show": "docs/web-show.md"
   },
   "assets": {
     "ascii_digits": "assets/ascii-bit-design/digits.jkm.json",
@@ -45,11 +49,17 @@
     "validator": "tools/validate.ts",
     "reference": "tools/reference.ts",
     "gpu": "tools/gpu.ts",
-    "gpu_page": "web/index.html"
+    "gpu_page": "web/index.html",
+    "show": "tools/show.ts",
+    "show_page": "web/show/index.html",
+    "show_examples": "web/show/examples.json",
+    "examples": "tools/examples.ts",
+    "chrome": "tools/chrome.ts"
   },
   "reports": {
     "static": "reports/static-validation.json",
     "reference": "reports/reference-run.json",
-    "gpu": "reports/gpu-run.json"
+    "gpu": "reports/gpu-run.json",
+    "show": "reports/show-run.json"
   }
 }

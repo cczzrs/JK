@@ -2,11 +2,12 @@
 
 import { type Jki, type Jkm, type RunScript, type Snapshot, Model, docBlock, docFragment, docModels } from "../model.ts";
 import { CpuExecutor, TxLimit, Unsupported } from "../cpu.ts";
-import { bitsToInt, formatRecords } from "../record.ts";
+import { formatRecords } from "../record.ts";
 import { runScriptCpu } from "../executor.ts";
 import { Random } from "./random.ts";
+import { syncInput } from "./static.ts";
 import {
-  ASCII_READ, ASCII_WATCH, asciiBatches, clone, deepEqual, exitLoopModel, inlineModel, inputs, jkm, jks, nestOrderModel,
+  asciiBatches, asciiCodes, clone, deepEqual, exitLoopModel, inlineModel, inputs, jkm, jks, nestOrderModel,
   randomBatches, randomModel, run, runBatches, shuffled,
 } from "./fixtures.ts";
 
@@ -29,14 +30,14 @@ const hex = (codes: number[]) => JSON.stringify(codes.map((c) => "0x" + c.toStri
 const same = (a: { record(): unknown[] }, b: { record(): unknown[] }) =>
   formatRecords(a.record() as never) === formatRecords(b.record() as never);
 
-/** 第 10 节模型及各自的一批输入，用于批执行与 GPU 对拍。 */
-export const DOC_RUNS: [string, string[], string[], string[]][] = [
-  ["M_FLOW", ["G1.Q1", "G1.Q3"], [], []],
-  ["M_PATH", ["G1.Q1"], [], []],
-  ["M_SYNC", ["G1.Q1", "G1.Q1", "G1.Q2"], [], []],
-  ["M_TX", ["G1.Q10", "G1.Q10"], ["G2.Q101"], ["G2.Q102"]],
-  ["M_NEST", ["G1.Q10"], [], []],
-  ["M_REG", ["G1.Q2", "G1.Q1", "G1.Q2"], ["G1.Q5"], ["G1.Q5"]],
+/** 第 10 节模型及各自的一批输入，用于批执行与 GPU 对拍。输出观察取自各模型的 output。 */
+export const DOC_RUNS: [string, string[]][] = [
+  ["M_FLOW", ["G1.Q1", "G1.Q3"]],
+  ["M_PATH", ["G1.Q1"]],
+  ["M_SYNC", ["G1.Q1", "G1.Q1", "G1.Q2"]],
+  ["M_TX", ["G1.Q10", "G1.Q10"]],
+  ["M_NEST", ["G1.Q10"]],
+  ["M_REG", ["G1.Q2", "G1.Q1", "G1.Q2"]],
 ];
 
 export function runCases(ctx: CaseContext): CaseResult[] {
@@ -110,11 +111,12 @@ export function runCases(ctx: CaseContext): CaseResult[] {
   // 事务传播、事务内投递、不满足 publish 不推进、多实例顺序执行（M_TX）
   {
     const data = model("M_TX");
-    const r = run(data, ["G1.Q10"], { watch: ["G2.Q101"], read: ["G2.Q102"] });
+    const r = run(data, ["G1.Q10"]);
     check("事务传播（M_TX）", r.count("tx") === 1 && deepEqual(r.writes("G2.Q101"), [1]) && deepEqual(r.writes("G2.Q102"), [1]),
       `事务任务 ${r.count("tx")} 个，Q101 ${JSON.stringify(r.writes("G2.Q101"))}，Q102 ${JSON.stringify(r.writes("G2.Q102"))}`);
-    check("事务内投递", deepEqual(r.outputs, [{ source: "G2.Q101", values: [0] }]),
-      `输出模块在事务内收到 Q101 的通知，此时 Q102 尚未计算，读到 Q102=${r.outputs[0]?.values[0] ?? null}`);
+    check("事务内投递", deepEqual(r.outputs, [{ source: "G2.Q101", values: [1, 0] }, { source: "G2.Q102", values: [1, 1] }]),
+      `output 为 [Q101, Q102]：输出模块在事务内收到 Q101 的通知时记录 ${JSON.stringify(r.outputs[0]?.values)}（Q102 尚未计算），`
+      + `收到 Q102 的通知时记录 ${JSON.stringify(r.outputs[1]?.values)}`);
     const blocked = clone(data);
     (blocked.roots[0].members[0] as Jki).q = 0;
     (blocked.roots[1].members.find((m) => m.id === "Q101") as Jki).publish = { one: [1] };
@@ -193,14 +195,14 @@ export function runCases(ctx: CaseContext): CaseResult[] {
   // 十选一
   {
     const outputs = (data: Jkm, digits: number[], overlap: boolean, rng?: Random) => {
-      const ref = new CpuExecutor(new Model(data, "ascii"), { watch: ASCII_WATCH, read: ASCII_READ });
+      const ref = new CpuExecutor(new Model(data, "ascii"));
       for (const d of digits) {
         ref.inject(`G1.Q${d + 1}`);
         if (!overlap) ref.run();
         else if (rng) for (let i = rng.randrange(40); i > 0; i--) if (!ref.step()) break;
       }
       ref.run();
-      return ref.outputs.map((o) => bitsToInt(o.values));
+      return asciiCodes(ref.outputs);
     };
     const digits = Array.from({ length: 10 }, (_, d) => d);
     const serial = outputs(ctx.ascii, digits, false);
@@ -218,6 +220,7 @@ export function runCases(ctx: CaseContext): CaseResult[] {
     check("十选一重叠输入", mismatches === 0, `${trials} 组重叠或交错输入，与逐个输入不同的有 ${mismatches} 组`);
     const plain = clone(ctx.ascii);
     plain.roots[0].trigger = { any: digits.map((d) => `Q${d + 1}`) };
+    syncInput(plain); // 根登记改了，input 随之改写（§8.1）
     const wrong = outputs(plain, [0, 1], true);
     check("十选一不用事务", !deepEqual(wrong, [0x30, 0x31]),
       `登记改为 any 时，同时输入 0、1 的输出为 ${hex(wrong)}，应为 ["0x30","0x31"]`);
@@ -259,11 +262,11 @@ export function runCases(ctx: CaseContext): CaseResult[] {
 
   // 嵌套事务（§6.3）
   {
-    const r = run(inlineModel(), ["G1.Q1"], { watch: ["G3.Q2"], read: ["G1.Q2", "G2.Q2", "G3.Q2"] });
+    const r = run(inlineModel(), ["G1.Q1"]); // output 为 [G1.Q2, G2.Q2, G3.Q2]
     const txs = r.log.flatMap((e) => (e.kind === "tx" ? [`${e.g}@${e.depth}`] : []));
     const fromThread = r.log.filter((e) => e.kind === "tx_enqueue" && e.depth === 0).length;
     const layered = deepEqual(txs, ["G1@1", "G2@2", "G3@3"]) && fromThread === 1
-      && deepEqual(r.outputs, [{ source: "G3.Q2", values: [1, 1, 1] }]);
+      && deepEqual(r.outputs.map((o) => o.values), [[1, 0, 0], [1, 1, 0], [1, 1, 1]]);
     const order = run(nestOrderModel(), ["G1.Q1"]).log.flatMap((e) => (e.kind === "q" ? [e.path] : []));
     const ok = layered && deepEqual(order, ["G1.Q2", "G1.Q3", "G2.Q2", "G2.Q3", "G1.Q4"]);
     check("嵌套事务（§6.3）", ok,
@@ -297,7 +300,7 @@ export function runCases(ctx: CaseContext): CaseResult[] {
 
   // 1 bit 寄存器（M_REG）
   {
-    const r = new CpuExecutor(new Model(model("M_REG"), "M_REG"), { watch: ["G1.Q5"], read: ["G1.Q5"] });
+    const r = new CpuExecutor(new Model(model("M_REG"), "M_REG")); // output 为 [G1.Q5]
     for (const s of [2, 2, 1, 1, 2, 1]) {
       r.inject(`G1.Q${s}`);
       r.run();
@@ -309,15 +312,14 @@ export function runCases(ctx: CaseContext): CaseResult[] {
   // 可并行批（§7.5）
   {
     let ok = true;
-    for (const [name, inj, watch, read] of DOC_RUNS) {
-      ok &&= same(run(model(name), inj, { watch, read }), run(model(name), inj, { watch, read, batch: true }));
+    for (const [name, inj] of DOC_RUNS) {
+      ok &&= same(run(model(name), inj), run(model(name), inj, { batch: true }));
     }
     const rng = new Random(5);
     let asciiBad = 0;
     for (let i = 0; i < 100; i++) {
       const batches = asciiBatches(rng);
-      const opts = { watch: ASCII_WATCH, read: ASCII_READ };
-      if (!same(runBatches(ctx.ascii, batches, opts), runBatches(ctx.ascii, batches, { ...opts, batch: true }))) asciiBad++;
+      if (!same(runBatches(ctx.ascii, batches), runBatches(ctx.ascii, batches, { batch: true }))) asciiBad++;
     }
     const sizes: number[] = [];
     let randomBad = 0;
@@ -342,16 +344,16 @@ export function runCases(ctx: CaseContext): CaseResult[] {
     const data = ctx.loadModel(script.model);
     const a = runScriptCpu(script, data);
     const b = runScriptCpu(script, data, { batch: true });
-    const codes = a.outputs.map((o) => bitsToInt(o.values));
+    const codes = asciiCodes(a.outputs);
     check("运行脚本（§9.4）", deepEqual(codes, [0x30, 0x31, 0x39]) && same(a, b),
-      `输出 ${hex(codes)}，执行记录 ${a.record().length} 条，批执行模式记录相同`);
+      `Q24 的输出记录 ${hex(codes)}，执行记录 ${a.record().length} 条（其中输出记录 ${a.outputs.length} 条），批执行模式记录相同`);
   }
 
   // 快照（§9.5）
   {
     const expected = docBlock<Snapshot>(ctx.doc, "snapshot");
     const data = model("M_TX");
-    const engine = () => new CpuExecutor(new Model(data, "M_TX"), { watch: ["G2.Q101"], read: ["G2.Q102"] });
+    const engine = () => new CpuExecutor(new Model(data, "M_TX"));
     const r = engine();
     r.inject("G1.Q10");
     r.inject("G1.Q10");

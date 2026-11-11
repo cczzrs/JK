@@ -10,22 +10,13 @@
  * --count <实例数>（吞吐参考的实例数）。
  */
 
-import { type ChildProcess, spawn } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import type { RunScript, Snapshot } from "../src/model.ts";
 import { formatSnapshot } from "../src/record.ts";
 import { SOURCE_FILES, exists, nowUtc, readJson, sha256, writeText } from "./common.ts";
 import { serve } from "./server.ts";
+import { runInChrome } from "./chrome.ts";
 
 const REPORT = "reports/gpu-run.json";
-
-const DEFAULT_CHROME: Record<string, string> = {
-  darwin: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  linux: "google-chrome",
-  win32: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-};
 
 interface Args {
   script?: string;
@@ -60,22 +51,6 @@ function parseArgs(argv: string[]): Args {
   return args;
 }
 
-/** 用独立的临时用户目录启动 Chrome（不影响日常使用的 Chrome 配置）。 */
-function launchChrome(url: string, args: Args): { proc: ChildProcess; profile: string } {
-  const binary = args.chrome ?? process.env.CHROME ?? DEFAULT_CHROME[process.platform] ?? "google-chrome";
-  const profile = mkdtempSync(join(tmpdir(), "jk-chrome-"));
-  const flags = [
-    `--user-data-dir=${profile}`, "--no-first-run", "--no-default-browser-check", "--disable-extensions",
-    "--enable-unsafe-webgpu", ...(args.headed ? [] : ["--headless"]), url,
-  ];
-  const proc = spawn(binary, flags, { stdio: "ignore" });
-  proc.on("error", (e) => {
-    console.error(`无法启动 Chrome（${binary}）：${e.message}。可用 --chrome 或环境变量 CHROME 指定路径。`);
-    process.exit(2);
-  });
-  return { proc, profile };
-}
-
 async function main(): Promise<number> {
   const args = parseArgs(process.argv.slice(2));
   let job: unknown;
@@ -91,26 +66,7 @@ async function main(): Promise<number> {
   }
 
   const served = await serve({ job, onLog: (line) => (script ? undefined : console.log(line)) });
-  const { proc, profile } = launchChrome(`${served.url}/web/index.html`, args);
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, fail) => {
-    timer = setTimeout(() => fail(new Error(`等待 ${args.timeout} 秒仍未得到结果`)), args.timeout * 1000);
-  });
-  let result: Record<string, unknown>;
-  try {
-    result = (await Promise.race([served.result, timeout])) as Record<string, unknown>;
-  } finally {
-    clearTimeout(timer);
-    const exited = new Promise((ok) => proc.once("exit", ok));
-    proc.kill();
-    await Promise.race([exited, new Promise((ok) => setTimeout(ok, 3000))]);
-    try {
-      rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
-    } catch {
-      console.error(`临时目录未能删除：${profile}`);
-    }
-    await served.close();
-  }
+  const result = await runInChrome(`${served.url}/web/index.html`, served, args);
 
   if (result.fatal) {
     console.error("GPU 运行失败：" + String(result.fatal));

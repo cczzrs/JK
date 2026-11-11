@@ -1,7 +1,7 @@
 {
   "status": "passed",
-  "generated_at_utc": "2026-11-08T03:14:45+00:00",
-  "semantics": "JKRD7 §4–§7 serial reference (CPU backend): one unit at a time, event-first, path-ordered delivery, JKS integration, transactions with local sequences and a single commit; §7.5 batches; §9.4 run scripts and records; §9.5 snapshots",
+  "generated_at_utc": "2026-11-10T22:29:31+00:00",
+  "semantics": "JKRD7 §4–§7 serial reference (CPU backend): one unit at a time, event-first, path-ordered delivery, JKS integration, transactions with their own FIFOs and nested transactions executed in place, transaction limits; §7.5 batches; §8.1 output list drives the output records; §9.4 run scripts and records; §9.5 snapshots",
   "scope": "single-thread models; CPU backend in TypeScript on Node; GPU backend is checked separately (reports/gpu-run.json)",
   "cases": [
     {
@@ -42,7 +42,7 @@
     {
       "case": "事务内投递",
       "passed": true,
-      "detail": "输出模块在事务内收到 Q101 的通知，此时 Q102 尚未计算，读到 Q102=0"
+      "detail": "output 为 [Q101, Q102]：输出模块在事务内收到 Q101 的通知时记录 [1,0]（Q102 尚未计算），收到 Q102 的通知时记录 [1,1]"
     },
     {
       "case": "不满足 publish 不推进",
@@ -122,12 +122,12 @@
     {
       "case": "可并行批（§7.5）",
       "passed": true,
-      "detail": "第 10 节模型一致；十选一 100 组、随机模型 300 个，记录不同的分别有 0、0 组；随机模型共 2041 批，平均每批 1.87 个任务，最大 5；十选一单次请求的批大小 [4,4]"
+      "detail": "第 10 节模型一致；十选一 100 组、随机模型 300 个，记录不同的分别有 0、0 组；随机模型共 1848 批，平均每批 1.90 个任务，最大 6；十选一单次请求的批大小 [4,4]"
     },
     {
       "case": "运行脚本（§9.4）",
       "passed": true,
-      "detail": "输出 [\"0x30\",\"0x31\",\"0x39\"]，执行记录 72 条，批执行模式记录相同"
+      "detail": "Q24 的输出记录 [\"0x30\",\"0x31\",\"0x39\"]，执行记录 96 条（其中输出记录 27 条），批执行模式记录相同"
     },
     {
       "case": "快照（§9.5）",
@@ -136,19 +136,19 @@
     }
   ],
   "sha256": {
-    "JKRD7.md": "9eee8f2b2a4ab38ae9ef7d18cbaeb359ae93ca81c02724a9d0ae0e5ca49dccd9",
-    "assets/ascii-bit-design/digits.jkm.json": "e6b32e6b70407359c680bb2758b084d665a10c54e2bdd5cf299eb1eedf0b8765",
-    "tools/reference.ts": "606994bd9b947a6824a6ba024994b8fbb0ba6537b7692e8b9e99c8575fe3ff67",
-    "src/model.ts": "c19963946d33ef43c0ea634944351bc4c38373e0fa7522488fbcf329e7dd9805",
-    "src/record.ts": "10cabb8a103842fb6350a7be4e67dca9c9812f7e6a05d2796f53acd046808550",
-    "src/cpu.ts": "d122b84c72ac0e97497aeb0e85684bbf4176b8decc467023dccc95741c06af93",
-    "src/executor.ts": "aedcc64322e19a108e5197bd75f4886d5d809cc9a4617c09db61814116bfa8f4",
-    "src/gpu/compile.ts": "7872f0f2a88a7924ba5959a0a119d32ce0438ef14568202171979b4fcfa904ea",
-    "src/gpu/kernel.ts": "99a113332311eb2a9c0312e3453ba8ebf088509831c4a60b95035d05ff6efb54",
-    "src/gpu/backend.ts": "50a45b00d4dd9918079eb598d700151a1bb69c3b65fedbbacf6b3cb852e8ac4e",
-    "src/testing/cases.ts": "69809555a25b6441614ab8c27df646ad882ca5390fe9056b21faa0ef2b82f57b",
-    "src/testing/fixtures.ts": "2a478a712ea4ea4a3c6e306c185960ef52974987197231de01cade7063331d51",
+    "JKRD7.md": "1c6774401a086e5958d27b26eeb5778d4c1cbae3442ea554cafee19ce756855d",
+    "assets/ascii-bit-design/digits.jkm.json": "16d529c40a5224562705ac52dc953e745f5912475bdb1900821296a1617c8189",
+    "tools/reference.ts": "f18d3e0b3420c46151b667e800d6cbf5be07982eb397c7528b9a851a5ef74265",
+    "src/model.ts": "40a2606bc32570af3b139573680c35cc93c8e37ced37570bb4a3fd4b8e101213",
+    "src/record.ts": "e95a7db92276ba36a7788968917775f21171d4a08a765638aa2a8587f2f82755",
+    "src/cpu.ts": "3ad06a9356e3f7f8d0b7f9d9f752d03bb5e8897387edcf336aae2250b0ff97a0",
+    "src/executor.ts": "4659559b215139106bfac6e07151392234920925065af5bc268e48002173b018",
+    "src/gpu/compile.ts": "5971264089a274180a2a10c26136c270d67772ebae21ac5ce835abda951cd522",
+    "src/gpu/kernel.ts": "ca2795eb82ce52068fd4cb1f98aa19835ca80da18002bc2e05e43d93ca2dc3b0",
+    "src/gpu/backend.ts": "064f88ea07b4994ba90612523b95c8a1d0238f32c3f1fe14d299dcfd0148a292",
+    "src/testing/cases.ts": "0a14a1ac667c22ed8122433e5d2f575b3ad4caeaef9ef2e6988481e8c1787b01",
+    "src/testing/fixtures.ts": "5072cb3fc1a2b68aae9373bec661b38b5c24cd7f043824d42ba025a106438f66",
     "src/testing/random.ts": "690b7384041ec9d52a2feb99bb8c988f36a2363abbe85d1ed6a00f9308b73fa4",
-    "src/testing/static.ts": "d3c923cf25d0d3b7ef36b449fe5ecd2a4e2e49e4103c8889c9d6c25d43095705"
+    "src/testing/static.ts": "6049d7e72d088a8e46d6a89459b33fe828514d2c7f0c5cd31f710704ad41d45e"
   }
 }

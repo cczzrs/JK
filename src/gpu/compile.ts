@@ -20,6 +20,7 @@ const GATE_CODE: Record<string, number> = { all: GATE_ALL, transaction: GATE_TX,
 export const F_ALL = 1;
 export const F_EX = 2;
 export const F_INPUT = 4;
+/** JKM.output 的成员：它的通知投递时写一条输出记录（§9.1）。 */
 export const F_WATCH = 8;
 
 /**
@@ -223,12 +224,12 @@ export class Compiled {
 export interface Layout {
   c: Compiled;
   cap: Capacity;
-  watch: number[];
-  read: number[];
+  /** JKM.output 成员的节点编号，按 output 的顺序。 */
+  output: number[];
   /** 模型缓冲区的段偏移（字）。 */
   m: Record<
     "FLAGS" | "SEED" | "PUB" | "SRC_OFF" | "SRC" | "SLOT_BASE" | "SLOT_LEN" | "SUB_OFF" | "SUB" | "SUB_SLOT"
-    | "REG_JKS" | "REG_GATE" | "REG_ROUND" | "ROUND_NEED" | "ROUND_BASE" | "JKS_LO" | "JKS_HI" | "READ",
+    | "REG_JKS" | "REG_GATE" | "REG_ROUND" | "ROUND_NEED" | "ROUND_BASE" | "JKS_LO" | "JKS_HI" | "OUTPUT",
     number
   >;
   modelData: Uint32Array;
@@ -243,23 +244,17 @@ export interface Layout {
   recWords: number;
 }
 
-export function layout(c: Compiled, watch: readonly string[], read: readonly string[], capacity: Partial<Capacity> = {}): Layout {
+export function layout(c: Compiled, capacity: Partial<Capacity> = {}): Layout {
   const cap: Capacity = { ...DEFAULT_CAPACITY, ...capacity };
-  const index = (p: string) => {
-    const i = c.index.get(p);
-    if (i === undefined) throw new Error(`${p} 不是模型中的 JKI 绝对路径`);
-    return i;
-  };
-  const w = watch.map(index);
-  const r = read.map(index);
+  const o = c.model.output.map((p) => c.index.get(p)!); // 静态检查已保证都是 JKI 绝对路径
 
   const sections: [keyof Layout["m"], number[]][] = [
-    ["FLAGS", c.flags.map((f, i) => f | (w.includes(i) ? F_WATCH : 0))],
+    ["FLAGS", c.flags.map((f, i) => f | (o.includes(i) ? F_WATCH : 0))],
     ["SEED", c.seed], ["PUB", c.pub], ["SRC_OFF", c.srcOff], ["SRC", c.src],
     ["SLOT_BASE", c.slotBase], ["SLOT_LEN", c.slotLen], ["SUB_OFF", c.subOff], ["SUB", c.sub], ["SUB_SLOT", c.subSlot],
     ["REG_JKS", c.regJks], ["REG_GATE", c.regGate], ["REG_ROUND", c.regRound],
     ["ROUND_NEED", c.roundNeed], ["ROUND_BASE", c.roundBase],
-    ["JKS_LO", c.jksLo], ["JKS_HI", c.jksHi], ["READ", r],
+    ["JKS_LO", c.jksLo], ["JKS_HI", c.jksHi], ["OUTPUT", o],
   ];
   const m = {} as Layout["m"];
   const words: number[] = [];
@@ -281,10 +276,10 @@ export function layout(c: Compiled, watch: readonly string[], read: readonly str
     s[name] = off;
     off += size;
   }
-  const outWords = Math.ceil(r.length / 32);
+  const outWords = Math.ceil(o.length / 32);
   // 一个微步：注入 1；投递 = 输出（1+outWords）+ 整合放行与照常投递时每个订阅者至多一条通知；任务 2；
   // 事务开始 = 放行时每个订阅者至多一条通知
   const maxRecStep = 1 + outWords + (c.maxRound + 1) * c.maxFan + 2;
   const recWords = 2 + Math.max(cap.records, maxRecStep);
-  return { c, cap, watch: w, read: r, m, modelData, s, stateWords: off, tkStride, outWords, maxRecStep, recWords };
+  return { c, cap, output: o, m, modelData, s, stateWords: off, tkStride, outWords, maxRecStep, recWords };
 }

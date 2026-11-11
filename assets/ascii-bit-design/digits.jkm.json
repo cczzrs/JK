@@ -2,6 +2,8 @@
   "jkm": "ASCII_DIGITS",
   "version": "7.0.0",
   "threads": ["work"],
+  "input": {"G1.transaction_any": ["Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8", "Q9", "Q10"]},
+  "output": {"data": ["G1.Q11", "G1.Q12", "G1.Q13", "G1.Q14", "G1.Q25", "G1.Q26", "G1.Q27", "G1.Q28"], "done": ["G1.Q24"]},
   "roots": [
     {
       "id": "G1",

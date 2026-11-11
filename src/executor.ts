@@ -28,7 +28,7 @@ export function scriptModel(script: RunScript, data: unknown): Model {
 /** 用 CPU 后端运行一个运行脚本，返回运行结束时的执行器。data 是脚本 model 字段所指的 JKM。 */
 export function runScriptCpu(script: RunScript, data: unknown, options: ScriptOptions = {}): CpuExecutor {
   const model = scriptModel(script, data);
-  const ref = new CpuExecutor(model, { watch: script.observe.watch, read: script.observe.read, batch: options.batch });
+  const ref = new CpuExecutor(model, { batch: options.batch }); // 输出观察取自模型的 output（§8.1）
   if (options.start) ref.loadSnapshot(options.start);
   for (const batch of script.batches) {
     for (const item of batch) ref.inject(item);

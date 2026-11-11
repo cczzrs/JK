@@ -1,7 +1,7 @@
 {
   "status": "passed",
-  "generated_at_utc": "2026-11-08T03:14:53+00:00",
-  "scope": "JKRD7 §2/§3/§5/§6.2/§8 static rules, document JSON, model asset, fixtures, links and index; no execution (see reports/reference-run.json and reports/gpu-run.json)",
+  "generated_at_utc": "2026-11-11T01:22:02+00:00",
+  "scope": "JKRD7 §2/§3/§5/§6.4/§8 static rules, document JSON, model asset, fixtures, links and index; no execution (see reports/reference-run.json and reports/gpu-run.json)",
   "checks": [
     {
       "check": "JKRD7 模型 M1",
@@ -76,7 +76,7 @@
       "passed": true
     },
     {
-      "check": "正例：从事务不可达的环",
+      "check": "正例：从事务不可达的环，退出节点登记为 out",
       "passed": true
     },
     {
@@ -84,23 +84,23 @@
       "passed": true
     },
     {
-      "check": "正例：事务可达的环：publish 退出",
+      "check": "正例：事务可达的环：退出节点按 publish 退出",
       "passed": true
     },
     {
-      "check": "正例：事务可达的环：all 等环外来源",
+      "check": "正例：事务可达的环：退出节点 all 等环外来源",
       "passed": true
     },
     {
-      "check": "正例：事务可达的环：JKS all 有环外前置",
+      "check": "正例：事务可达的环：退出节点经 JKS all 整合，有环外前置",
       "passed": true
     },
     {
-      "check": "正例：显式空对象（含 JKS 的 pro、runtime）、ack 登记、JKS.pro.tag 与 pro.jksid",
+      "check": "正例：显式空对象（含 JKS 的 pro、runtime）、ack 登记、JKS.pro.tag、pro.jksid 与 output",
       "passed": true
     },
     {
-      "check": "正例：会停下的空 EX 环",
+      "check": "正例：会停下的空 EX 环，退出节点登记为 out",
       "passed": true
     },
     {
@@ -248,6 +248,70 @@
       "passed": true
     },
     {
+      "check": "负例：JKM 缺少 input",
+      "passed": true
+    },
+    {
+      "check": "负例：input 不是对象",
+      "passed": true
+    },
+    {
+      "check": "负例：input 的值为空数组",
+      "passed": true
+    },
+    {
+      "check": "负例：input 漏列含入口的根登记",
+      "passed": true
+    },
+    {
+      "check": "负例：input 多列不含入口的根登记",
+      "passed": true
+    },
+    {
+      "check": "负例：input 列出子 JKS 的登记",
+      "passed": true
+    },
+    {
+      "check": "负例：input 与根登记顺序不同",
+      "passed": true
+    },
+    {
+      "check": "负例：input 少写根登记的前置",
+      "passed": true
+    },
+    {
+      "check": "负例：JKM 缺少 output",
+      "passed": true
+    },
+    {
+      "check": "负例：output 不是对象",
+      "passed": true
+    },
+    {
+      "check": "负例：output 是数组",
+      "passed": true
+    },
+    {
+      "check": "负例：output 的组为空",
+      "passed": true
+    },
+    {
+      "check": "负例：output 组内重复",
+      "passed": true
+    },
+    {
+      "check": "负例：output 组间重复",
+      "passed": true
+    },
+    {
+      "check": "负例：output 落到 JKS",
+      "passed": true
+    },
+    {
+      "check": "负例：output 写短 ID",
+      "passed": true
+    },
+    {
       "check": "负例：threads 重复",
       "passed": true
     },
@@ -308,6 +372,10 @@
       "passed": true
     },
     {
+      "check": "负例：退出节点同时登记为其他类型",
+      "passed": true
+    },
+    {
       "check": "负例：未登记节点写空 any",
       "passed": true
     },
@@ -316,11 +384,15 @@
       "passed": true
     },
     {
-      "check": "负例：事务内没有退出结构的环",
+      "check": "负例：事务内的环没有退出节点",
       "passed": true
     },
     {
-      "check": "负例：事务下游成环",
+      "check": "负例：事务下游的环没有退出节点",
+      "passed": true
+    },
+    {
+      "check": "负例：事务不可达的环没有退出节点",
       "passed": true
     },
     {
@@ -336,11 +408,15 @@
       "passed": true
     },
     {
-      "check": "负例：纯通知环",
+      "check": "负例：纯通知环（已登记退出节点）",
       "passed": true
     },
     {
       "check": "本地链接",
+      "passed": true
+    },
+    {
+      "check": "展示页示例文件",
       "passed": true
     },
     {
@@ -350,23 +426,25 @@
   ],
   "errors": [],
   "sha256": {
-    "AGENTS.md": "50ad3a13cc45fbcbb7b0f5100f6ba6394153b791776f9096bf2cc6163f496889",
-    "JKRD7.md": "9eee8f2b2a4ab38ae9ef7d18cbaeb359ae93ca81c02724a9d0ae0e5ca49dccd9",
-    "README.md": "d385193b14acb292b4f1796b8f2cc553e9a0fdd31751c708e50fff8e20259d3d",
-    "TypeScript.md": "2ef1a26ab393399a2913dc051c00f3b9b8917e8305943819021c34242005889e",
-    "WebGPU.md": "2ecaa4564dfef9d2440b11e9e380296f0f9c9be7f715cb54fae282ed0a4f863e",
-    "assets/ascii-bit-design/digits.jkm.json": "e6b32e6b70407359c680bb2758b084d665a10c54e2bdd5cf299eb1eedf0b8765",
+    "AGENTS.md": "bccb8c7327e2d2cf4d93fa9783716a9b4aaa5ef3fb9bef20aeec7709faca7f85",
+    "JKRD7.md": "1c6774401a086e5958d27b26eeb5778d4c1cbae3442ea554cafee19ce756855d",
+    "README.md": "ca356ea970d2b6901ed4e4c20c0807410e608d45aa3dda7867515791860a9094",
+    "TypeScript.md": "7f18e56493b50dabb4d036a0ff1f70f9a929286091ce6fa0536aa9e802ab6fed",
+    "WebGPU.md": "6eec7559fdf032ee3ff1ab623e02746c7d31734cdc3477f6312295609cb5d841",
+    "assets/ascii-bit-design/digits.jkm.json": "16d529c40a5224562705ac52dc953e745f5912475bdb1900821296a1617c8189",
     "assets/jks-factory-v7-design/JKI.FACTORY.json": "410729692fba6f0e70c69ec78436c27923c4e6de6fb0ed244ce378eeacda19d8",
     "assets/jks-factory-v7-design/RAM.FACTORY.json": "9ec8a03b18c4552d3db4ec42fddbfdfe39f3fd6e29a5d06675ba727f61c42f8f",
     "assets/jks-factory-v7-design/design-contract.json": "1e2f03cf60e4c4f233aaa9f361827debd2b17997653fce593effac4649d67c54",
     "assets/jks-factory-v7-design/generation-example.json": "f1b5561b14982b07b1ce41edb0285a1402e2b1f0f6eacba35199e60214b6c648",
-    "docs/jkrd7-maintenance.md": "8b1a265ada7a90279a490b9b682c34c928bd0188e47b2f312994507fcf1483ad",
+    "docs/jkrd7-maintenance.md": "01380cb0e7864d47df8f295fb2a52482d0e69aaa6ca25d12c07fa7c90dcd6c93",
     "docs/jkrd7-proposal-2026-11-05.md": "050f4b365a837e3b23f0167bbf6997e98601ce760bc98689128b5f8f3491e269",
     "docs/jkrd7-proposal-2026-11-06.md": "9fcbd3027b60425e3a803a49803c66b24986f6036073a7786c23a1ac175d4e03",
     "docs/modules/factory-pending.md": "e8139c930aa319f881d2ffcdeafeac86492a8ecfce65cda7fa020ba346718dc3",
-    "jk.config.json": "a2b7f42638dc681d8136508a62fcd8087356630a7a8858c4394bf0826d517304",
-    "src/model.ts": "c19963946d33ef43c0ea634944351bc4c38373e0fa7522488fbcf329e7dd9805",
-    "src/testing/static.ts": "d3c923cf25d0d3b7ef36b449fe5ecd2a4e2e49e4103c8889c9d6c25d43095705",
-    "tools/validate.ts": "bab7ee5f4c4c3e97dd7ba6b19aba458b2e67b8867469f559e8f392965148afb1"
+    "docs/web-show.md": "c30ec9001b5a2145aa0e624c0b170665508043f3ae730d353c95b5ceb9ffbfbc",
+    "jk.config.json": "1e03384c4edfc29470def7e33208cd75440f8dec5b6b3c83baf00140262c7004",
+    "src/model.ts": "40a2606bc32570af3b139573680c35cc93c8e37ced37570bb4a3fd4b8e101213",
+    "src/testing/static.ts": "6049d7e72d088a8e46d6a89459b33fe828514d2c7f0c5cd31f710704ad41d45e",
+    "tools/validate.ts": "401a95ad05ff6a1656254dfdf2ab297f586e57e701987753d35f0001ee3ab8cc",
+    "web/show/examples.json": "a7d145ca88ae81b4b34ccc43732ab3a2d799e0ea8e554e393ca7a10ec2f25b5c"
   }
 }

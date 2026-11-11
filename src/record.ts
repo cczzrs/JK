@@ -9,7 +9,7 @@ export type RecordEntry =
   | { inject: string }
   | { notify: string }
   | { q: string; from: Bit; to: Bit }
-  | { output: string; values: Bit[] };
+  | { output: string; values: Record<string, Bit[]> };
 
 /**
  * 固定的 JSON 文本：逗号和冒号后各一个空格，键按记录项定义的顺序，非 ASCII 字符原样输出。

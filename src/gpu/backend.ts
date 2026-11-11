@@ -83,10 +83,9 @@ export class GpuExecutor {
     device.queue.writeBuffer(this.modelBuffer, 0, l.modelData);
   }
 
-  /** 编译模型并建立计算管线。watch／read 是输出观察（§9.4）。 */
-  static async create(device: GPUDevice, model: Model, watch: readonly string[] = [], read: readonly string[] = [],
-    options: GpuOptions = {}): Promise<GpuExecutor> {
-    const l = layout(new Compiled(model), watch, read, options.capacity);
+  /** 编译模型并建立计算管线。输出观察取自模型的 output（§8.1）。 */
+  static async create(device: GPUDevice, model: Model, options: GpuOptions = {}): Promise<GpuExecutor> {
+    const l = layout(new Compiled(model), options.capacity);
     const source = kernelSource(l);
     const module = device.createShaderModule({ code: source });
     const info = await module.getCompilationInfo();
@@ -104,7 +103,7 @@ export class GpuExecutor {
   /** 运行脚本（§9.4）：一个实例。 */
   static async runScript(device: GPUDevice, model: Model, script: RunScript, start?: Snapshot,
     options: GpuOptions = {}): Promise<GpuResult> {
-    const gpu = await GpuExecutor.create(device, model, script.observe.watch, script.observe.read, options);
+    const gpu = await GpuExecutor.create(device, model, options);
     try {
       const [result] = await gpu.run([{ batches: script.batches, start }]);
       return result;
@@ -240,8 +239,8 @@ export class GpuExecutor {
       else if (kind === REC_Q) out.push({ q: path, from: ((w >>> 28) & 1) as Bit, to: ((w >>> 29) & 1) as Bit });
       else {
         const values: Bit[] = [];
-        for (let r = 0; r < l.read.length; r++) values.push(((words[k + 1 + (r >> 5)] >>> (r & 31)) & 1) as Bit);
-        out.push({ output: path, values });
+        for (let r = 0; r < l.output.length; r++) values.push(((words[k + 1 + (r >> 5)] >>> (r & 31)) & 1) as Bit);
+        out.push({ output: path, values: c.model.groupOutput(values) });
         k += l.outWords;
       }
     }

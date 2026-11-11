@@ -1,6 +1,7 @@
 /**
  * 本机 HTTP 服务（只监听 127.0.0.1）：把仓库文件提供给浏览器，.ts 文件去掉类型后按 JavaScript 返回；
- * 另有 /__job（取任务）、/__log（打印进度）、/__result（交回结果）三个接口，供 tools/gpu.ts 使用。
+ * 另有 /__job（取任务）、/__log（打印进度）、/__result（交回结果）三个接口，供 tools/gpu.ts 与 tools/show.ts 使用。
+ * 浏览器端的运行依赖（three）经只读路由 /vendor/ 提供，其余 node_modules 与以点开头的文件不提供。
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
@@ -16,7 +17,29 @@ const TYPES: Record<string, string> = {
   ".json": "application/json; charset=utf-8",
   ".md": "text/markdown; charset=utf-8",
   ".css": "text/css; charset=utf-8",
+  ".png": "image/png",
+  ".ico": "image/x-icon",
+  ".svg": "image/svg+xml",
 };
+
+/** 只读的运行依赖路由：URL 前缀 → 仓库内目录。只提供其中的 .js 文件。 */
+const VENDOR: Record<string, string> = {
+  "/vendor/three/build/": "node_modules/three/build/",
+  "/vendor/three/examples/jsm/": "node_modules/three/examples/jsm/",
+};
+
+/** 运行依赖的文件路径；不属于 /vendor/ 或不允许时返回 null。 */
+function vendorFile(path: string): string | null {
+  for (const [prefix, dir] of Object.entries(VENDOR)) {
+    if (!path.startsWith(prefix)) continue;
+    const rest = path.slice(prefix.length);
+    const base = resolve(ROOT, dir);
+    const file = resolve(base, rest);
+    const ok = extname(file) === ".js" && file.startsWith(base + sep) && !rest.split("/").some((part) => part === "" || part.startsWith("."));
+    return ok ? file : null;
+  }
+  return null;
+}
 
 /** 去掉 TypeScript 类型（Node 内置功能；关闭它的“实验功能”提示）。 */
 function stripTypes(code: string): string {
@@ -63,9 +86,10 @@ export async function serve(options: { job?: unknown; port?: number; onLog?: (li
       return;
     }
     const path = decodeURIComponent(url.pathname === "/" ? "/web/index.html" : url.pathname);
-    const file = resolve(ROOT, "." + path);
-    const hidden = path.split("/").some((part) => part.startsWith(".") || part === "node_modules");
-    if (!file.startsWith(ROOT + sep) || hidden) {
+    const vendor = path.startsWith("/vendor/") ? vendorFile(path) : null;
+    const file = vendor ?? resolve(ROOT, "." + path);
+    const hidden = !vendor && path.split("/").some((part) => part.startsWith(".") || part === "node_modules");
+    if (!file.startsWith(ROOT + sep) || hidden || (path.startsWith("/vendor/") && !vendor)) {
       res.writeHead(403).end();
       return;
     }

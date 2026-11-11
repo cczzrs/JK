@@ -55,7 +55,6 @@ export function scriptFromArgs(args: Args): RunScript {
   return {
     run: basename(model, extname(model)),
     model: rel(model),
-    observe: { watch: [], read: [] },
     batches: args.inject.length ? [args.inject] : [],
   };
 }
@@ -85,8 +84,8 @@ function main(): number {
       status: failed.length ? "failed" : "passed",
       generated_at_utc: nowUtc(),
       semantics: "JKRD7 §4–§7 serial reference (CPU backend): one unit at a time, event-first, path-ordered delivery, "
-        + "JKS integration, transactions with local sequences and a single commit; §7.5 batches; "
-        + "§9.4 run scripts and records; §9.5 snapshots",
+        + "JKS integration, transactions with their own FIFOs and nested transactions executed in place, transaction limits; "
+        + "§7.5 batches; §8.1 output list drives the output records; §9.4 run scripts and records; §9.5 snapshots",
       scope: "single-thread models; CPU backend in TypeScript on Node; GPU backend is checked separately (reports/gpu-run.json)",
       cases: results,
       sha256: Object.fromEntries(files.map((p) => [p, sha256(p)])),

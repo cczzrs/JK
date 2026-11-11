@@ -4,6 +4,7 @@
 - **依据**：用户批准“只使用 TypeScript，规则工具链也改成 TypeScript”；执行器分为 CPU 和 GPU 两个后端，默认用 CPU。
 - **状态**：原 Python 工具已全部移植到 TypeScript 并删除。删除前做过逐字节对拍，见第 7 节。
 - GPU 后端的设计见 [WebGPU.md](WebGPU.md)。规则只以 [JKRD7](JKRD7.md) 为准。
+- 2026-11-08 增加展示页 `web/show/`（JKM 工作区），设计与依据见 [docs/web-show.md](docs/web-show.md)。
 
 ## 1. 环境
 
@@ -11,12 +12,14 @@
 | --- | --- | --- |
 | Node | 26（LTS） | 版本写在 [.node-version](.node-version) 中；本机是 26.13.0，用 fnm 管理。可以直接运行 `.ts` 文件，运行时只去掉类型，不做检查 |
 | TypeScript | 7.0.2（开发依赖） | 只做类型检查（`tsc`，不输出文件） |
-| @types/node、@webgpu/types | 开发依赖 | Node 与 WebGPU 的类型声明 |
-| Chrome | 本机 157 | 运行 GPU 后端并做对拍 |
+| @types/node、@webgpu/types、@types/three | 开发依赖 | Node、WebGPU 与 three 的类型声明 |
+| three | 0.180.0（运行依赖） | 只用于浏览器展示页 `web/show/` 的 3D 场景（用户 2026-11-08 批准） |
+| Chrome | 本机 157 | 运行 GPU 后端、展示页，并做对拍 |
 
-- 运行时没有第三方依赖：
+- 第三方运行依赖只有 three，而且只在浏览器展示页中使用：
   - `src/` 只用语言本身和 WebGPU 接口；
-  - `tools/` 只用 Node 内置模块。
+  - `tools/` 只用 Node 内置模块；
+  - `web/show/` 另用 three，由本机服务的只读路由提供（第 8 节）。
 - 首次使用前运行 `npm install`。开发依赖的版本锁定在 [package.json](package.json) 与 `package-lock.json` 中。
 
 ## 2. 目录
@@ -41,12 +44,30 @@ tools/                   命令行（只在 Node 中运行）
   validate.ts            静态检查
   reference.ts           CPU 后端：验收案例、运行脚本
   gpu.ts                 GPU 后端：启动 Chrome，对拍或运行运行脚本
+  show.ts                展示页验收：启动 Chrome，通过页面控件运行，与 CPU 后端比较
+  chrome.ts              启动本机 Chrome 并等待页面交回结果（gpu.ts、show.ts 共用）
   server.ts              本机 HTTP 服务（去掉类型后提供给浏览器）
   serve.ts               手动启动本机服务
+  examples.ts            生成展示页的内置示例文件 web/show/examples.json
   common.ts              文件读写与报告
 web/
   index.html、gpu.ts     GPU 对拍页面
-reports/                 三份核对报告
+  show/                  展示页：JKM 工作区（docs/web-show.md）
+    index.html、style.css、cosmic.css
+    boot.ts、three-source.ts  启动：选定 three 的来源（CDN 优先，本机回退），写入 import map，再载入 main.ts
+    examples.json        内置示例（由 tools/examples.ts 生成）
+    config.ts            默认配置树
+    main.ts              入口：窗口、控件、场景、面板、播放与 GPU 对拍的连接
+    state.ts             页面状态：模型、会话、选中的对象、最近的处理单元
+    session.ts           执行会话：包装 CPU 后端，只读；按执行细节分步
+    panels.ts            面板：状态、FIFO、执行记录、输出、节点与 JKS 详情、本单元
+    playback.ts          播放与时间轴（从初值重新执行到目标单元）
+    gpu-run.ts、cpu-worker.ts  GPU 对拍：管线缓存，CPU 参考在 Worker 中计算
+    gpu-device.ts        3D 渲染与 GPU 后端共用的设备
+    verify.ts            自动验收（由 tools/show.ts 触发）
+    scene/               3D 场景（three）：布局、连线、标签、渲染、Canvas 2D 降级
+    ui/                  桌面窗口、节点树、网络样式、图片转输入、标签页、输出窗口选择的保存
+reports/                 四份核对报告
 ```
 
 ## 3. 命令
@@ -61,15 +82,17 @@ reports/                 三份核对报告
 | `node tools/reference.ts --model <JKM> --inject <输入入口> …` | 把这些输入作为一批运行 |
 | `node tools/gpu.ts [--write-report]` | 用 GPU 后端跑验收案例 |
 | `node tools/gpu.ts --script <运行脚本> [--start <快照>] [--save <快照>]` | 用 GPU 后端运行，输出执行记录 |
-| `npm run serve` | 启动本机服务，在浏览器中打开 `http://127.0.0.1:8317/web/index.html` |
+| `node tools/show.ts [--write-report]` | 展示页验收：在 Chrome 中通过页面控件运行，与 CPU 后端比较 |
+| `node tools/examples.ts` | 由 JKRD7 第 10 节与十选一附件重新生成 `web/show/examples.json`（改动这些模型后运行） |
+| `npm run serve` | 启动本机服务，在浏览器中打开 `http://127.0.0.1:8317/web/show/index.html`（展示页）或 `/web/index.html`（GPU 对拍） |
 | `npm run check` | 依次执行类型检查、静态检查、CPU 验收案例 |
 
-`tools/gpu.ts` 的其他参数：
+`tools/gpu.ts` 与 `tools/show.ts` 的其他参数：
 
 - `--chrome <路径>`：指定 Chrome 位置，也可以用环境变量 `CHROME`；
 - `--headed`：显示浏览器窗口；
 - `--timeout <秒>`：等待结果的时间上限；
-- `--count <实例数>`：吞吐参考使用的实例数。
+- `--count <实例数>`：吞吐参考使用的实例数（只用于 `tools/gpu.ts`）。
 
 ## 4. 写法约束
 
@@ -85,16 +108,22 @@ reports/                 三份核对报告
   - 文件读写、进程、HTTP 只放在 `tools/` 中。
 - **严格模式**（`strict`）。
 - **不补规则**：JKRD7 未确定的行为不在代码中自行补全（[AGENTS.md](AGENTS.md)）。
+- **界面写法**（`web/show/`，用户 2026-11-08 批准）：
+  - 不用 JavaScript 拼接 HTML：元素和模板都写在 HTML 中，脚本只查找元素、复制 `<template>`，再填充文本与属性；
+  - 不用 JavaScript 生成 CSS 规则：脚本只设置 CSS 变量、类名和 `data-`、`aria-` 属性，样式写在样式表中；
+  - 页面的默认配置和默认值集中在 `web/show/config.ts` 的只读树形结构中；浏览器存储只保存窗口布局、外观和网络样式等展示偏好，不保存 JKM 定义或执行状态；
+  - 页面不执行规则：执行只经 `src/cpu.ts` 与 `src/gpu/backend.ts`；动画与计数只从运行日志推出。
 
 ## 5. 模块与 JKRD7 的对应
 
 | 模块 | 内容 | JKRD7 |
 | --- | --- | --- |
-| [src/model.ts](src/model.ts) | JKI 字段检查、JKM 加载、引用解析、派生索引（成员、前置、带事务登记的 JKS、订阅者）、登记分层、从事务可达的环的退出结构、纯通知环、运行脚本与快照检查 | §2、§3、§5、§6.4、§8、§9.4、§9.5 |
+| [src/model.ts](src/model.ts) | JKI 字段检查、JKM 加载（含输入登记 input 与根登记的核对、分组的输出列表 output）、引用解析、派生索引（成员、前置、带事务登记的 JKS、订阅者）、登记分层、环的退出节点（out 登记）、纯通知环、运行脚本与快照检查 | §2、§3、§5、§6.4、§8、§9.4、§9.5 |
 | [src/record.ts](src/record.ts) | 执行记录的四种项与固定文本格式 | §9.4 |
-| [src/cpu.ts](src/cpu.ts) | 串行执行：触发、计算、发布、整合、事务与嵌套事务、事务上限、投递顺序；可并行批；快照导出与载入 | §4—§7、§9.1、§9.5 |
+| [src/cpu.ts](src/cpu.ts) | 串行执行：触发、计算、发布、整合、事务与嵌套事务、事务上限、投递顺序；按 JKM.output 写输出记录；可并行批；快照导出与载入；可选的执行细节回调 `trace`（展示用，不进入记录，不改变执行） | §4—§7、§8.1、§9.1、§9.5 |
 | [src/executor.ts](src/executor.ts) | 按运行脚本执行 | §9.4 |
 | [src/gpu/](src/gpu/backend.ts) | GPU 后端 | WebGPU.md |
+| [web/show/](web/show/main.ts) | 展示页：显示与交互，执行交给两个后端 | §9.1、§9.2、§9.4 |
 | [src/testing/](src/testing/cases.ts) | 验收案例、正例与负例、随机模型 | §11.2 |
 | [tools/](tools/validate.ts) | 命令行 | §11.1 |
 
@@ -151,11 +180,14 @@ reports/                 三份核对报告
 
 - 浏览器不能直接运行 TypeScript。[tools/server.ts](tools/server.ts) 把仓库文件提供给浏览器，对 `.ts` 文件先用 Node 内置的 `stripTypeScriptTypes` 去掉类型。这个功能在 Node 26 中仍属实验功能。
 - 服务只监听 127.0.0.1，不提供以点开头的文件，也不提供 `node_modules`。
-- `tools/gpu.ts` 用一个临时用户目录启动 Chrome（运行后删除），不影响日常使用的 Chrome 配置。启动时打开 `--enable-unsafe-webgpu`。
+- 例外是只读路由 `/vendor/three/build/` 与 `/vendor/three/examples/jsm/`：只提供 `node_modules/three` 中这两个目录的 `.js` 文件，展示页用 import map 引用。
+- `tools/gpu.ts` 与 `tools/show.ts` 用一个临时用户目录启动 Chrome（运行后删除），不影响日常使用的 Chrome 配置。启动时打开 `--enable-unsafe-webgpu`。
 
 ## 9. 边界
 
 - 类型检查和三项核对都通过，只说明在本机已核对的范围内实现与 JKRD7 一致。
+- 展示页已有 JKM 工作区（[docs/web-show.md](docs/web-show.md)），3D 渲染与 GPU 后端共用设备。
 - 还没有做的：
   - 发布用的打包（例如用 esbuild 生成单个 JavaScript 文件）；
-  - 展示界面（WebGPU.md 第 11 节第 2 阶段）。
+  - 展示页的快照窗口与共享模型池（用户 2026-11-08 决定延后）；
+  - 页面直接读取 GPU 状态缓冲区、GPU 单步（WebGPU.md 第 11 节第 2 阶段的其余部分）。
