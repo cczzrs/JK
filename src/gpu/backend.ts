@@ -6,11 +6,11 @@
  * 输入批和起始快照。只依赖 WebGPU 接口，浏览器中直接使用 navigator.gpu 得到的设备。
  */
 
-import { type Bit, type Model, type RunScript, type Snapshot, checkSnapshot } from "../model.ts";
+import { type Bit, type Model, type RunScript, type Snapshot, VERSION, checkSnapshot } from "../model.ts";
 import { TX_LIMITS, compareRoundKeys } from "../cpu.ts";
 import type { RecordEntry } from "../record.ts";
 import {
-  type Capacity, Compiled, ERRORS, F_INPUT, H, type Layout, NONE, REC_INJECT, REC_NOTIFY, REC_Q, layout,
+  type Capacity, Compiled, ERRORS, F_ALL, F_INPUT, H, type Layout, NODE_BITS, NONE, REC_INJECT, REC_NOTIFY, REC_Q, layout,
 } from "./compile.ts";
 import { PARAM_WORDS, WORKGROUP_SIZE, kernelSource } from "./kernel.ts";
 
@@ -65,15 +65,13 @@ export class GpuExecutor {
   readonly txSteps: number;
   readonly pipeline: GPUComputePipeline;
   readonly modelBuffer: GPUBuffer;
-  readonly source: string;
   stats: GpuStats = { dispatches: 0, instances: 0, milliseconds: 0, gpuMilliseconds: 0, decodeMilliseconds: 0 };
 
-  private constructor(device: GPUDevice, l: Layout, pipeline: GPUComputePipeline, source: string, options: GpuOptions) {
+  private constructor(device: GPUDevice, l: Layout, pipeline: GPUComputePipeline, options: GpuOptions) {
     this.device = device;
     this.l = l;
     this.c = l.c;
     this.pipeline = pipeline;
-    this.source = source;
     this.budget = options.budget ?? 4096;
     this.stepLimit = options.stepLimit ?? 1_000_000;
     this.txSteps = options.txSteps ?? TX_LIMITS.steps;
@@ -86,8 +84,7 @@ export class GpuExecutor {
   /** 编译模型并建立计算管线。输出观察取自模型的 output（§8.1）。 */
   static async create(device: GPUDevice, model: Model, options: GpuOptions = {}): Promise<GpuExecutor> {
     const l = layout(new Compiled(model), options.capacity);
-    const source = kernelSource(l);
-    const module = device.createShaderModule({ code: source });
+    const module = device.createShaderModule({ code: kernelSource(l) });
     const info = await module.getCompilationInfo();
     const errors = info.messages.filter((m) => m.type === "error");
     if (errors.length) {
@@ -97,7 +94,7 @@ export class GpuExecutor {
     const pipeline = await device.createComputePipelineAsync({ layout: "auto", compute: { module, entryPoint: "main" } });
     const problem = await device.popErrorScope();
     if (problem) throw new Error("计算管线创建失败：" + problem.message);
-    return new GpuExecutor(device, l, pipeline, source, options);
+    return new GpuExecutor(device, l, pipeline, options);
   }
 
   /** 运行脚本（§9.4）：一个实例。 */
@@ -123,7 +120,9 @@ export class GpuExecutor {
 
   /** 执行一组实例；实例过多时自动分组，使每个缓冲区不超过设备限制。 */
   async run(instances: readonly GpuInstance[]): Promise<GpuResult[]> {
-    const inWords = 1 + Math.max(0, ...instances.flatMap((i) => i.batches.map((b) => b.length)));
+    let longest = 0; // 最长的一批；逐项比较，实例很多时不把它们展开成函数参数
+    for (const inst of instances) for (const batch of inst.batches) longest = Math.max(longest, batch.length);
+    const inWords = 1 + longest;
     const limits = this.device.limits;
     const maxBinding = Math.min(limits.maxStorageBufferBindingSize, limits.maxBufferSize);
     const perInstance = Math.max(this.l.stateWords, this.l.recWords, inWords) * BYTES;
@@ -137,7 +136,7 @@ export class GpuExecutor {
     this.stats = { dispatches: 0, instances: 0, milliseconds: 0, gpuMilliseconds: 0, decodeMilliseconds: 0 };
     const t0 = performance.now();
     for (let k = 0; k < instances.length; k += group) {
-      results.push(...await this.runGroup(instances.slice(k, k + group), inWords));
+      for (const result of await this.runGroup(instances.slice(k, k + group), inWords)) results.push(result);
     }
     this.stats = { ...this.stats, instances: instances.length, milliseconds: performance.now() - t0 };
     return results;
@@ -163,7 +162,7 @@ export class GpuExecutor {
     });
 
     const results: GpuResult[] = instances.map(() => ({ records: [], error: null, snapshot: null }));
-    const batches = Math.max(0, ...instances.map((i) => i.batches.length));
+    const batches = instances.reduce((most, inst) => Math.max(most, inst.batches.length), 0);
     try {
       for (let b = 0; b < batches; b++) {
         const input = new Uint32Array(n * inWords);
@@ -229,7 +228,7 @@ export class GpuExecutor {
 
   private decodeRecords(words: Uint32Array, start: number, count: number, out: RecordEntry[]): void {
     const { c, l } = this;
-    const mask = (1 << 28) - 1;
+    const mask = (1 << NODE_BITS) - 1;
     for (let k = start; k < start + count; k++) {
       const w = words[k];
       const kind = w >>> 30;
@@ -257,9 +256,7 @@ export class GpuExecutor {
     st.fill(NONE, l.s.SLOT, l.s.SLOT + c.nSlots);
     if (!snap) return;
     const problems = checkSnapshot(snap, c.model);
-    if (problems.length || snap.jkm !== c.name) {
-      throw new Error("快照不合法：\n" + (problems.length ? problems : ["快照与模型不对应"]).join("\n"));
-    }
+    if (problems.length) throw new Error("快照不合法：\n" + problems.join("\n"));
     const idx = (p: string) => c.index.get(p)!;
     for (const [p, v] of Object.entries(snap.q)) st[l.s.Q + idx(p)] = v;
     for (const [p, record] of Object.entries(snap.trigger_all)) {
@@ -299,7 +296,7 @@ export class GpuExecutor {
     c.paths.forEach((p, i) => (q[p] = st[l.s.Q + i] as Bit));
     const triggerAll: Record<string, (Bit | null)[]> = {};
     c.paths.forEach((p, i) => {
-      if (!c.slotLen[i] || !(c.flags[i] & 1)) return;
+      if (!(c.flags[i] & F_ALL)) return;
       const record = Array.from({ length: c.slotLen[i] }, (_, k) => {
         const v = st[l.s.SLOT + c.slotBase[i] + k];
         return v === NONE ? null : (v as Bit);
@@ -323,7 +320,7 @@ export class GpuExecutor {
     }
     const threads: Snapshot["threads"] = {};
     if (c.thread !== undefined) threads[c.thread] = { events, tasks };
-    return { snapshot: name, jkm: c.name, version: "7.0.0", q, trigger_all: triggerAll, rounds, threads };
+    return { snapshot: name, jkm: c.name, version: VERSION, q, trigger_all: triggerAll, rounds, threads };
   }
 }
 

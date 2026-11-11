@@ -9,15 +9,10 @@ import type { TaskItem } from "../../src/cpu.ts";
 import type { RecordEntry } from "../../src/record.ts";
 import type { FifoRow, OutputRow, Session, Step } from "./session.ts";
 import { type Loaded, state } from "./state.ts";
-import { byId, clone } from "./ui/dom.ts";
+import { byId, clone, pretty, setText } from "./ui/dom.ts";
 import { tabValue } from "./ui/tabs.ts";
 
 const $ = (id: string): HTMLElement => byId(id);
-const setText = (id: string, text: unknown): void => {
-  const element = document.getElementById(id);
-  if (element) element.textContent = String(text);
-};
-const pretty = (value: unknown): string => JSON.stringify(value, null, 2);
 
 /** JKRD7 §4.4 的发布条件：[EX 非空：完成后发布的条件, 空 EX：触发时发布的条件]。 */
 const PUBLISH_RULES: Record<PublishMode, [string, string]> = {

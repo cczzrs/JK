@@ -2,7 +2,17 @@
  * 模型的展示投影：从 JK 的 Model 得到画图用的节点、连线与观察点。只读，不是可接受的模型格式。
  */
 
-import { type Bit, type Model, comparePaths, isInputEntry, sortPaths } from "../../../src/model.ts";
+import { type Model, comparePaths, isInputEntry, sortPaths } from "../../../src/model.ts";
+
+/** 观察点在场景中的键：每个 output 成员一个，与它读取的 JKI 分开。 */
+export function observeKey(path: string): string {
+  return `observe:${path}`;
+}
+
+/** 观察点的键所读取的 JKI；不是观察点的键原样返回。 */
+export function observedPath(key: string): string {
+  return key.startsWith("observe:") ? key.slice("observe:".length) : key;
+}
 
 export interface Token {
   source: string;
@@ -15,9 +25,7 @@ export interface Token {
 export interface DisplayNode {
   id: string;
   key: string;
-  initial: Bit;
   hasEX: boolean;
-  errors: string[];
   tokens: Token[];
   isInput: boolean;
   tags: string[];
@@ -28,16 +36,12 @@ export interface DisplayOutput {
   id: string;
   source: string;
   displayName: string;
-  error: null;
-  category: "observe";
   tags: string[];
 }
 
+/** 输入入口本身就是 JKI，在 nodes 中；outputs 是观察点。 */
 export interface DisplayModel {
-  name: string;
   nodes: DisplayNode[];
-  /** 场景中独立的输入点；JKM 的输入入口本身就是 JKI，因此为空。 */
-  inputs: string[];
   outputs: DisplayOutput[];
 }
 
@@ -58,13 +62,13 @@ export function createDisplayModel(model: Model): DisplayModel {
     }
     const tags = [...(definition.pro?.tag ?? [])];
     return {
-      id: path, key: path, initial: definition.q, hasEX: ops.length > 0, errors: [], tokens,
+      id: path, key: path, hasEX: ops.length > 0, tokens,
       isInput: isInputEntry(model, path), tags,
       displayName: tags.length ? `${path} · ${tags.join(" · ")}` : path,
     };
   });
   const outputs = sortPaths(model.output).map((path): DisplayOutput => ({
-    id: `observe:${path}`, source: path, displayName: `观察 · ${path}`, error: null, category: "observe", tags: [],
+    id: observeKey(path), source: path, displayName: `观察 · ${path}`, tags: [],
   }));
-  return { name: model.name ?? "", nodes, inputs: [], outputs };
+  return { nodes, outputs };
 }

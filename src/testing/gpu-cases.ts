@@ -3,7 +3,8 @@
  * 命令行见 tools/gpu.ts（启动本机 Chrome 执行）。
  */
 
-import { Model, type RunScript, type Snapshot, docBlock, docModels } from "../model.ts";
+import { Model, type RunScript, type Snapshot } from "../model.ts";
+import { docBlock, docModels } from "../doc.ts";
 import { CpuExecutor, type CpuOptions, TxLimit } from "../cpu.ts";
 import { runScriptCpu } from "../executor.ts";
 import { bitsToInt, formatRecords, formatSnapshot } from "../record.ts";

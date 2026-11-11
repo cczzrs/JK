@@ -26,7 +26,8 @@
     "factory_pending": "docs/modules/factory-pending.md",
     "typescript": "TypeScript.md",
     "webgpu": "WebGPU.md",
-    "web_show": "docs/web-show.md"
+    "web_show": "docs/web-show.md",
+    "ultra": "ultra.md"
   },
   "assets": {
     "ascii_digits": "assets/ascii-bit-design/digits.jkm.json",
@@ -46,6 +47,7 @@
   },
   "tools": {
     "model": "src/model.ts",
+    "doc": "src/doc.ts",
     "validator": "tools/validate.ts",
     "reference": "tools/reference.ts",
     "gpu": "tools/gpu.ts",

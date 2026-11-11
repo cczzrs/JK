@@ -4,7 +4,28 @@ import { type Bit, type Jki, type Jkm, type Jks, Model, PUBLISH, PUBLISH_MODES }
 import { CpuExecutor, type CpuOptions } from "../cpu.ts";
 import { bitsToInt } from "../record.ts";
 import type { Random } from "./random.ts";
-import { syncInput } from "./static.ts";
+
+/**
+ * 按根 JKS.trigger 重写 JKM.input（§8.1）：列出含输入入口（trigger.any=[] 的直接成员）的根登记。
+ * 夹具改动根登记或入口后调用；模型结构不完整时不改。
+ */
+export function syncInput(data: Jkm): Jkm {
+  const input: Record<string, string[]> = {};
+  for (const root of Array.isArray(data.roots) ? data.roots : []) {
+    const trigger = (root as Partial<Jks> | null)?.trigger;
+    const members = (root as Partial<Jks> | null)?.members;
+    if (typeof trigger !== "object" || trigger === null || !Array.isArray(members)) continue;
+    for (const [kind, refs] of Object.entries(trigger)) {
+      const entry = Array.isArray(refs) && refs.some((ref) => members.some((m) => {
+        const t = (m as Partial<Jki>)?.trigger as { any?: unknown } | undefined;
+        return (m as Partial<Jki>)?.id === ref && !("members" in m) && Array.isArray(t?.any) && t.any.length === 0;
+      }));
+      if (entry) input[`${root.id}.${kind}`] = [...refs as string[]];
+    }
+  }
+  data.input = input;
+  return data;
+}
 
 /** 一个 JKM；input 按根登记生成，output 默认为空，需要时用 withOutput 设定（§8.1）。 */
 export function jkm(name: string, ...roots: Jks[]): Jkm {

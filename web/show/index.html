@@ -258,7 +258,6 @@
               </div>
             </div>
             <p id="model-summary" class="muted model-validation">JKRD7 · 正在加载</p>
-            <div id="model-errors" class="errors" hidden></div>
             <details id="jkm-metadata-details">
               <summary>模型元数据</summary>
               <p class="muted">JKS <b id="stat-groups">0</b> · 事件 <b id="stat-events">0</b> · 任务 <b id="stat-tasks">0</b></p>
@@ -279,9 +278,9 @@
   <div class="cosmic-window-body">
 <div class="input-section">
 <button id="image-input" class="button small">输入数据提取</button>
-            <div id="input-buttons" class="v7-input-buttons" aria-label="输入入口"></div>
+            <div id="input-buttons" class="v7-input-buttons" role="group" aria-label="输入入口"></div>
             <label for="input-json">编辑输入入口路径，发送到网络</label>
-            <textarea id="input-json" spellcheck="false" aria-label="输入信号 JSON"></textarea>
+            <textarea id="input-json" spellcheck="false"></textarea>
             <button id="send" class="button primary full"><span></span>发送信号<span>↗</span></button>
             <div id="message" role="status" aria-live="polite">正在加载 JKRD7 模型…</div>
 </div>
@@ -656,11 +655,11 @@
         </span>
       </div>
       <div class="output-row"><span>最近一行</span><span id="output-number" class="source">等待通知</span><span id="output-character" class="output-value">—</span></div>
-      <div role="tabpanel" aria-labelledby="output-render-mode-rgb">
+      <div role="tabpanel" aria-labelledby="output-render-mode-rgb" tabindex="0">
         <canvas id="output-board" aria-label="输出位画板"></canvas>
         <p class="muted">渲染“输出数据格式及列表”当前的行（随记录方式变化）。每行画一行的位，按 output 的组顺序，只记已标记节点时只画这些节点；绿色为 1，灰色为 0。</p>
       </div>
-      <div role="tabpanel" aria-labelledby="output-render-mode-ascii" hidden>
+      <div role="tabpanel" aria-labelledby="output-render-mode-ascii" tabindex="0" hidden>
         <pre id="output-ascii" class="output-ascii" aria-label="data 组转成的 ASCII"></pre>
         <p class="muted">渲染“输出数据格式及列表”当前的行（随记录方式变化）。每行的 data 组转成一个字符，8 位且可打印时显示字符，否则显示十六进制码；没有 data 成员的行不显示。</p>
       </div>
@@ -681,7 +680,7 @@
         <button id="output-mode-all" type="button" role="tab" data-value="all" aria-selected="true" tabindex="0">每条输出</button>
         <button id="output-mode-trigger" type="button" role="tab" data-value="trigger" aria-selected="false" tabindex="-1">指定触发组</button>
       </div>
-      <div role="tabpanel" aria-labelledby="output-mode-all">
+      <div role="tabpanel" aria-labelledby="output-mode-all" tabindex="0">
         <p class="muted">本会话的每条输出各成一行。运行控制勾选“切片记录”时：output 中某个成员的通知投递时，按 output 的顺序读取全部成员的 q（与执行记录 §9.4 相同）。不勾选时与真实运行一样：只记到达的成员自己的 q，不读取其他成员。</p>
       </div>
       <div role="tabpanel" aria-labelledby="output-mode-trigger" hidden>
@@ -931,7 +930,7 @@
     </div>
 
     <!-- 动态内容仅复制静态模板，JavaScript 只填充数据与状态。 -->
-    <template id="output-list-row-template"><tr><td data-n></td><td data-unit></td><td data-source></td><td data-values></td><td data-number></td><td data-char></td></tr></template>
+    <template id="output-list-row-template"><tr><td></td><td></td><td></td><td></td><td></td><td></td></tr></template>
     <template id="output-row-template">
       <div class="output-row"><span data-output-id></span><span class="source"></span><span class="output-value">0</span><small class="output-publication">尚未发布</small></div>
     </template>
@@ -961,7 +960,6 @@
     <template id="history-row-template"><div class="history-row"><span data-kind></span><b data-detail></b></div></template>
     <template id="option-template"><option></option></template>
     <template id="input-template"><button class="button small" type="button"><strong></strong><span></span></button></template>
-    <template id="row-template"><div class="history-row"><code></code></div></template>
     <template id="download-template"><a hidden></a></template>
     <template id="unit-step-template"><li class="unit-step"><button type="button" class="unit-step-head"><em data-depth></em><b data-kind></b><span data-target></span></button><ul class="unit-lines" data-lines></ul></li></template>
     <template id="unit-line-template"><li></li></template>

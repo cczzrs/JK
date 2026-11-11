@@ -99,7 +99,6 @@ export class CosmicWorkspace {
   private readonly resetButton: HTMLButtonElement;
   private readonly listeners: (() => void)[] = [];
   private readonly observer: ResizeObserver;
-  private active = true;
   private gesture: Gesture | null = null;
   private disposed = false;
   private rendering = false;
@@ -277,7 +276,7 @@ export class CosmicWorkspace {
   }
 
   scheduleLayout(): void {
-    if (this.frame !== null || !this.active || this.disposed) return;
+    if (this.frame !== null || this.disposed) return;
     this.frame = requestAnimationFrame(() => {
       this.frame = null;
       this.render();
@@ -376,7 +375,7 @@ export class CosmicWorkspace {
   }
 
   render(): void {
-    if (!this.active || this.disposed) return;
+    if (this.disposed) return;
     if (this.rendering) {
       this.scheduleLayout();
       return;
@@ -434,7 +433,7 @@ export class CosmicWorkspace {
   }
 
   private reveal(key: string): void {
-    if (this.single || this.windows[key].zone === "scene" || !this.active) return;
+    if (this.single || this.windows[key].zone === "scene") return;
     const geometry = fitWindowGeometry(this.windows[key], this.bounds(key), this.config, key);
     const top = this.desktop.scrollTop;
     const bottom = top + this.desktop.clientHeight;
@@ -501,7 +500,6 @@ export class CosmicWorkspace {
   }
 
   private click(event: MouseEvent): void {
-    if (!this.active) return;
     const target = event.target as Element;
     if (target.closest("#scene-fullscreen")) this.scheduleLayout();
     const appearance = target.closest<HTMLElement>("[data-cosmic-appearance]");
@@ -531,7 +529,7 @@ export class CosmicWorkspace {
   }
 
   private pointerDown(event: PointerEvent): void {
-    if (!this.active || event.button !== 0 || this.gesture) return;
+    if (event.button !== 0 || this.gesture) return;
     const target = event.target as Element;
     const element = target.closest<HTMLElement>("[data-cosmic-window]");
     const key = element?.dataset.cosmicWindow;
@@ -576,7 +574,6 @@ export class CosmicWorkspace {
     const distance = gesture.kind === "rail-width" ? Math.abs(x) : gesture.kind === "rail-menu" ? Math.abs(y) : Math.hypot(x, y);
     if (!gesture.moved && distance < this.config.geometry.dragThreshold) return;
     gesture.moved = true;
-    this.root.dataset.windowGesture = gesture.kind;
     if (gesture.kind === "rail-width") {
       this.state.rail.width = fitRailWidth(gesture.railWidth - x, this.shell.clientWidth, this.config);
     } else if (gesture.kind === "rail-menu") {
@@ -611,7 +608,6 @@ export class CosmicWorkspace {
   private releaseGesture(): void {
     const gesture = this.gesture;
     this.gesture = null;
-    delete this.root.dataset.windowGesture;
     if (gesture?.handle.hasPointerCapture(gesture.pointerId)) gesture.handle.releasePointerCapture(gesture.pointerId);
   }
 
@@ -626,7 +622,7 @@ export class CosmicWorkspace {
   }
 
   private keydown(event: KeyboardEvent): void {
-    if (!this.active || this.gesture || !ARROWS.includes(event.key)) return;
+    if (this.gesture || !ARROWS.includes(event.key)) return;
     const target = event.target as Element;
     const railResize = target.closest("#cosmic-rail-resize");
     const railSplitter = target.closest("#cosmic-rail-splitter");
@@ -835,12 +831,6 @@ export class CosmicWorkspace {
     this.save();
     // 这是布局变化，不是打开窗口：业务处理不应因此改写编辑框。
     this.root.dispatchEvent(new CustomEvent("cosmic-display-mode-change", { detail: { mode } }));
-  }
-
-  setActive(active: boolean): void {
-    if (!active) this.cancelGesture();
-    this.active = active;
-    if (this.active) this.scheduleLayout();
   }
 
   dispose(): void {

@@ -8,44 +8,18 @@
  * 其他参数：--chrome <路径>（或环境变量 CHROME）、--headed（显示浏览器窗口）、--timeout <秒>。
  */
 
-import { type Bit, type Jkm, type RunScript, Model, docBlock, docModels, isInputEntry, sortPaths } from "../src/model.ts";
+import { type Bit, type Jkm, type RunScript, Model, isInputEntry, sortPaths } from "../src/model.ts";
+import { DOC_MODELS, docBlock, docModels } from "../src/doc.ts";
 import { formatRecords } from "../src/record.ts";
 import { runScriptCpu } from "../src/executor.ts";
 import { CpuExecutor, TxLimit } from "../src/cpu.ts";
 import { exitLoopModel } from "../src/testing/fixtures.ts";
-import { ASCII_MODEL, DOC, SOURCE_FILES, exists, nowUtc, readJson, readText, sha256, writeText } from "./common.ts";
+import { ASCII_MODEL, DOC, SOURCE_FILES, parseArgs, readJson, readText, writeReport } from "./common.ts";
 import { serve } from "./server.ts";
-import { runInChrome } from "./chrome.ts";
+import { CHROME_ARGS, chromeOptions, runInChrome } from "./chrome.ts";
 import type { CaseResult, ShowCase, ShowJob } from "../web/show/verify.ts";
 
 const REPORT = "reports/show-run.json";
-/** 第 10 节的示例（工厂附录不在内）。 */
-const DOC_EXAMPLES = ["M_FLOW", "M_PATH", "M_SYNC", "M_TX", "M_NEST", "M_REG"];
-
-interface Args {
-  chrome?: string;
-  headed: boolean;
-  writeReport: boolean;
-  timeout: number;
-}
-
-function parseArgs(argv: string[]): Args {
-  const args: Args = { headed: false, writeReport: false, timeout: 600 };
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    const value = () => {
-      const v = argv[++i];
-      if (v === undefined || v.startsWith("--")) throw new Error(`${a} 需要一个参数`);
-      return v;
-    };
-    if (a === "--chrome") args.chrome = value();
-    else if (a === "--timeout") args.timeout = Number(value());
-    else if (a === "--headed") args.headed = true;
-    else if (a === "--write-report") args.writeReport = true;
-    else throw new Error(`未知参数 ${a}`);
-  }
-  return args;
-}
 
 type Kind = ShowCase["kind"];
 
@@ -106,7 +80,7 @@ function buildCases(): ShowCase[] {
   const asciiScript = docBlock<RunScript>(doc, "run");
   cases.push(showCase("十选一 ASCII：JKRD7 §9.4 运行脚本，GPU 64 个实例对拍", "script", "ASCII_DIGITS", ascii, asciiScript, { gpu: 64 }));
   const scripts = new Map<string, RunScript>();
-  for (const name of DOC_EXAMPLES) {
+  for (const name of DOC_MODELS) {
     const data = models.get(name);
     if (!data) throw new Error(`JKRD7 中没有 ${name}`);
     const model = new Model(data, name);
@@ -161,11 +135,11 @@ function buildCases(): ShowCase[] {
 }
 
 async function main(): Promise<number> {
-  const args = parseArgs(process.argv.slice(2));
+  const args = parseArgs(process.argv.slice(2), { writeReport: "flag", ...CHROME_ARGS });
   const cases = buildCases();
   const job: ShowJob = { mode: "show", cases, timeoutMs: 60000 };
   const served = await serve({ job, onLog: (line) => console.log(line) });
-  const result = await runInChrome(`${served.url}/web/show/index.html`, served, args);
+  const result = await runInChrome(`${served.url}/web/show/index.html`, served, chromeOptions(args));
   if (result.fatal) {
     console.error("展示页验收失败：" + String(result.fatal));
     return 1;
@@ -175,12 +149,7 @@ async function main(): Promise<number> {
   for (const c of failed) console.error(`失败  ${c.case}\n      ${c.detail}`);
   console.log(`\n${results.length - failed.length}/${results.length} 项通过（渲染：${String(result.render)}）`);
   if (args.writeReport) {
-    const files = ["JKRD7.md", "assets/ascii-bit-design/digits.jkm.json", "tools/show.ts", "tools/server.ts", "tools/chrome.ts",
-      "web/show/index.html", "web/show/main.ts", "web/show/session.ts", "web/show/panels.ts", "web/show/playback.ts",
-      "web/show/scene/view.ts", "web/show/verify.ts", ...SOURCE_FILES].filter(exists);
-    const report = {
-      status: failed.length ? "failed" : "passed",
-      generated_at_utc: nowUtc(),
+    writeReport(REPORT, failed.length > 0, {
       semantics: "display page (web/show) driven through its own controls: run scripts with and without animation, "
         + "input batches sent between units and stepped one unit at a time (step counts from the executor's trace), "
         + "timeline jump/back/forward by re-execution, Canvas 2D fallback, image-to-input, a transaction stopped at the step limit, "
@@ -192,10 +161,9 @@ async function main(): Promise<number> {
       render: result.render,
       user_agent: result.userAgent,
       cases: results,
-      sha256: Object.fromEntries(files.map((p) => [p, sha256(p)])),
-    };
-    writeText(REPORT, JSON.stringify(report, null, 2) + "\n");
-    console.log(`报告已写入 ${REPORT}`);
+    }, [DOC, ASCII_MODEL, "tools/show.ts", "tools/server.ts", "tools/chrome.ts",
+      "web/show/index.html", "web/show/main.ts", "web/show/session.ts", "web/show/panels.ts", "web/show/playback.ts",
+      "web/show/scene/view.ts", "web/show/verify.ts", ...SOURCE_FILES]);
   }
   return failed.length ? 1 : 0;
 }

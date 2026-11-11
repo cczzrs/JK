@@ -11,7 +11,7 @@
  */
 
 import {
-  type Bit, GATED_TYPES, type Jki, type Model, type PublishMode, type Snapshot, type SnapshotTask,
+  type Bit, GATED_TYPES, type Jki, type Model, type PublishMode, type Snapshot, type SnapshotTask, VERSION,
   checkSnapshot, hasEx, publishMode, publishes, segments, sortPaths, isInputEntry,
 } from "./model.ts";
 import type { RecordEntry } from "./record.ts";
@@ -46,8 +46,8 @@ export class Fifo<T> {
     return this.items.length - this.head;
   }
 
-  push(...values: T[]): void {
-    this.items.push(...values);
+  push(value: T): void {
+    this.items.push(value);
   }
 
   shift(): T {
@@ -186,11 +186,6 @@ export class CpuExecutor {
 
   // -- 小工具 -------------------------------------------------------------
 
-  private abs(ref: string): string {
-    if (!this.m.isJkiPath(ref)) throw new Error(`${ref} 不是模型中的 JKI 绝对路径`);
-    return ref;
-  }
-
   private node(path: string): Jki {
     return this.m.jki.get(path)!;
   }
@@ -203,9 +198,8 @@ export class CpuExecutor {
 
   // -- 外部接口（§9.1） ------------------------------------------------------
 
-  inject(ref: string): void {
-    const path = this.abs(ref);
-    if (!isInputEntry(this.m, path)) throw new Error(`${ref} 不是输入入口（JKRD7 §3.2、§9.1）`);
+  inject(path: string): void {
+    if (!isInputEntry(this.m, path)) throw new Error(`${path} 不是输入入口（JKRD7 §3.2、§9.1）`);
     this.note({ kind: "inject", path });
     this.events.push(path);
     this.trace?.({ kind: "push", fifo: "events", depth: 0, item: path });
@@ -470,14 +464,12 @@ export class CpuExecutor {
     if (this.thread !== undefined) {
       threads[this.thread] = { events: this.events.toArray().map((source) => ({ source })), tasks: this.tasks.toArray().map(task) };
     }
-    return { snapshot: name, jkm: this.m.name, version: "7.0.0", q, trigger_all: triggerAll, rounds, threads };
+    return { snapshot: name, jkm: this.m.name, version: VERSION, q, trigger_all: triggerAll, rounds, threads };
   }
 
   loadSnapshot(snap: Snapshot): void {
     const problems = checkSnapshot(snap, this.m);
-    if (problems.length || snap.jkm !== this.m.name) {
-      throw new Error("快照不合法：\n" + (problems.length ? problems : ["快照与模型不对应"]).join("\n"));
-    }
+    if (problems.length) throw new Error("快照不合法：\n" + problems.join("\n"));
     this.q = new Map(Object.entries(snap.q));
     for (const [path, record] of this.triggerAll) {
       const saved = snap.trigger_all[path];

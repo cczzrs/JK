@@ -7,7 +7,8 @@
  */
 
 import { APP_CONFIG } from "./config.ts";
-import { type Jkm, type RunScript, Model, checkRunScript, formatJkmJson, isInputEntry, sortPaths } from "../../src/model.ts";
+import { type Jkm, type RunScript, Model, checkRunScript, isInputEntry, parseJson, sortPaths } from "../../src/model.ts";
+import { formatJkmJson } from "../../src/doc.ts";
 import { formatRecords } from "../../src/record.ts";
 import { Session, type Step, type Unit } from "./session.ts";
 import { type Loaded, current, state } from "./state.ts";
@@ -21,7 +22,7 @@ import { NodeTree } from "./ui/node-tree.ts";
 import { CosmicWorkspace } from "./ui/cosmic-workspace.ts";
 import { NetworkStylePanel } from "./ui/network-style-panel.ts";
 import { pixelsToBatches } from "./ui/image-input.ts";
-import { byId, clone, errorMessage } from "./ui/dom.ts";
+import { byId, clone, errorMessage, pretty, setText } from "./ui/dom.ts";
 import { OutputChoiceStore } from "./ui/output-choices.ts";
 
 const $ = (id: string): HTMLElement => byId(id);
@@ -30,14 +31,8 @@ const area = (id: string): HTMLTextAreaElement => byId(id, HTMLTextAreaElement);
 const choice = (id: string): HTMLSelectElement => byId(id, HTMLSelectElement);
 const button = (id: string): HTMLButtonElement => byId(id, HTMLButtonElement);
 const canvasOf = (id: string): HTMLCanvasElement => byId(id, HTMLCanvasElement);
-const pretty = (value: unknown): string => JSON.stringify(value, null, 2);
-const setText = (id: string, text: unknown): void => {
-  const element = document.getElementById(id);
-  if (element) element.textContent = String(text);
-};
 
 const jkmPanel = $("jkm-panel");
-jkmPanel.style.setProperty("--cosmic-rail-bg", APP_CONFIG.desktop.theme.rail);
 jkmPanel.style.setProperty("--cosmic-fg", APP_CONFIG.desktop.theme.foreground);
 jkmPanel.style.setProperty("--cosmic-scene-background-edge", APP_CONFIG.scene.appearance.backgroundEdge);
 for (const section of $("node-inspector").querySelectorAll<HTMLDetailsElement>("[data-inspector-section]")) {
@@ -87,7 +82,7 @@ const view = new NetworkView({
   onLayout: (layout) => {
     if (layout.pending) setText("layout-status", "正在排列…");
     else if (layout.error) setText("layout-status", `布局失败：${layout.error}`);
-    else setText("layout-status", layout.label ?? `${layout.mode} 布局`);
+    else setText("layout-status", `${layout.mode} 布局`);
   },
   onStep: (index) => {
     state.unitStep = index;
@@ -176,7 +171,7 @@ function download(name: string, value: unknown, type = "application/json"): void
 
 async function readJsonFile(file: File): Promise<unknown> {
   if (file.size > APP_CONFIG.view.fileBytes) throw new Error("文件超过 32 MiB 限制");
-  return JSON.parse(await file.text()) as unknown;
+  return parseJson(await file.text());
 }
 
 function action(id: string, fn: () => unknown, errorId?: string): void {
@@ -195,7 +190,7 @@ function action(id: string, fn: () => unknown, errorId?: string): void {
 function updatePlayback(): void {
   const skip = input("skip").checked;
   const speed = Number(input("speed").value);
-  view.setPlayback({ running: playback.running, speed, skip });
+  view.setPlayback({ speed, skip });
   setText("speed-label", skip ? "计算速度" : "动画速度");
   setText("speed-budget", skip ? `每帧预算 ${APP_CONFIG.engine.frameBudgetMs * speed} ms` : `每单元 ${(APP_CONFIG.playback.duration / speed).toFixed(2)} 秒`);
 }
@@ -492,7 +487,7 @@ action("import-btn", () => {
 });
 action("model-apply", () => {
   playback.pause();
-  loadModel(JSON.parse(area("model-json").value));
+  loadModel(parseJson(area("model-json").value));
   desktop.hide("models-dialog");
 }, "model-error");
 action("model-download", () => download(`${current().loaded.raw.jkm}.jkm.json`, formatJkmJson(current().loaded.raw) + "\n"));
@@ -682,7 +677,7 @@ async function fetchText(path: string): Promise<string> {
 
 /** 内置示例：一个 JSON 文件，名称 → JKM（由 tools/examples.ts 从 JKRD7 第 10 节与十选一附件生成）。 */
 async function loadExamples(): Promise<Map<string, Jkm>> {
-  const data = JSON.parse(await fetchText(APP_CONFIG.model.examples)) as Record<string, Jkm>;
+  const data = parseJson(await fetchText(APP_CONFIG.model.examples)) as Record<string, Jkm>;
   return new Map(Object.entries(data));
 }
 

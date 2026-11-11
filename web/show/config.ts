@@ -68,7 +68,7 @@ export interface DesktopConfig {
   display: { mode: "dual" | "single"; modes: { dual: ModeSpec; single: ModeSpec } };
   theme: {
     background: string; accent: string; hover: string; focus: string; border: string;
-    selectionBackground: string; selectionForeground: string; rail: string; foreground: string;
+    selectionBackground: string; selectionForeground: string; foreground: string;
     glass: { enabled: boolean; blur: number; limits: Limit };
   };
   split: Ranged;
@@ -84,7 +84,7 @@ export interface DesktopConfig {
   };
   geometry: {
     padding: number; titleHeight: number; dragThreshold: number; keyboardStep: number; maxCanvasHeight: number;
-    minWidth: number; minHeight: number; baseWidth: number; defaultZone: Zone;
+    minWidth: number; minHeight: number; defaultZone: Zone;
   };
   appearance: WindowAppearance & {
     target: string;
@@ -132,11 +132,6 @@ export interface Preset {
   /** 运行脚本 model 字段使用的 JKM 文件路径（相对仓库根目录）。 */
   path?: string;
   input?: string[];
-}
-
-export interface RenderScheduleSettings {
-  idleFps: number;
-  activeFps: number;
 }
 
 function freezeTree<T>(value: T): T {
@@ -198,7 +193,7 @@ const desktop: DesktopConfig = {
   theme: {
     background: "#000000", accent: "#00ffff", hover: "#e5edf6", focus: "#ffffff",
     border: "#ffffff", selectionBackground: "#595959", selectionForeground: "#ffffff",
-    rail: "#000000", foreground: "#ffffff",
+    foreground: "#ffffff",
     glass: { enabled: true, blur: 14, limits: { min: 0, max: 40, step: 1 } },
   },
   split: { value: 0.737, min: 0.2, max: 0.82, step: 0.02 },
@@ -229,7 +224,7 @@ const desktop: DesktopConfig = {
   },
   geometry: {
     padding: 12, titleHeight: 42, dragThreshold: 4, keyboardStep: 16, maxCanvasHeight: 6000,
-    minWidth: 220, minHeight: 120, baseWidth: 460, defaultZone: "tools",
+    minWidth: 220, minHeight: 120, defaultZone: "tools",
   },
   appearance: {
     target: "appearance",
@@ -312,7 +307,6 @@ const styles: StylesConfig = {
 export const APP_CONFIG = freezeTree({
   desktop,
   model: {
-    version: "7.0.0",
     example: "ASCII_DIGITS",
     runName: "show-run",
     /** 内置示例文件：名称 → JKM，按显示顺序（node tools/examples.ts 生成，静态检查核对与来源一致）。 */
@@ -327,8 +321,6 @@ export const APP_CONFIG = freezeTree({
     } as Record<string, Preset>,
   },
   engine: {
-    /** 默认后端（JKRD7 实现：CPU 为默认）。 */
-    backend: "cpu" as "cpu" | "gpu",
     /** 一段连续处理（从开始处理到静止）最多处理的单元数；到达后暂停，现场完整保留。属于页面调度，不是规则。 */
     playUnits: 100000,
     /** 播放中静止时，检查新输入的间隔（毫秒）。播放到静止不自动停下。 */
@@ -391,7 +383,6 @@ export const APP_CONFIG = freezeTree({
         activeLineWidth: 2,
         arrowPixels: 4,
         nodeSize: 0.1,
-        edgeColors: { J: 0xe898c0, K: 0x689ef3, Y: 0x79dfae, error: 0xff596e } as Record<string, number>,
         signalTextColor: "#eefcf8",
       },
     },
@@ -429,4 +420,3 @@ export const APP_CONFIG = freezeTree({
   },
 });
 
-export type AppConfig = typeof APP_CONFIG;

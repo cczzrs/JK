@@ -9,6 +9,7 @@
 import { CpuExecutor, type TaskItem, type TraceEntry, compareRoundKeys } from "../../src/cpu.ts";
 import { type Bit, type Model, isInputEntry, sortPaths } from "../../src/model.ts";
 import type { RecordEntry } from "../../src/record.ts";
+import { observeKey } from "./scene/model-view.ts";
 
 /** 一次动画用的传递：沿某条连线移动的标记。只用于画图。 */
 export interface Transfer {
@@ -149,7 +150,7 @@ function buildSteps(model: Model, trace: readonly TraceEntry[], firstOutput: num
       e.x.forEach((value, index) => step.transfers.push({ source: refs[index], target: e.path, value: `读${value}`, relation: "source", index }));
     } else if (e.kind === "output") { // 输出模块按 JKM.output 的顺序读取（§9.1）
       const n = output++;
-      model.output.forEach((path, i) => step.transfers.push({ source: path, target: `observe:${path}`, value: String(e.values[i]), relation: "observe", output: n }));
+      model.output.forEach((path, i) => step.transfers.push({ source: path, target: observeKey(path), value: String(e.values[i]), relation: "observe", output: n }));
     } else if (e.kind === "q") {
       step.pulses.push({ path: e.path, text: `${e.from}→${e.to}`, kind: "write" });
     } else if (e.kind === "notify") {

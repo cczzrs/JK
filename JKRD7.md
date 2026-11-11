@@ -1,7 +1,7 @@
 # JKRD7（JK 规则与设计 7.0.0）
 
 - **版本**：7.0.0
-- **状态**：用户已批准。2026-11-05 按已批准的补充项 P1—P9 重排全文；2026-11-06 写入第二轮补充项 P10—P17；2026-11-09 写入环的退出节点（out 登记）与 JKM 的输出列表（output）；2026-11-10 写入 JKM 的输入登记（input），output 改为分组。
+- **状态**：用户已批准。2026-11-05 按已批准的补充项 P1—P9 重排全文；2026-11-06 写入第二轮补充项 P10—P17；2026-11-09 写入环的退出节点（out 登记）与 JKM 的输出列表（output）；2026-11-10 写入 JKM 的输入登记（input），output 改为分组；2026-11-11 在 §9.5 写明事务任务的本次前置，第 11 节补入展示页验收，以及 bit 原文写法与快照的静态案例。
 - **范围**：JKI 节点，JKS 结构与事务，串行执行模型，JKM 模型封装，模块边界。
 - 本文件是唯一规则入口。只维护 7.0.0，不兼容、不迁移此前版本。各次修改的依据与前后差异见[维护记录](docs/jkrd7-maintenance.md)。
 - 设计获批、静态检查或参考解释器通过，都不等于生产执行器、恢复或硬件行为已经验证。验证范围见第 11 节。
@@ -558,6 +558,8 @@ FIFO 项的写法：
 - 节点任务：`{"node": 目标}`。
 - 事务任务：`{"tx": 目标 JKS, "prereqs": [本次前置]}`。
 
+事务任务的 prereqs 就是 §5.3 记下的本次前置：transaction 登记到齐的一轮，列出该登记的全部前置，各一次，按首次到达顺序；transaction_any 只列发出通知的那一个前置。
+
 定义加快照，可以从该点继续执行，结果与不中断的运行相同。
 
 ## 10. 示例
@@ -871,11 +873,12 @@ G2 的前置成员 Q202 接入 G1.Q10，并登记为 transaction。G2 的子结�
 
 | 命令 | 作用 |
 | --- | --- |
-| `node tools/validate.ts` | 静态检查：本文的模型、JKI 片段、运行脚本与快照，模型附件，正例与负例，本地链接和索引 |
+| `node tools/validate.ts` | 静态检查：本文的模型、JKI 片段、运行脚本与快照，模型附件，正例与负例（含 bit 的原文写法与快照），本地链接和索引 |
 | `node tools/reference.ts` | CPU 后端（串行参考解释器）：执行第 10 节的模型与十选一附件，核对 §11.2；同时核对可并行批、运行脚本与快照 |
 | `node tools/gpu.ts` | GPU 后端：启动本机 Chrome，在 WebGPU 上执行，与同一页面里的 CPU 后端逐字节对拍 |
+| `node tools/show.ts` | 展示页验收：启动本机 Chrome 打开展示页，通过页面控件执行，把页面导出的执行记录和显示的状态同 CPU 后端比较（见 [web-show.md](docs/web-show.md) 第 9 节） |
 
-三个命令加 `--write-report` 时，分别把报告写入 [reports/static-validation.json](reports/static-validation.json)、[reports/reference-run.json](reports/reference-run.json) 和 [reports/gpu-run.json](reports/gpu-run.json)。规则检查在 [src/model.ts](src/model.ts)，CPU 后端在 [src/cpu.ts](src/cpu.ts)，GPU 后端在 [src/gpu/](src/gpu/backend.ts)。
+四个命令加 `--write-report` 时，分别把报告写入 [reports/static-validation.json](reports/static-validation.json)、[reports/reference-run.json](reports/reference-run.json)、[reports/gpu-run.json](reports/gpu-run.json) 和 [reports/show-run.json](reports/show-run.json)。规则检查在 [src/model.ts](src/model.ts)，CPU 后端在 [src/cpu.ts](src/cpu.ts)，GPU 后端在 [src/gpu/](src/gpu/backend.ts)。
 
 两个后端另有命令行用法，输出 §9.4 的执行记录，供逐条比对：
 
@@ -892,7 +895,7 @@ node tools/gpu.ts --script <运行脚本> [--start <快照>] [--save <快照>]
 | 案例 | 预期 | 核对 |
 | --- | --- | --- |
 | JKM 与 JKS 格式 | roots 为空；缺少 input，input 漏列或多列含输入入口的根登记、键不是“根 id.登记类型”、值与根登记不同；缺少 output，output 不是分组对象、组为空、成员在组间重复或不是 JKI 绝对路径；JKS.trigger 没有登记、JKS 缺少 id、thread、trigger 或 members 均被拒绝；JKS 的 pro、runtime 省略或写 `{}` 都合法 | 静态 |
-| JKI 字段 | 必填 id、q、trigger；可省略项与省略等价；seed=null、字符串或布尔 bit、未批准字段均被拒绝 | 静态 |
+| JKI 字段 | 必填 id、q、trigger；可省略项与省略等价；seed=null、字符串或布尔 bit、原文不是 0 或 1 的 bit（如 1.0）、未批准字段均被拒绝 | 静态 |
 | 编号与字符串 | Q、G 编号带前导零，字符串数组含空串，均被拒绝 | 静态 |
 | 引用与路径 | 短 ID 只在本层解析；跨层写绝对路径；引用落到 JKS、根 id 重复均被拒绝 | 静态；M_PATH |
 | 定义中的到达记录 | trigger_all 不全为 null 的定义被拒绝 | 静态 |
@@ -922,6 +925,7 @@ node tools/gpu.ts --script <运行脚本> [--start <快照>] [--save <快照>]
 | 可并行批 | 批执行模式与串行的执行记录完全相同：第 10 节模型、十选一、随机模型 | 参考 |
 | 运行脚本 | §9.4 的脚本中，Q24 的输出记录的 data 依次为 0x30、0x31、0x39 | 参考 |
 | 快照 | M_TX 的中间状态与 §9.5 一致；从快照继续的记录与不中断运行相同 | 参考 |
+| 快照格式 | 字段多出或类型不对、jkm 与模型不对应、到达记录或轮记录不合法、事件项或任务项不合法（含事务任务的前置不是本次前置）均被拒绝 | 静态 |
 | GPU 后端 | 第 10 节模型、嵌套事务与带退出结构的环、运行脚本、十选一多实例、随机模型、从快照继续：执行记录与结束时的快照与 CPU 后端逐字节相同；容量不足、超出步数与超出事务上限时报告错误，停下的位置与已有记录与 CPU 后端相同，同一次运行中的其他实例不受影响 | GPU |
 
 核对一栏中，“静态”指 `node tools/validate.ts`，“参考”指 `node tools/reference.ts`，“GPU”指 `node tools/gpu.ts`。

@@ -5,6 +5,7 @@
 - **状态**：原 Python 工具已全部移植到 TypeScript 并删除。删除前做过逐字节对拍，见第 7 节。
 - GPU 后端的设计见 [WebGPU.md](WebGPU.md)。规则只以 [JKRD7](JKRD7.md) 为准。
 - 2026-11-08 增加展示页 `web/show/`（JKM 工作区），设计与依据见 [docs/web-show.md](docs/web-show.md)。
+- 2026-11-11 整理结构与代码（依据、改动与下一步规划见 [ultra.md](ultra.md)）。
 
 ## 1. 环境
 
@@ -26,10 +27,11 @@
 
 ```text
 src/                     命令行与浏览器共用，不依赖 Node
-  model.ts               规则：JSON 结构、静态检查、引用解析、运行脚本与快照检查
+  model.ts               规则：JSON 原文解析、JSON 结构、静态检查、引用解析、运行脚本与快照检查
+  doc.ts                 JKRD7 正文中 JSON 块的提取、第 10 节模型名单、JKM 的排版
   record.ts              执行记录与固定文本格式
   cpu.ts                 CPU 后端（串行参考，默认）
-  executor.ts            运行脚本入口
+  executor.ts            按运行脚本运行 CPU 后端
   gpu/
     compile.ts           模型 → 结构数组，状态与记录布局
     kernel.ts            生成 WGSL 内核
@@ -37,8 +39,8 @@ src/                     命令行与浏览器共用，不依赖 Node
   testing/
     cases.ts             §11.2 验收案例（CPU）
     gpu-cases.ts         GPU 验收案例（与 CPU 对拍）
-    static.ts            静态检查的正例与负例
-    fixtures.ts          模型构造、随机模型、深比较
+    static.ts            静态检查的正例与负例、bit 的原文写法、快照的正例与负例
+    fixtures.ts          模型构造、输入登记的同步、随机模型、深比较
     random.ts            可设种子的伪随机数
 tools/                   命令行（只在 Node 中运行）
   validate.ts            静态检查
@@ -49,7 +51,7 @@ tools/                   命令行（只在 Node 中运行）
   server.ts              本机 HTTP 服务（去掉类型后提供给浏览器）
   serve.ts               手动启动本机服务
   examples.ts            生成展示页的内置示例文件 web/show/examples.json
-  common.ts              文件读写与报告
+  common.ts              文件读写、命令行参数解析、报告写出
 web/
   index.html、gpu.ts     GPU 对拍页面
   show/                  展示页：JKM 工作区（docs/web-show.md）
@@ -74,7 +76,7 @@ reports/                 四份核对报告
 
 | 命令 | 作用 |
 | --- | --- |
-| `npm install` | 安装开发依赖（TypeScript 与类型声明） |
+| `npm install` | 安装依赖：TypeScript、类型声明，以及展示页用的 three |
 | `npm run typecheck` | 类型检查 |
 | `node tools/validate.ts [--write-report]` | 静态检查 |
 | `node tools/reference.ts [--write-report]` | 用 CPU 后端跑验收案例 |
@@ -118,10 +120,11 @@ reports/                 四份核对报告
 
 | 模块 | 内容 | JKRD7 |
 | --- | --- | --- |
-| [src/model.ts](src/model.ts) | JKI 字段检查、JKM 加载（含输入登记 input 与根登记的核对、分组的输出列表 output）、引用解析、派生索引（成员、前置、带事务登记的 JKS、订阅者）、登记分层、环的退出节点（out 登记）、纯通知环、运行脚本与快照检查 | §2、§3、§5、§6.4、§8、§9.4、§9.5 |
+| [src/model.ts](src/model.ts) | JSON 原文解析（bit 只接受写成 0、1）、JKI 字段检查、JKM 加载（含输入登记 input 与根登记的核对、分组的输出列表 output）、引用解析、派生索引（成员、前置、带事务登记的 JKS、订阅者）、登记分层、环的退出节点（out 登记）、纯通知环、运行脚本与快照检查 | §2、§3、§5、§6.4、§8、§9.4、§9.5 |
+| [src/doc.ts](src/doc.ts) | 取出 JKRD7 正文中的 JSON 块（模型、JKI 片段、运行脚本、快照）；第 10 节的模型名单；按第 10 节的排版输出 JKM。不含规则 | 第 10 节 |
 | [src/record.ts](src/record.ts) | 执行记录的四种项与固定文本格式 | §9.4 |
 | [src/cpu.ts](src/cpu.ts) | 串行执行：触发、计算、发布、整合、事务与嵌套事务、事务上限、投递顺序；按 JKM.output 写输出记录；可并行批；快照导出与载入；可选的执行细节回调 `trace`（展示用，不进入记录，不改变执行） | §4—§7、§8.1、§9.1、§9.5 |
-| [src/executor.ts](src/executor.ts) | 按运行脚本执行 | §9.4 |
+| [src/executor.ts](src/executor.ts) | 按运行脚本运行 CPU 后端（GPU 后端的入口是 `GpuExecutor.runScript`） | §9.4 |
 | [src/gpu/](src/gpu/backend.ts) | GPU 后端 | WebGPU.md |
 | [web/show/](web/show/main.ts) | 展示页：显示与交互，执行交给两个后端 | §9.1、§9.2、§9.4 |
 | [src/testing/](src/testing/cases.ts) | 验收案例、正例与负例、随机模型 | §11.2 |
@@ -185,7 +188,7 @@ reports/                 四份核对报告
 
 ## 9. 边界
 
-- 类型检查和三项核对都通过，只说明在本机已核对的范围内实现与 JKRD7 一致。
+- 类型检查和四项核对都通过，只说明在本机已核对的范围内实现与 JKRD7 一致。
 - 展示页已有 JKM 工作区（[docs/web-show.md](docs/web-show.md)），3D 渲染与 GPU 后端共用设备。
 - 还没有做的：
   - 发布用的打包（例如用 esbuild 生成单个 JavaScript 文件）；

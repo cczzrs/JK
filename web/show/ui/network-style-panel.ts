@@ -165,13 +165,9 @@ export class NetworkStylePanel {
   }
 
   private syncLegend(): void {
-    for (const element of this.root.querySelectorAll<HTMLElement>("[data-network-node-color]")) {
-      const key = element.dataset.networkNodeColor ?? "";
-      if (Object.hasOwn(this.state.nodes, key)) element.style.backgroundColor = this.state.nodes[key].color;
-    }
     for (const element of this.root.querySelectorAll<HTMLElement>("[data-network-edge-color]")) {
       const key = element.dataset.networkEdgeColor ?? "";
-      if (Object.hasOwn(this.state.edges, key)) element.style.backgroundColor = this.state.edges[key].color;
+      if (Object.hasOwn(this.state.edges, key)) element.style.setProperty("--legend-color", this.state.edges[key].color);
     }
   }
 

@@ -1,7 +1,7 @@
 {
   "status": "passed",
-  "generated_at_utc": "2026-11-11T01:22:02+00:00",
-  "scope": "JKRD7 §2/§3/§5/§6.4/§8 static rules, document JSON, model asset, fixtures, links and index; no execution (see reports/reference-run.json and reports/gpu-run.json)",
+  "generated_at_utc": "2026-11-11T22:00:54+00:00",
+  "scope": "JKRD7 §2/§3/§5/§6.4/§8 static rules, bit spelling in the JSON source text, §9.5 snapshot checks, document JSON, model asset, fixtures, display-page examples, links and index; no execution (see reports/reference-run.json and reports/gpu-run.json)",
   "checks": [
     {
       "check": "JKRD7 模型 M1",
@@ -48,7 +48,7 @@
       "passed": true
     },
     {
-      "check": "JKRD7 第 10 节模型齐全",
+      "check": "JKRD7 正文模型齐全",
       "passed": true
     },
     {
@@ -412,6 +412,126 @@
       "passed": true
     },
     {
+      "check": "原文：bit 写成 0、1",
+      "passed": true
+    },
+    {
+      "check": "原文：q 写成 1.0",
+      "passed": true
+    },
+    {
+      "check": "原文：q 写成 1e0",
+      "passed": true
+    },
+    {
+      "check": "原文：q 写成 -0",
+      "passed": true
+    },
+    {
+      "check": "原文：seed 写成 0.0",
+      "passed": true
+    },
+    {
+      "check": "快照：基准快照",
+      "passed": true
+    },
+    {
+      "check": "快照：transaction_any 的事务任务只含一个前置",
+      "passed": true
+    },
+    {
+      "check": "快照：多出字段",
+      "passed": true
+    },
+    {
+      "check": "快照：snapshot 不是字符串",
+      "passed": true
+    },
+    {
+      "check": "快照：jkm 不是对应的模型",
+      "passed": true
+    },
+    {
+      "check": "快照：版本错误",
+      "passed": true
+    },
+    {
+      "check": "快照：q 缺少节点",
+      "passed": true
+    },
+    {
+      "check": "快照：q 为布尔值",
+      "passed": true
+    },
+    {
+      "check": "快照：q 写成 1.0",
+      "passed": true
+    },
+    {
+      "check": "快照：trigger_all 不是对象",
+      "passed": true
+    },
+    {
+      "check": "快照：trigger_all 列出 any 节点",
+      "passed": true
+    },
+    {
+      "check": "快照：trigger_all 全为 null",
+      "passed": true
+    },
+    {
+      "check": "快照：trigger_all 已齐备",
+      "passed": true
+    },
+    {
+      "check": "快照：rounds 不是对象",
+      "passed": true
+    },
+    {
+      "check": "快照：rounds 的键不是 JKS",
+      "passed": true
+    },
+    {
+      "check": "快照：rounds 列出已到齐的一轮",
+      "passed": true
+    },
+    {
+      "check": "快照：threads 的键未声明",
+      "passed": true
+    },
+    {
+      "check": "快照：事件来源不是 JKI",
+      "passed": true
+    },
+    {
+      "check": "快照：事件项带接收者",
+      "passed": true
+    },
+    {
+      "check": "快照：节点任务的目标是空 EX",
+      "passed": true
+    },
+    {
+      "check": "快照：事务任务的目标没有事务登记",
+      "passed": true
+    },
+    {
+      "check": "快照：事务任务没有前置",
+      "passed": true
+    },
+    {
+      "check": "快照：事务任务的前置重复",
+      "passed": true
+    },
+    {
+      "check": "快照：事务任务的前置不属于事务登记",
+      "passed": true
+    },
+    {
+      "check": "快照：transaction_any 的事务任务含两个前置",
+      "passed": true
+    },
+    {
       "check": "本地链接",
       "passed": true
     },
@@ -427,24 +547,27 @@
   "errors": [],
   "sha256": {
     "AGENTS.md": "bccb8c7327e2d2cf4d93fa9783716a9b4aaa5ef3fb9bef20aeec7709faca7f85",
-    "JKRD7.md": "1c6774401a086e5958d27b26eeb5778d4c1cbae3442ea554cafee19ce756855d",
-    "README.md": "ca356ea970d2b6901ed4e4c20c0807410e608d45aa3dda7867515791860a9094",
-    "TypeScript.md": "7f18e56493b50dabb4d036a0ff1f70f9a929286091ce6fa0536aa9e802ab6fed",
-    "WebGPU.md": "6eec7559fdf032ee3ff1ab623e02746c7d31734cdc3477f6312295609cb5d841",
+    "JKRD7.md": "9212f3c9f72fcb63a20db121a778316f0fcd4d58ea519c2272b872e3a12231d4",
+    "README.md": "5abf09b4ae3a5757195ef08208cb080763a081a04c29013adfaf6167663086ff",
+    "TypeScript.md": "9c6effa7ad7c11d5fb0589a4aca78eccf52540750c89e46ad0b72d1158ed7e45",
+    "WebGPU.md": "9fad74760dce45ed3e319ec504e7b6c0403eb72e3a099fdb210ed7e45a03cade",
     "assets/ascii-bit-design/digits.jkm.json": "16d529c40a5224562705ac52dc953e745f5912475bdb1900821296a1617c8189",
     "assets/jks-factory-v7-design/JKI.FACTORY.json": "410729692fba6f0e70c69ec78436c27923c4e6de6fb0ed244ce378eeacda19d8",
     "assets/jks-factory-v7-design/RAM.FACTORY.json": "9ec8a03b18c4552d3db4ec42fddbfdfe39f3fd6e29a5d06675ba727f61c42f8f",
     "assets/jks-factory-v7-design/design-contract.json": "1e2f03cf60e4c4f233aaa9f361827debd2b17997653fce593effac4649d67c54",
     "assets/jks-factory-v7-design/generation-example.json": "f1b5561b14982b07b1ce41edb0285a1402e2b1f0f6eacba35199e60214b6c648",
-    "docs/jkrd7-maintenance.md": "01380cb0e7864d47df8f295fb2a52482d0e69aaa6ca25d12c07fa7c90dcd6c93",
+    "docs/jkrd7-maintenance.md": "e7fdb736084e7bb8de2c2b31db5b03fc9efb66b37a7cb6d19b534c82dbea8da5",
     "docs/jkrd7-proposal-2026-11-05.md": "050f4b365a837e3b23f0167bbf6997e98601ce760bc98689128b5f8f3491e269",
     "docs/jkrd7-proposal-2026-11-06.md": "9fcbd3027b60425e3a803a49803c66b24986f6036073a7786c23a1ac175d4e03",
     "docs/modules/factory-pending.md": "e8139c930aa319f881d2ffcdeafeac86492a8ecfce65cda7fa020ba346718dc3",
-    "docs/web-show.md": "c30ec9001b5a2145aa0e624c0b170665508043f3ae730d353c95b5ceb9ffbfbc",
-    "jk.config.json": "1e03384c4edfc29470def7e33208cd75440f8dec5b6b3c83baf00140262c7004",
-    "src/model.ts": "40a2606bc32570af3b139573680c35cc93c8e37ced37570bb4a3fd4b8e101213",
-    "src/testing/static.ts": "6049d7e72d088a8e46d6a89459b33fe828514d2c7f0c5cd31f710704ad41d45e",
-    "tools/validate.ts": "401a95ad05ff6a1656254dfdf2ab297f586e57e701987753d35f0001ee3ab8cc",
+    "docs/web-show.md": "d6e7674cc2faa69d398b97ebec8f08a67a812e477f4ba02736eb8187d2596830",
+    "jk.config.json": "512a4dc93a3a3c2639176e2caa23f774e698cf766577f95d45b7274711c0d6fb",
+    "src/doc.ts": "b35ec3bc87314457157bca33c296c1bebbe0d19c6ea3f46d6557bd30621dfc31",
+    "src/model.ts": "24789c99f2ca7cb26ba104895fad39d26b40c9680baea747f36d013d2e77474d",
+    "src/testing/fixtures.ts": "a44f18158a5c96fc008088729c6c45efe3c4a936e946c64751a9c70cf79c9263",
+    "src/testing/static.ts": "5b8b4c776e70b5fc039a500ebc44e99fb22613a0682186f2ed2a822dfa88ca66",
+    "tools/validate.ts": "b0e0c8f2b2856449b8de5f73661f0427b9304c23f4670d5ab59e3f7267d5ea75",
+    "ultra.md": "56193a0953083557c0d32cf21e6933e953293bcd5225c3ef1a2c32c1a5a82d75",
     "web/show/examples.json": "a7d145ca88ae81b4b34ccc43732ab3a2d799e0ea8e554e393ca7a10ec2f25b5c"
   }
 }

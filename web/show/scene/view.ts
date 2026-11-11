@@ -12,7 +12,7 @@ import type { CanvasView } from "./canvas-renderer.ts";
 import { FloatingEdgeCurve, assignEdgeLanes, updateTubeGeometry } from "./edge-curves.ts";
 import { EditorControls } from "./editor-controls.ts";
 import { DEFAULT_LAYOUT_MODE, LAYOUT_MODES, type LayoutMode, type LayoutResult, quickLayout } from "./layout.ts";
-import { type DisplayModel, compareDisplayNodes, createDisplayModel } from "./model-view.ts";
+import { type DisplayModel, compareDisplayNodes, createDisplayModel, observedPath } from "./model-view.ts";
 import { NetworkBatches } from "./network-batches.ts";
 import { adjustNetworkLayout, edgeStyleType, resolveNodeStyle } from "./network-style.ts";
 import { type LabelHandle, NodeLabels } from "./node-labels.ts";
@@ -33,9 +33,9 @@ interface Visual {
   count: LabelHandle;
   q: LabelHandle | null;
   id: string;
-  type: "Q" | "X" | "Y";
+  /** Q：JKI；Y：观察点。 */
+  type: "Q" | "Y";
   hasEX: boolean;
-  error: boolean;
   base: number;
   styleColor: number;
   lastCount: number;
@@ -110,8 +110,6 @@ export interface LayoutStatus {
   error?: string;
   requestedMode?: LayoutMode;
   mode?: string;
-  label?: string;
-  description?: string;
 }
 
 export interface ViewOptions {
@@ -205,6 +203,8 @@ export class NetworkView implements CanvasView {
   private available = false;
   private disposed = false;
   private fallbackPending: Promise<void> | null = null;
+  /** 最近一次渲染器重建；重建逐个进行。 */
+  private rebuilding: Promise<void> = Promise.resolve();
   private backendName: "webgpu" | "canvas" = "canvas";
   private fallbackReason: string | null = null;
   private model: DisplayModel | null = null;
@@ -221,8 +221,7 @@ export class NetworkView implements CanvasView {
   private counts: ReadonlyMap<string, number> = new Map();
   private jk: Model | null = null;
   private session: Session | null = null;
-  private playback = { running: false, speed: APP_CONFIG.playback.speed.value, skip: APP_CONFIG.playback.skip };
-  private motionEnabled = true;
+  private playback = { speed: APP_CONFIG.playback.speed.value, skip: APP_CONFIG.playback.skip };
   private animationStart: number | undefined;
   private animationFrame = 0;
   private readonly onStep: (index: number) => void;
@@ -236,7 +235,7 @@ export class NetworkView implements CanvasView {
   constructor({ container, onSelect = () => {}, onStatus = () => {}, onLayout = () => {}, onStep = () => {}, device }: ViewOptions) {
     this.container = container;
     // 选中观察点时选中它读取的 JKI。
-    this.onSelect = (key) => onSelect(key?.startsWith("observe:") ? key.slice(8) : key);
+    this.onSelect = (key) => onSelect(key === null ? null : observedPath(key));
     this.onStatus = onStatus;
     this.onLayout = (layout) => {
       if (!layout.pending && !layout.error) this.resetCamera();
@@ -265,7 +264,7 @@ export class NetworkView implements CanvasView {
           if (this.signalProgress >= 1) this.nextSegment();
         }
         try {
-          this.render(this.motionEnabled);
+          this.render();
         } catch (error) {
           void this.fail(error instanceof Error ? error : new Error(String(error)));
         }
@@ -482,8 +481,17 @@ export class NetworkView implements CanvasView {
     this.onStatus({ backend: "error", label: "渲染中断", reason: error.message });
   }
 
-  /** 重建渲染器（例如从 Canvas 2D 恢复到 WebGPU），保留相机与场景。 */
-  async recover(options: RendererOptions = {}): Promise<void> {
+  /**
+   * 重建渲染器（例如从 Canvas 2D 恢复到 WebGPU），保留相机与场景。
+   * 上一次重建没有结束时排在它后面，不会同时建两套渲染器。
+   */
+  recover(options: RendererOptions = {}): Promise<void> {
+    this.rebuilding = this.rebuilding.catch(() => {}).then(() => this.rebuild(options));
+    return this.rebuilding;
+  }
+
+  private async rebuild(options: RendererOptions): Promise<void> {
+    if (this.disposed) return;
     this.available = false;
     this.resizeObserver?.disconnect();
     const target = this.controls?.target.clone();
@@ -497,6 +505,10 @@ export class NetworkView implements CanvasView {
     old?.domElement.remove();
     disposeRenderer(old);
     await this.init(options);
+    if (this.disposed) { // 重建途中页面已关闭
+      this.releaseRenderer();
+      return;
+    }
     this.renderSchedule.resetClock();
     this.camera.position.copy(position);
     this.camera.up.copy(up);
@@ -678,9 +690,9 @@ export class NetworkView implements CanvasView {
       const p = this.layout!.positions.get(key)!;
       return new THREE.Vector3(p.x, p.y, p.z);
     };
-    const add = (key: string, id: string, type: "Q" | "X" | "Y", pos: THREE.Vector3, hasEX: boolean, error: boolean, displayName = id): Visual => {
+    const add = (key: string, id: string, type: "Q" | "Y", pos: THREE.Vector3, hasEX: boolean, displayName: string): Visual => {
       // 场景外的轻量代理保留逐节点的拾取与位置。
-      const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: error ? COLORS.error : COLORS[type] }));
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: COLORS[type] }));
       mesh.position.copy(pos);
       mesh.userData.key = key;
       mesh.updateMatrixWorld();
@@ -695,7 +707,7 @@ export class NetworkView implements CanvasView {
         q.position.copy(pos);
       }
       const visual: Visual = {
-        mesh, title, count, q, id, type, hasEX, error, base: COLORS[type], styleColor: COLORS[type], lastCount: 0,
+        mesh, title, count, q, id, type, hasEX, base: COLORS[type], styleColor: COLORS[type], lastCount: 0,
         batchIndex: this.visuals.size, tags: [], isInput: false, qValue: null,
       };
       this.visuals.set(key, visual);
@@ -706,7 +718,7 @@ export class NetworkView implements CanvasView {
       return visual;
     };
     for (const n of sorted) {
-      const visual = add(n.key, n.id, "Q", at(n.key), n.hasEX, n.errors.length > 0, n.displayName);
+      const visual = add(n.key, n.id, "Q", at(n.key), n.hasEX, n.displayName);
       visual.tags = n.tags;
       visual.isInput = n.isInput;
       if (n.isInput) {
@@ -714,8 +726,7 @@ export class NetworkView implements CanvasView {
         visual.mesh.material.color.setHex(COLORS.X);
       }
     }
-    for (const id of model.inputs) add(id, id, "X", at(id), false, false);
-    for (const o of model.outputs) add(o.id, o.id, "Y", at(o.id), false, Boolean(o.error), o.displayName).tags = o.tags;
+    for (const o of model.outputs) add(o.id, o.id, "Y", at(o.id), false, o.displayName).tags = o.tags;
     const rawEdges: Omit<DrawEdge, "sourceKey" | "laneIndex" | "laneCount" | "curve" | "arrow" | "endT" | "highlight">[] = [];
     for (const n of model.nodes) {
       for (const t of n.tokens) {
@@ -858,17 +869,13 @@ export class NetworkView implements CanvasView {
     this.resetCamera();
   }
 
-  setAnimationEnabled(enabled: boolean): void {
-    this.motionEnabled = enabled;
-  }
-
-  setPlayback({ running = this.playback.running, speed = this.playback.speed, skip = this.playback.skip }: { running?: boolean; speed?: number; skip?: boolean } = {}): void {
+  setPlayback({ speed = this.playback.speed, skip = this.playback.skip }: { speed?: number; skip?: boolean } = {}): void {
     const skipChanged = skip && !this.playback.skip;
     if (this.animationStart !== undefined && speed !== this.playback.speed) {
       const now = performance.now();
       this.animationStart = now - (now - this.animationStart) * this.playback.speed / speed;
     }
-    this.playback = { running, speed, skip };
+    this.playback = { speed, skip };
     if (skipChanged) {
       this.clearSignals();
       this.animationStart = undefined;
@@ -940,7 +947,7 @@ export class NetworkView implements CanvasView {
   /** 节点的颜色（q=0 变暗）、标题颜色与“q · 次数”标签。 */
   private paintVisual(key: string, v: Visual, count: number, group: ReturnType<NetworkView["selectedGroup"]>): void {
     const q = v.type === "Q" ? this.qOf(key) : null;
-    this.scratch.setHex(v.error || count > 1000 ? COLORS.error : v.styleColor);
+    this.scratch.setHex(count > 1000 ? COLORS.error : v.styleColor);
     if (q === 0) this.scratch.multiplyScalar(APP_CONFIG.scene.qDisplay.zeroBrightness);
     v.mesh.material.color.copy(this.scratch);
     const title = key === this.selected ? 0x85efd0 : group?.prereqs.has(key) ? 0xffd27a : group?.members.has(key) ? 0xbfe9ff : 0xffffff;
@@ -1068,15 +1075,15 @@ export class NetworkView implements CanvasView {
     }
   }
 
-  private render(animate = true): void {
+  private render(): void {
     if (!this.available || !this.renderer || !this.controls) return;
     const now = performance.now();
     this.controls.update();
-    const frame = this.renderSchedule.sample(now, { animate, active: animate && this.signals.length > 0 && this.signalProgress < 1, hidden: document.hidden });
+    const frame = this.renderSchedule.sample(now, { active: this.signals.length > 0 && this.signalProgress < 1, hidden: document.hidden });
     if (!frame) return;
-    if (animate) this.edgeTime += frame.deltaSeconds;
+    this.edgeTime += frame.deltaSeconds;
     // 连线以 20 Hz 缓慢摆动；缓冲区持久，箭头、高亮与信号保持一致。
-    if (animate && now - this.lastEdgeUpdate >= 50) {
+    if (now - this.lastEdgeUpdate >= 50) {
       this.lastEdgeUpdate = now;
       for (const [index, e] of this.edges.entries()) {
         const target = this.visuals.get(e.targetKey)!;

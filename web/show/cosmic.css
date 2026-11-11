@@ -496,7 +496,7 @@
 /* Retain the existing text hierarchy from style.css. Absolute base sizes apply
    the owning window's scale once, including windows nested in a full-screen scene.
    These precede the desktop's existing overrides to preserve the 100% appearance. */
-#jkm-panel .cosmic-window :where(.eyebrow, .node-purpose-tag, .output-publication, .output-row .source, .queue-columns, .history-heading > span, #speed-budget) {
+#jkm-panel .cosmic-window :where(.node-purpose-tag, .output-publication, .output-row .source, .queue-columns, .history-heading > span, #speed-budget) {
   font-size: calc(9px * var(--window-font-scale));
 }
 
@@ -504,7 +504,7 @@
   font-size: calc(10px * var(--window-font-scale));
 }
 
-#jkm-panel .cosmic-window :where(.errors, #inspector, .inspector-path, .node-tree-name, .jkm-inspector dd, .inspector-group > summary, .jkm-queue-empty, #model-pool-status, #node-tags, #node-registration, #gpu-detail) {
+#jkm-panel .cosmic-window :where(.errors, #inspector, .inspector-path, .node-tree-name, .jkm-inspector dd, .inspector-group > summary, .jkm-queue-empty, #node-tags, #node-registration, #gpu-detail) {
   font-size: calc(11px * var(--window-font-scale));
 }
 
@@ -521,7 +521,7 @@
   color: inherit;
 }
 
-#jkm-panel .cosmic-window :is(.muted, .eyebrow, .model-validation, .output-publication, .output-row .source, .history-heading > span, .queue-columns, .queue-row em, .queue-row .values, .jkm-queue-empty, .jkm-queue-limit, .inspector-field-label, .inspector-section-note, .inspector-section-number, .inspector-hint, dt) {
+#jkm-panel .cosmic-window :is(.muted, .model-validation, .output-publication, .output-row .source, .history-heading > span, .queue-columns, .queue-row em, .queue-row .values, .jkm-queue-empty, .jkm-queue-limit, .inspector-field-label, .inspector-section-note, .inspector-section-number, .inspector-hint, dt) {
   color: var(--cosmic-muted);
 }
 
@@ -548,7 +548,7 @@
 }
 
 #jkm-panel .cosmic-window .section,
-#jkm-panel .cosmic-window :is(#node-inspector, #events-queue, #tasks-queue, .history-section) {
+#jkm-panel .cosmic-window :is(#node-inspector, #events-queue, #tasks-queue) {
   min-width: 0;
   min-height: 0;
   height: auto;
@@ -658,7 +658,7 @@
   color: var(--cosmic-muted);
 }
 
-#jkm-panel .cosmic-window :is(pre, .inspector-code, .expression) {
+#jkm-panel .cosmic-window :is(pre, .inspector-code) {
   color: var(--window-fg);
   background: var(--cosmic-field);
   border-color: var(--cosmic-border);
@@ -777,17 +777,6 @@
   overflow-wrap: anywhere;
 }
 
-#jkm-panel .cosmic-window :is(.import-heading, .display-heading, .image-input-heading) {
-  position: static;
-  min-height: 0;
-  margin: 0 0 12px;
-  padding: 0 0 10px;
-  border-bottom: 1px solid var(--cosmic-border);
-  background: transparent;
-  color: inherit;
-  gap: 8px;
-}
-
 #jkm-panel .cosmic-window :is(.model-pool-toolbar, .import-actions, .display-actions, .image-input-tools) {
   display: flex;
   flex-wrap: wrap;
@@ -811,7 +800,7 @@
   min-height: 100px;
 }
 
-#jkm-panel .cosmic-window :is(.display-body, .image-input-body) {
+#jkm-panel .cosmic-window :is(.image-input-body) {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 12px;
@@ -1056,6 +1045,7 @@
   flex: 0 0 12px;
   height: 4px;
   border-radius: 2px;
+  background-color: var(--legend-color);
 }
 
 #jkm-panel .cosmic-edge-control .button {

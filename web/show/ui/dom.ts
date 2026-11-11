@@ -32,6 +32,17 @@ export function cloneFrom<T extends Element = HTMLElement>(template: HTMLTemplat
   return first.cloneNode(true) as T;
 }
 
+/** 设置元素 #id 的文字；没有这个元素时不做事。 */
+export function setText(id: string, text: unknown): void {
+  const element = document.getElementById(id);
+  if (element) element.textContent = String(text);
+}
+
+/** 两格缩进的 JSON 文本（显示用）。 */
+export function pretty(value: unknown): string {
+  return JSON.stringify(value, null, 2);
+}
+
 export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }

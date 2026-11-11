@@ -21,7 +21,6 @@ export interface CanvasView {
   readonly grid: THREE.GridHelper | null;
   readonly edges: readonly {
     visible?: boolean;
-    op: string;
     curve: THREE.Curve<THREE.Vector3>;
     endT: number;
     styleOpacity?: number;
@@ -83,7 +82,6 @@ interface TextItem {
 
 export class CanvasRenderer {
   readonly domElement: HTMLCanvasElement;
-  readonly isCanvasRenderer = true;
   private view: CanvasView;
   private readonly config = APP_CONFIG.scene.renderer.software;
   private context: CanvasRenderingContext2D | null;
@@ -326,7 +324,7 @@ export class CanvasRenderer {
     for (const [index, edge] of this.view.edges.entries()) {
       if (edge.visible === false) continue;
       const active = Boolean(edge.highlight?.visible);
-      const color = this.style(edge.highlight?.material.color ?? this.view.batches?.edgeColor(index) ?? this.config.edgeColors[edge.op] ?? 0xffffff);
+      const color = this.style(edge.highlight?.material.color ?? this.view.batches?.edgeColor(index) ?? 0xffffff);
       const opacity = edge.styleOpacity ?? 0.4;
       this.curve(edge.curve, color, active ? this.config.activeLineWidth : this.config.lineWidth, active ? Math.min(1, opacity / 0.4) : opacity, edge.endT);
       this.arrow(edge.curve, edge.endT, color, edge.arrow.scale.x, Math.min(1, opacity / 0.4));

@@ -24,6 +24,13 @@ export interface ChromeOptions {
   timeout: number;
 }
 
+/** tools/gpu.ts 与 tools/show.ts 共用的命令行参数（见 common.ts 的 parseArgs）。 */
+export const CHROME_ARGS = { chrome: "value", headed: "flag", timeout: "value" } as const;
+
+export function chromeOptions(args: { chrome?: string; headed: boolean; timeout?: string }): ChromeOptions {
+  return { chrome: args.chrome, headed: args.headed, timeout: Number(args.timeout ?? 600) };
+}
+
 function launchChrome(url: string, options: ChromeOptions): { proc: ChildProcess; profile: string } {
   const binary = options.chrome ?? process.env.CHROME ?? DEFAULT_CHROME[process.platform] ?? "google-chrome";
   const profile = mkdtempSync(join(tmpdir(), "jk-chrome-"));

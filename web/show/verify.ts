@@ -6,6 +6,7 @@
 
 import type { Bit, RunScript } from "../../src/model.ts";
 import type { ShowApi } from "./main.ts";
+import { observeKey } from "./scene/model-view.ts";
 
 export type CaseKind = "script" | "animate" | "manual" | "timeline" | "canvas" | "image" | "txlimit" | "invalid" | "layouts";
 
@@ -140,7 +141,7 @@ function compare(api: ShowApi, c: ShowCase, problems: string[], quiet = true): v
     if (got !== want) problems.push(`输出列表按触发组 ${name} 记录了 ${got} 行，应为 ${want} 行`);
     // 按输出格式：每条输出各给一组输出节点动画，场景只保留成行的输出（全部成员）；不勾选时全部保留。
     const { model, outputs } = api.session();
-    const transfers = outputs.flatMap((_, n) => model.output.map((path) => ({ source: path, target: `observe:${path}`, value: "", relation: "observe" as const, output: n })));
+    const transfers = outputs.flatMap((_, n) => model.output.map((path) => ({ source: path, target: observeKey(path), value: "", relation: "observe" as const, output: n })));
     const step = { depth: 0, kind: "event" as const, path: "", entries: [], transfers, pulses: [], levels: [] };
     const kept = (checked: boolean) => {
       setChecked("by-output-format", checked);
@@ -167,7 +168,7 @@ function compare(api: ShowApi, c: ShowCase, problems: string[], quiet = true): v
       if (cell !== want) problems.push(`真实运行记录最后一行的 values 是“${cell}”，应为“${want}”`);
     }
     const { model, outputs } = api.session();
-    const transfers = outputs.flatMap((_, n) => model.output.map((path) => ({ source: path, target: `observe:${path}`, value: "", relation: "observe" as const, output: n })));
+    const transfers = outputs.flatMap((_, n) => model.output.map((path) => ({ source: path, target: observeKey(path), value: "", relation: "observe" as const, output: n })));
     for (const byFormat of [true, false]) {
       setChecked("by-output-format", byFormat);
       const shown = api.sceneStep({ depth: 0, kind: "event", path: "", entries: [], transfers, pulses: [], levels: [] }).transfers;

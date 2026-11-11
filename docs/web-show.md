@@ -120,7 +120,8 @@
 - 页面只用 JKRD7 的术语：thread、事件 FIFO、任务 FIFO。
 - 换模型时保留当前的布局模式，与布局按钮一致。
 - 网络概览的元数据显示 JKM 的 jkm、version、threads 和根 JKS（§8.1）。
-- 浏览器存储键为 `jk.show.desktop`、`jk.show.network-styles`，只保存展示偏好。
+- 浏览器存储键为 `jk.show.desktop`、`jk.show.network-styles`、`jk.show.output-choices`，只保存展示偏好。
+- 脚本自己创建的元素只有两类，都不是页面标记：`boot.ts` 写入的 import map 脚本（必须在模块解析之前写入）；渲染用的 canvas（渲染器的画布、标签图集与动画标记的离屏画布）。其余元素都写在 HTML 中或由模板复制（TypeScript.md 第 4 节）。
 
 ## 8. 待处理与延后
 
@@ -132,6 +133,7 @@
 | §6.4 退出结构的可视化 | 待处理 | 需要 `src/model.ts` 公开环与退出结构的分析结果 |
 | §7.5 可并行批的显示 | 待处理 | 同时决定页面是否提供 CPU 的批执行模式 |
 | 界面纯函数的单元测试 | 待处理（可选） | 目前只靠 `tools/show.ts` 的整体验收（第 9 节） |
+| 场景层与界面层已确认、尚未执行的清理 | 待处理 | 见 [ultra.md](../ultra.md) 第 5 节：重复的显示常量、设备丢失的接线、“次数超过 1000 变红”是否保留等 |
 | 发布前把 TypeScript 转成 JavaScript | 待处理 | README V4；TypeScript.md 第 9 节 |
 | 快照窗口（捕获、下载、载入、恢复） | 延后（快照） | 用户 2026-11-08 决定 |
 | 把当前 CPU 现场交给 GPU 继续执行 | 延后（快照） | 需要用快照交接 |

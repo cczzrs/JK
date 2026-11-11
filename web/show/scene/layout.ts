@@ -30,19 +30,12 @@ export interface Metrics {
   wireLength: number;
 }
 
+/** 布局结果：节点与观察点的世界坐标、包围盒、实际采用的布局与请求的布局。 */
 export interface LayoutResult {
   positions: Map<string, Point>;
-  candidates: Point[];
   mode: Exclude<LayoutMode, "auto">;
-  description: string;
-  metrics?: Metrics;
-  automatic?: boolean;
-  axisOrder?: "xyz" | "x,-z,y";
   bounds: Bounds3;
   requestedMode: LayoutMode;
-  seedPositions?: Map<string, Point>;
-  topologyRanks?: Map<string, number>;
-  label?: string;
 }
 
 interface Edge {
@@ -50,7 +43,8 @@ interface Edge {
   target: string;
 }
 
-type Draft = Omit<LayoutResult, "bounds" | "requestedMode"> & Partial<Pick<LayoutResult, "bounds" | "requestedMode">>;
+/** 构造坐标中的布局（还没有换到世界坐标）。 */
+type Draft = Pick<LayoutResult, "positions" | "mode">;
 
 const EPS = 1e-9;
 const AXES = ["x", "y", "z"] as const;
@@ -61,7 +55,6 @@ const centerOrder = (a: Point, b: Point): number => radius2(a) - radius2(b) || a
 const parameterCount = (n: DisplayNode): number => n.tokens.filter((t) => t.source).length;
 const negate = (value: number): number => (value === 0 ? 0 : -value);
 const toWorldPoint = (p: Point): Point => ({ x: p.x, y: negate(p.z), z: p.y });
-const toConstructionPoint = (p: Point): Point => ({ x: p.x, y: p.z, z: negate(p.y) });
 const transformMap = (positions: Map<string, Point>, transform: (p: Point) => Point): Map<string, Point> =>
   new Map([...positions].map(([key, p]) => [key, transform(p)]));
 
@@ -132,15 +125,13 @@ function bounds(points: Iterable<Point>): Bounds3 {
   return b;
 }
 
+/** 观察点排在节点包围盒的 +x 一侧（输入入口本身就是 JKI，不另设输入点）。 */
 function terminals(model: DisplayModel, positions: Map<string, Point>, mode: string, envelope: Point[] = [...positions.values()]): Map<string, Point> {
   const b = bounds(envelope);
-  const groups: [string[], boolean][] = [[model.inputs, true], [model.outputs.map((o) => o.id), false]];
-  for (const [ids, input] of groups) {
-    const ps = gridPoints(ids.length, mode === "1D" ? 1 : 2);
-    const pb = bounds(ps);
-    const offset = input ? b.min.x - 3 - pb.max.x : b.max.x + 3 - pb.min.x;
-    ids.forEach((id, i) => positions.set(id, { x: ps[i].x + offset, y: ps[i].y, z: ps[i].z }));
-  }
+  const ids = model.outputs.map((o) => o.id);
+  const ps = gridPoints(ids.length, mode === "1D" ? 1 : 2);
+  const offset = b.max.x + 3 - bounds(ps).min.x;
+  ids.forEach((id, i) => positions.set(id, { x: ps[i].x + offset, y: ps[i].y, z: ps[i].z }));
   return positions;
 }
 
@@ -152,17 +143,12 @@ export function wireLength(positions: Map<string, Point>, edges: Edge[]): number
   }, 0);
 }
 
-const BASIC_DESCRIPTIONS: Record<string, string> = {
-  "1D": "三列竖排 · Y 轴从上到下",
-  "2D": "YZ 平面 · 先沿 Z 再沿 Y 向下 · 三区中心沿 X 轴",
-  "3D": "YZ 输入输出 · JK 近似正方体",
-};
-
+/** 1D：竖排，Y 轴从上到下；2D：YZ 平面，先沿 Z 再沿 Y 向下；3D：近似正方体。 */
 function basic(model: DisplayModel, nodes: DisplayNode[], mode: "1D" | "2D" | "3D"): Draft {
   const candidates = gridPoints(nodes.length, Number(mode[0]));
   const positions = new Map(nodes.map((n, i) => [n.key, candidates[i]]));
   terminals(model, positions, mode);
-  return { positions, candidates, mode, description: BASIC_DESCRIPTIONS[mode] };
+  return { positions, mode };
 }
 
 /** 在固定的 x 切片内缩短实际连线长度，不颠倒拓扑次序。 */
@@ -223,7 +209,7 @@ function topological(model: DisplayModel, nodes: DisplayNode[], edges: Edge[]): 
   const positions = new Map(sorted.map((n, i) => [n.key, candidates[i]]));
   terminals(model, positions, "4D");
   optimizeSlices(positions, nodes, edges);
-  return { positions, candidates, topologyRanks: topology.ranks, mode: "4D", description: "XYZ 拓扑结构 · 连线距离优化" };
+  return { positions, topologyRanks: topology.ranks, mode: "4D" };
 }
 
 /** 两侧第一排固定；其余节点各自优化与所引用来源的距离。 */
@@ -266,7 +252,6 @@ function five(model: DisplayModel, nodes: DisplayNode[], edges: Edge[]): Draft {
     vacant.delete(best);
   }
   terminals(model, positions, "5D");
-  const seedPositions = new Map([...positions].map(([k, p]) => [k, { ...p }]));
   const sources = new Map<string, string[]>();
   for (const e of edges) {
     if (!sources.has(e.target)) sources.set(e.target, []);
@@ -307,7 +292,7 @@ function five(model: DisplayModel, nodes: DisplayNode[], edges: Edge[]): Draft {
     occupant.set(bestSlot, n.key);
     free.delete(bestSlot);
   }
-  return { positions, candidates, seedPositions, topologyRanks: ranks, mode: "5D", description: "双侧第一排 · 球形扩张 · 引用距离优化" };
+  return { positions, mode: "5D" };
 }
 
 /** 迭代的强连通分量缩点，反馈网络的布局仍是有限的。 */
@@ -394,9 +379,9 @@ function crosses(a: { x: number; y: number }, b: { x: number; y: number }, c: { 
   return turn(a, b, c) * turn(a, b, d) < -EPS && turn(c, d, a) * turn(c, d, b) < -EPS;
 }
 
-/** 在构造坐标中评分，只交换坐标轴不改变自动选择的结果。 */
+/** 在构造坐标中评分，换到世界坐标之前调用。 */
 export function readability(result: Draft, edges: Edge[]): Metrics {
-  const positions = result.axisOrder === "x,-z,y" ? transformMap(result.positions, toConstructionPoint) : result.positions;
+  const positions = result.positions;
   const flat = result.mode === "1D";
   const screen = new Map([...positions].map(([k, p]) => [k, project(p, flat)]));
   const bins = new Map<string, { x: number; y: number }[]>();
@@ -462,10 +447,7 @@ export function quickLayout(model: DisplayModel): LayoutResult {
   const positions = new Map(nodes.map((n, i) => [n.key, candidates[i]]));
   terminals(model, positions, "2D");
   const world = transformMap(positions, toWorldPoint);
-  return {
-    positions: world, candidates: candidates.map(toWorldPoint), mode: "2D", description: "临时布局", axisOrder: "x,-z,y",
-    bounds: bounds(world.values()), requestedMode: "2D",
-  };
+  return { positions: world, mode: "2D", bounds: bounds(world.values()), requestedMode: "2D" };
 }
 
 export function createLayout(model: DisplayModel, mode: LayoutMode = DEFAULT_LAYOUT_MODE): LayoutResult {
@@ -479,20 +461,10 @@ export function createLayout(model: DisplayModel, mode: LayoutMode = DEFAULT_LAY
   else {
     const choices: Draft[] = [...(["1D", "2D", "3D"] as const).map((m) => basic(model, nodes, m)), topological(model, nodes, edges)];
     if (nodes.length <= 256) choices.push(five(model, nodes, edges));
-    for (const c of choices) c.metrics = readability(c, edges);
-    choices.sort((a, b) => a.metrics!.score - b.metrics!.score);
-    result = choices[0];
-    result.automatic = true;
+    // 自动选择：各候选在构造坐标中评分，取分数最低的（同分时保持上面的先后）
+    result = choices.map((choice) => ({ choice, score: readability(choice, edges).score })).sort((a, b) => a.score - b.score)[0].choice;
   }
-  result.metrics ??= readability(result, edges);
-  // 只有 1D 保留原来从上到下的 Y 列（包括自动选中的 1D）。
-  if (result.mode === "1D") {
-    result.axisOrder = "xyz";
-  } else {
-    result.positions = transformMap(result.positions, toWorldPoint);
-    result.candidates = result.candidates.map(toWorldPoint);
-    if (result.seedPositions) result.seedPositions = transformMap(result.seedPositions, toWorldPoint);
-    result.axisOrder = "x,-z,y";
-  }
-  return { ...result, bounds: bounds(result.positions.values()), requestedMode: mode };
+  // 只有 1D 保留原来从上到下的 Y 列（包括自动选中的 1D），其余换到世界坐标。
+  const positions = result.mode === "1D" ? result.positions : transformMap(result.positions, toWorldPoint);
+  return { positions, mode: result.mode, bounds: bounds(positions.values()), requestedMode: mode };
 }

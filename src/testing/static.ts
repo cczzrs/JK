@@ -1,42 +1,16 @@
-/** 静态检查的正例与负例（JKRD7 §2、§3、§5、§6.4、§8）。命令行见 tools/validate.ts。 */
-
-import type { Jki, Jkm, Jks } from "../model.ts";
-
-function fix(...roots: Jks[]): Jkm {
-  return syncInput({ jkm: "FIX", version: "7.0.0", threads: ["work"], input: {}, output: {}, roots });
-}
-
 /**
- * 按根 JKS.trigger 重写 JKM.input（§8.1）：列出含输入入口（trigger.any=[] 的直接成员）的根登记。
- * 夹具改动根登记或入口后调用；模型结构不完整时不改。
+ * 静态检查的正例与负例（JKRD7 §2、§3、§5、§6.4、§8），bit 的原文写法（§2 第 2 条），以及快照（§9.5）。
+ * 命令行见 tools/validate.ts。
  */
-export function syncInput(data: Jkm): Jkm {
-  const input: Record<string, string[]> = {};
-  for (const root of Array.isArray(data.roots) ? data.roots : []) {
-    const trigger = (root as Partial<Jks> | null)?.trigger;
-    const members = (root as Partial<Jks> | null)?.members;
-    if (typeof trigger !== "object" || trigger === null || !Array.isArray(members)) continue;
-    for (const [kind, refs] of Object.entries(trigger)) {
-      const entry = Array.isArray(refs) && refs.some((ref) => members.some((m) => {
-        const t = (m as Partial<Jki>)?.trigger as { any?: unknown } | undefined;
-        return (m as Partial<Jki>)?.id === ref && !("members" in m) && Array.isArray(t?.any) && t.any.length === 0;
-      }));
-      if (entry) input[`${root.id}.${kind}`] = [...refs as string[]];
-    }
-  }
-  data.input = input;
-  return data;
-}
 
-function jks(id: string, members: (Jki | Jks)[], trigger: Jks["trigger"]): Jks {
-  return { id, thread: "work", trigger, members };
-}
+import { type Jki, type Jkm, type Jks, type Snapshot, parseJson } from "../model.ts";
+import { jkm, jks, syncInput } from "./fixtures.ts";
 
 type Any = Record<string, unknown>;
 
 /** 合法的基准模型：G1 为输入；G2 以 Q1 为事务前置，事务推进到 Q2、Q3、G2.G1.Q1。 */
 export function base(): Jkm {
-  return fix(
+  return jkm("FIX",
     jks("G1", [{ id: "Q1", q: 1, trigger: { any: [] } }, { id: "Q2", q: 1, trigger: { any: [] } }], { any: ["Q1", "Q2"] }),
     jks("G2", [
       { id: "Q1", q: 0, trigger: { any: ["G1.Q1"] } },
@@ -163,7 +137,7 @@ export const NEGATIVE: [string, () => unknown, string][] = [
 
 /** 从事务不可达的环（计数器），退出节点 Q3 登记为 out。 */
 function loopModel(): Jkm {
-  return fix(jks("G1", [
+  return jkm("FIX", jks("G1", [
     { id: "Q1", q: 1, trigger: { any: [] } },
     { id: "Q2", q: 0, trigger: { any: ["Q1", "Q3"] }, sources: { s: ["Q3"], ex: ["K"] } },
     { id: "Q3", q: 0, trigger: { any: ["Q2"] }, sources: { seed: 1, s: ["Q2"], ex: ["K"] } },
@@ -234,3 +208,84 @@ const POSITIVE_MODELS: [string, () => Jkm][] = [
 
 /** 正例在改动根登记后都按 §8.1 重写 input。 */
 export const POSITIVE: [string, () => unknown][] = POSITIVE_MODELS.map(([name, build]) => [name, () => syncInput(build())]);
+
+// ---------------------------------------------------------------------------
+// bit 的原文写法（§2 第 2 条）
+// ---------------------------------------------------------------------------
+
+/** 基准模型的 JSON 文本，把其中第一处 from 改写成 to。 */
+const spell = (from: string, to: string) => () => {
+  const text = JSON.stringify(base());
+  if (!text.includes(from)) throw new Error(`基准模型的文本中没有 ${from}`);
+  return text.replace(from, to);
+};
+
+/** [名称, JKM 的 JSON 文本, 预期错误片段；null 表示应当通过]。文本先经 parseJson 解析，再做静态检查。 */
+export const TEXT_CASES: [string, () => string, string | null][] = [
+  ["bit 写成 0、1", () => JSON.stringify(base()), null],
+  ["q 写成 1.0", spell('"q":1', '"q":1.0'), "q 必须是整数 0 或 1"],
+  ["q 写成 1e0", spell('"q":1', '"q":1e0'), "q 必须是整数 0 或 1"],
+  ["q 写成 -0", spell('"q":0', '"q":-0'), "q 必须是整数 0 或 1"],
+  ["seed 写成 0.0", spell('"seed":0', '"seed":0.0'), "sources.seed 只能是 0 或 1"],
+];
+
+// ---------------------------------------------------------------------------
+// 快照（§9.5）
+// ---------------------------------------------------------------------------
+
+/** 基准模型的一个合法快照：G2.Q3（all）已到达一个来源，两个 FIFO 各有待处理的项。 */
+export function baseSnapshot(): Snapshot {
+  return {
+    snapshot: "S1", jkm: "FIX", version: "7.0.0",
+    q: { "G1.Q1": 1, "G1.Q2": 1, "G2.Q1": 0, "G2.Q2": 0, "G2.Q3": 0, "G2.G1.Q1": 0 },
+    trigger_all: { "G2.Q3": [0, null] },
+    rounds: {},
+    threads: { work: { events: [{ source: "G1.Q1" }], tasks: [{ node: "G2.Q2" }, { tx: "G2", prereqs: ["G2.Q1"] }] } },
+  };
+}
+
+/** 基准模型改用 transaction_any 登记两个前置；每个事务任务只含发出通知的那一个前置（§5.3）。 */
+function anyModel(): Jkm {
+  const model = base();
+  node(model, "G2").trigger = { transaction_any: ["Q1", "Q2"] };
+  return model;
+}
+
+type SnapshotCase = { model: Jkm; snapshot: unknown };
+const snap = (fn: (s: Any) => void, model: () => Jkm = base) => (): SnapshotCase => {
+  const snapshot = baseSnapshot() as unknown as Any;
+  fn(snapshot);
+  return { model: model(), snapshot };
+};
+const work = (s: Any) => (s.threads as Any).work as Any;
+const task = (item: unknown, model?: () => Jkm) => snap((s) => set(work(s), { tasks: [item] }), model);
+
+/** [名称, 模型与快照, 预期错误片段；null 表示应当通过] */
+export const SNAPSHOT_CASES: [string, () => SnapshotCase, string | null][] = [
+  ["基准快照", snap(() => {}), null],
+  ["transaction_any 的事务任务只含一个前置", task({ tx: "G2", prereqs: ["G2.Q2"] }, anyModel), null],
+  ["多出字段", snap((s) => set(s, { units: 3 })), "快照字段必须恰好"],
+  ["snapshot 不是字符串", snap((s) => set(s, { snapshot: 7 })), "snapshot 必须是非空字符串"],
+  ["jkm 不是对应的模型", snap((s) => set(s, { jkm: "OTHER" })), "jkm 必须是对应模型的 jkm"],
+  ["版本错误", snap((s) => set(s, { version: "6.0.0" })), "version 必须是"],
+  ["q 缺少节点", snap((s) => drop(s.q as Any, "G2.Q3")), "q 必须给出全部 JKI"],
+  ["q 为布尔值", snap((s) => set(s.q as Any, { "G2.Q1": true })), "q 必须给出全部 JKI"],
+  ["q 写成 1.0", () => ({ model: base(), snapshot: parseJson(JSON.stringify(baseSnapshot()).replace('"G1.Q1":1', '"G1.Q1":1.0')) }),
+    "q 必须给出全部 JKI"],
+  ["trigger_all 不是对象", snap((s) => set(s, { trigger_all: [1] })), "trigger_all 必须是对象"],
+  ["trigger_all 列出 any 节点", snap((s) => set(s.trigger_all as Any, { "G2.Q2": [0] })), "trigger_all 中 G2.Q2 的记录不合法"],
+  ["trigger_all 全为 null", snap((s) => set(s.trigger_all as Any, { "G2.Q3": [null, null] })), "trigger_all 中 G2.Q3 的记录不合法"],
+  ["trigger_all 已齐备", snap((s) => set(s.trigger_all as Any, { "G2.Q3": [0, 1] })), "trigger_all 中 G2.Q3 的记录不合法"],
+  ["rounds 不是对象", snap((s) => set(s, { rounds: "x" })), "rounds 必须是对象"],
+  ["rounds 的键不是 JKS", snap((s) => set(s, { rounds: { "G2.Q1": { transaction: ["G2.Q1"] } } })), "不是 JKS 绝对路径"],
+  ["rounds 列出已到齐的一轮", snap((s) => set(s, { rounds: { G2: { transaction: ["G2.Q1"] } } })), "只能列出未到齐的本轮前置"],
+  ["threads 的键未声明", snap((s) => set(s, { threads: { fast: { events: [], tasks: [] } } })), "threads 的键必须是"],
+  ["事件来源不是 JKI", snap((s) => set(work(s), { events: [{ source: "G2" }] })), "事件项不合法"],
+  ["事件项带接收者", snap((s) => set(work(s), { events: [{ source: "G1.Q1", to: "G2.Q1" }] })), "事件项不合法"],
+  ["节点任务的目标是空 EX", task({ node: "G2.Q1" }), "任务项不合法"],
+  ["事务任务的目标没有事务登记", task({ tx: "G1", prereqs: ["G1.Q1"] }), "任务项不合法"],
+  ["事务任务没有前置", task({ tx: "G2", prereqs: [] }), "任务项不合法"],
+  ["事务任务的前置重复", task({ tx: "G2", prereqs: ["G2.Q1", "G2.Q1"] }), "任务项不合法"],
+  ["事务任务的前置不属于事务登记", task({ tx: "G2", prereqs: ["G2.Q2"] }), "任务项不合法"],
+  ["transaction_any 的事务任务含两个前置", task({ tx: "G2", prereqs: ["G2.Q1", "G2.Q2"] }, anyModel), "任务项不合法"],
+];

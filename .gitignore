@@ -1,13 +1,9 @@
 .DS_Store
-__pycache__/
-*.py[cod]
-*.egg-info/
-build/
-dist/
-.venv/
 .env
 .env.*
 !.env.example
 
 # Node
 node_modules/
+build/
+dist/

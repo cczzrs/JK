@@ -32,7 +32,7 @@ export function tabValue(id: string): string {
   return byId(id).querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.dataset.value ?? "";
 }
 
-/** 选中标签组 id 中 data-value 为 value 的标签，并通知 onChange。 */
+/** 给标签组 id 绑定点击与方向键、Home、End；选中改变时调用 onChange。 */
 export function setupTabs(id: string, onChange: (value: string) => void): void {
   const list = byId(id);
   const choose = (tab: HTMLButtonElement) => {

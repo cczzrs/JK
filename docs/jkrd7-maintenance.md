@@ -1,5 +1,69 @@
 # JKRD7 维护记录
 
+## 2026-11-11：结构与代码整理；bit 按 JSON 原文核对；快照检查补全
+
+依据：
+
+- 用户要求：“项目结构与代码优结构化。读取整个项目内容，先分析 JKRD7 设计与规则，再推理与参考其它模块的设计与规则。目的是根据先后的设计与规则，分析出项目结构是否需要优化、代码结构和内容是否需要优化、再给出下一步的设计方向及规划。需要全面分析并执行改进更新。可调整所有内容，所有执行操作都记录在 ultra.md 文档里。”
+- R6（bit 只接受 JSON 原文 0、1）：用户 2026-11-09 已定从严，规则不改，静态检查核对原文。
+- 快照检查（原 R4、C1）：JKRD7 §9.5 的事务任务项写的是“本次前置”，§5.3 已规定本次前置的内容；检查按这两处补全，没有新增行为。
+- 全部分析、探针、改动与核对见 [ultra.md](../ultra.md)。
+
+行为变化：
+
+- 静态检查：JKM、运行脚本、快照的 JSON 文本改由 `parseJson` 解析，值等于 0 或 1、原文却不是 `0`、`1` 的数（`1.0`、`1e0`、`-0` 等）不再被当作 bit。命令行读文件、JKRD7 正文的 JSON 块、GPU 对拍页与展示页载入模型都走这个入口。
+- 快照检查：`snapshot` 不是非空字符串、`jkm` 与模型不对应、`trigger_all` 或 `rounds` 不是对象、事务任务的前置不是本次前置（transaction 登记的全部前置各一次，或 transaction_any 登记的一个前置）时拒绝。此前这些快照被接受；其中前置过多的事务任务会让 GPU 编码写出任务项的范围。
+- 命令行：三个工具的参数解析、四份报告的写出改为共用 `tools/common.ts` 中的同一份代码；参数与输出不变。`tools/serve.ts` 遇到未知参数时报错。报告中 sha256 的文件清单改为去重并排序。
+- 展示页：删除无人使用的样式、模板、配置项与方法（见下表），显示不变。渲染器重建改为逐个进行，连点“重试”不再留下多余的渲染器。连线图例的颜色改用 CSS 变量；触发组下拉项改为复制模板。
+- 执行语义、执行记录、两个后端的对拍结果都没有变化。
+
+### JKRD7
+
+| 位置 | 修改前 | 修改后 |
+| --- | --- | --- |
+| 开头·状态 | 到 2026-11-10 | 加“2026-11-11 在 §9.5 写明事务任务的本次前置，第 11 节补入展示页验收，以及 bit 原文写法与快照的静态案例” |
+| §9.5 FIFO 项的写法 | 事务任务只写 `{"tx": 目标 JKS, "prereqs": [本次前置]}` | 其后加一句：prereqs 就是 §5.3 记下的本次前置；transaction 登记到齐的一轮列出该登记的全部前置，各一次，按首次到达顺序；transaction_any 只列发出通知的那一个前置 |
+| §11.1 工具表 | 三个命令；validate 一行写“正例与负例” | 加 `node tools/show.ts` 一行；validate 一行写“正例与负例（含 bit 的原文写法与快照）” |
+| §11.1 报告 | “三个命令加 `--write-report` 时”，列三份报告 | “四个命令”，加 reports/show-run.json |
+| §11.2 JKI 字段 | seed=null、字符串或布尔 bit、未批准字段均被拒绝 | 加“原文不是 0 或 1 的 bit（如 1.0）” |
+| §11.2 | — | 新增“快照格式”一行（静态）：字段多出或类型不对、jkm 与模型不对应、到达记录或轮记录不合法、事件项或任务项不合法（含事务任务的前置不是本次前置）均被拒绝 |
+
+### README.md
+
+| 位置 | 修改前 | 修改后 |
+| --- | --- | --- |
+| 阅读入口 | — | 加一行“结构与代码整理：ultra.md” |
+| 核对·tools/validate.ts | 范围到“本地链接和索引” | 加“bit 的原文写法、快照的正例与负例、展示页的内置示例” |
+| 待处理事项·标题与引言 | 2026-11-09 整理 | 2026-11-11 整理；说明本次处理了 R6、R4、C1、C7，确认 R3、C2 已失效，六项从表中移除 |
+| 待处理事项·检查数量 | 静态检查 93/93 | 静态检查 135/135（其余不变：CPU 26/26、GPU 6/6、展示页 17/17） |
+| 待处理区·2 | 标题“静态检查与执行器”，含 R6、C4 两行 | 标题“执行器”，只留 C4；C4 的现状改为“没有使用者的 Backend、RunResult 类型已删除”，并注明统一入口要先定出错时交回结果的方式（C3） |
+| 待处理区·4 展示页 | 三项 | 加“场景层与界面层已确认、尚未执行的清理（ultra.md 第 5 节）” |
+| 延后处理区·快照 | R2、R5、R4、R3、C1、C5 | R2、R5、C5 |
+| 延后处理区·溢出与异常 | C3、C6、C2、C7 | C3、C6 |
+
+### 其他文件
+
+| 文件 | 修改前 | 修改后 |
+| --- | --- | --- |
+| src/model.ts | `derive()` 一个方法做七件事；“trigger.any 为空”的判定写了三处；快照检查不查 `snapshot`、`jkm`、`trigger_all` 与 `rounds` 的类型，事务任务只要求前置属于该 JKS；文末有正文 JSON 块的提取与 JKM 的排版 | 新增 `parseJson`；`derive()` 拆成七个方法，顺序不变；`isOpenEntry`；快照检查补全；JSON 块的提取与排版移到 src/doc.ts |
+| src/doc.ts（新增） | — | `jsonBlocks`、`docModels`、`docBlock`、`docFragment`、`formatJkmJson`，以及第 10 节的模型名单 `DOC_MODELS` |
+| src/cpu.ts | `Fifo.push(...values)`；只用一次的 `abs()`；快照版本写字面量；载入快照时另查 jkm | `Fifo.push(value)`；删除 `abs()`；用 `VERSION`；jkm 由 `checkSnapshot` 检查 |
+| src/executor.ts | 导出没有使用者的 `Backend`、`RunResult`；文件头写“后端可选 CPU 或 GPU” | 删除两个类型；文件头改为实际内容（按运行脚本运行 CPU 后端） |
+| src/gpu/backend.ts、src/gpu/compile.ts | 解码用字面量 `(1 << 28) - 1`、`flags & 1`；对实例数组与模型各段用展开语法；`GpuExecutor.source` 只写不读；compile.ts 文件头引用的 WebGPU.md 章节号有误 | 用 `NODE_BITS`、`F_ALL`、`VERSION`；逐项追加，模型缓冲区各段用 `Uint32Array.set` 写入；删除 `source`；章节号改为 §4、§5 |
+| src/testing/ | `syncInput` 在 static.ts，被 fixtures.ts 与 cases.ts 反向引用；static.ts 另有一套 `jks`、`fix`；`same()` 用 `as never`；第 10 节模型名单各处自写 | `syncInput` 移到 fixtures.ts，static.ts 复用 `jkm`、`jks`；新增 `TEXT_CASES`（5 例）与 `SNAPSHOT_CASES`（25 例）；`DOC_RUNS` 由 `DOC_MODELS` 生成 |
+| tools/ | reference.ts、gpu.ts、show.ts 各有一份 `parseArgs`；四个工具各自拼装报告；`DOC`、`ASCII_MODEL` 是绝对路径，调用处混用 `rel()`；第 10 节模型名单写了三份 | `tools/common.ts` 提供 `parseArgs`、`writeReport`；`DOC`、`ASCII_MODEL` 改为相对仓库根目录的路径；名单取自 `DOC_MODELS`；`readJson` 改用 `parseJson`；reference.ts 去掉无人导入的导出 |
+| web/gpu.ts | 运行脚本任务只建 `Model` | 用 `scriptModel`，与 CPU 后端做同样的模型与运行脚本检查；读模型用 `parseJson` |
+| web/show/style.css、cosmic.css | style.css 2014 行，其中 133 条规则的选择器含有 HTML 与脚本中都不存在的类或 id | 删除这 133 条规则、13 处列表中的死选择器、6 个无人使用的自定义属性与 3 个变空的 @media；style.css 1363 行。全部元素的计算样式不变 |
+| web/show/index.html | 有无人使用的模板 `row-template`、恒隐藏的 `#model-errors`、无人读取的 6 个 data- 属性 | 删除；三个没有可聚焦内容的标签面板加 `tabindex="0"`；输入框去掉盖住可见标签的 aria-label；`#input-buttons` 加 `role="group"` |
+| web/show/scene/ | 展示投影与布局结果带有恒为空或只写不读的字段；`NetworkView.recover()` 可以重入；`setAnimationEnabled` 等无人调用 | 删除这些字段与方法（布局结果收窄为 positions、mode、bounds、requestedMode，各模型各布局的坐标逐位不变）；重建渲染器逐个进行；观察点键名集中到 `observeKey`、`observedPath` |
+| web/show/ui/、main.ts、panels.ts、config.ts | `CosmicWorkspace.setActive` 无人调用；图例颜色直接写 `style.backgroundColor`；触发组下拉项用 `createElement`；`setText`、`pretty` 在两个文件各写一份；配置中有无人读取的项 | 删除死代码与只写不读的状态；图例颜色经 CSS 变量 `--legend-color`；下拉项复制 `option-template`；`setText`、`pretty` 移到 ui/dom.ts；删除 `model.version`、`engine.backend`、`geometry.baseWidth`、`theme.rail`、`software.edgeColors` 等配置项 |
+| WebGPU.md | §6.4 错误码表被空行与段落截断；§7 写“事件的接收者路径换成出边编号”；§8 写“子孙 JKS 的事务就地放行”；§9 写 72 条记录、55 次 | 表格修好；§7 改为现行编码并注明先做快照检查；§8 改为“MODE 记层数，逐层执行”；§9 改为 96 条、45 次（取自 reports/gpu-run.json） |
+| TypeScript.md | 目录与对应表没有 doc.ts；`npm install` 写“安装开发依赖”；第 9 节写“三项核对” | 补 doc.ts 与 common.ts 的说明；改为“安装依赖（含展示页用的 three）”；“四项核对” |
+| docs/web-show.md | 第 7 节的存储键只列两个 | 列出三个；注明脚本自己创建的两类元素；第 8 节加一行指向 ultra.md |
+| jk.config.json、.gitignore | 索引没有 doc.ts 与 ultra.md；忽略清单留有 Python 条目 | 补索引；删除 Python 条目 |
+| ultra.md（新增） | — | 本次的分析、全部操作、核对结果与下一步规划 |
+| reports/ | 修改前的报告 | 重新生成 |
+
 ## 2026-11-10：JKM 新增输入登记（input）；output 改为分组；展示页的 JKM 排版与输出窗口
 
 依据：

@@ -1,14 +1,14 @@
 /** JKRD7 §11.2 的验收案例（CPU 后端）。命令行见 tools/reference.ts。 */
 
-import { type Jki, type Jkm, type RunScript, type Snapshot, Model, docBlock, docFragment, docModels } from "../model.ts";
+import { type Jki, type Jkm, type RunScript, type Snapshot, Model } from "../model.ts";
+import { DOC_MODELS, docBlock, docFragment, docModels } from "../doc.ts";
 import { CpuExecutor, TxLimit, Unsupported } from "../cpu.ts";
 import { formatRecords } from "../record.ts";
 import { runScriptCpu } from "../executor.ts";
 import { Random } from "./random.ts";
-import { syncInput } from "./static.ts";
 import {
   asciiBatches, asciiCodes, clone, deepEqual, exitLoopModel, inlineModel, inputs, jkm, jks, nestOrderModel,
-  randomBatches, randomModel, run, runBatches, shuffled,
+  randomBatches, randomModel, run, runBatches, shuffled, syncInput,
 } from "./fixtures.ts";
 
 export interface CaseResult {
@@ -27,18 +27,18 @@ export interface CaseContext {
 }
 
 const hex = (codes: number[]) => JSON.stringify(codes.map((c) => "0x" + c.toString(16)));
-const same = (a: { record(): unknown[] }, b: { record(): unknown[] }) =>
-  formatRecords(a.record() as never) === formatRecords(b.record() as never);
+const same = (a: CpuExecutor, b: CpuExecutor) => formatRecords(a.record()) === formatRecords(b.record());
 
-/** 第 10 节模型及各自的一批输入，用于批执行与 GPU 对拍。输出观察取自各模型的 output。 */
-export const DOC_RUNS: [string, string[]][] = [
-  ["M_FLOW", ["G1.Q1", "G1.Q3"]],
-  ["M_PATH", ["G1.Q1"]],
-  ["M_SYNC", ["G1.Q1", "G1.Q1", "G1.Q2"]],
-  ["M_TX", ["G1.Q10", "G1.Q10"]],
-  ["M_NEST", ["G1.Q10"]],
-  ["M_REG", ["G1.Q2", "G1.Q1", "G1.Q2"]],
-];
+/** 第 10 节各模型的一批输入，用于批执行与 GPU 对拍。输出观察取自各模型的 output。 */
+const DOC_INPUTS: Record<(typeof DOC_MODELS)[number], string[]> = {
+  M_FLOW: ["G1.Q1", "G1.Q3"],
+  M_PATH: ["G1.Q1"],
+  M_SYNC: ["G1.Q1", "G1.Q1", "G1.Q2"],
+  M_TX: ["G1.Q10", "G1.Q10"],
+  M_NEST: ["G1.Q10"],
+  M_REG: ["G1.Q2", "G1.Q1", "G1.Q2"],
+};
+export const DOC_RUNS: [string, string[]][] = DOC_MODELS.map((name) => [name, DOC_INPUTS[name]]);
 
 export function runCases(ctx: CaseContext): CaseResult[] {
   const models = docModels(ctx.doc);

@@ -5,15 +5,16 @@
  *   node tools/examples.ts
  */
 
-import { type Jkm, docModels, formatJkmJson } from "../src/model.ts";
+import type { Jkm } from "../src/model.ts";
+import { DOC_MODELS, docModels, formatJkmJson } from "../src/doc.ts";
 import { ASCII_MODEL, DOC, readJson, readText, writeText } from "./common.ts";
 
 export const EXAMPLES_FILE = "web/show/examples.json";
 /** 示例名称与顺序；ASCII_DIGITS 取自附件，其余取自 JKRD7 第 10 节。 */
-export const EXAMPLE_NAMES = ["ASCII_DIGITS", "M_FLOW", "M_PATH", "M_SYNC", "M_TX", "M_NEST", "M_REG"];
+const EXAMPLE_NAMES = ["ASCII_DIGITS", ...DOC_MODELS];
 
 /** 按来源组装示例：名称 → JKM。 */
-export function buildExamples(): Record<string, Jkm> {
+function buildExamples(): Record<string, Jkm> {
   const models = docModels(readText(DOC));
   const out: Record<string, Jkm> = {};
   for (const name of EXAMPLE_NAMES) {

@@ -1,6 +1,6 @@
 /**
- * JKRD7 规则模型：加载 JKM、解析引用、静态检查（JKRD7 §2、§3、§5、§6.4 环的退出节点与纯通知环、§8），
- * 以及运行脚本（§9.4）与快照（§9.5）的检查。执行见 cpu.ts 与 gpu/。
+ * JKRD7 规则模型：解析 JSON 原文、加载 JKM、解析引用、静态检查（JKRD7 §2、§3、§5、§6.4 环的退出节点与纯通知环、§8），
+ * 以及运行脚本（§9.4）与快照（§9.5）的检查。执行见 cpu.ts 与 gpu/；正文中 JSON 块的提取与 JKM 的排版见 doc.ts。
  *
  * 只依赖语言本身，命令行（Node）与浏览器共用。
  */
@@ -108,12 +108,28 @@ function isBit(value: unknown): value is Bit {
   return value === 0 || value === 1;
 }
 
+/**
+ * 解析 JKM、运行脚本、快照的 JSON 文本，并按原文核对 bit 的写法（§2 第 2 条）：bit 只能写成 0 或 1。
+ * 值等于 0 或 1、原文却不是 0、1 的数（1.0、1e0、-0 等）换成原文字符串，后面的检查就按“不是 bit”拒绝它。
+ * 规则文件中的数都是 bit，所以对全部数这样处理。
+ * 原文取自 JSON.parse 交给 reviver 的第三个参数（Node 22、Chrome 114 起）；没有它的环境里照常解析，但不做原文检查。
+ */
+export function parseJson(text: string): unknown {
+  return JSON.parse(text, (_key: string, value: unknown, context?: { source?: string }) =>
+    isBit(value) && context?.source !== undefined && context.source !== String(value) ? context.source : value);
+}
+
 function isJksObj(value: unknown): value is Obj {
   return isObj(value) && "members" in value;
 }
 
 export function hasEx(node: Jki): boolean {
   return (node.sources?.ex?.length ?? 0) > 0;
+}
+
+/** §3.2：trigger.any=[]，尚未接入上游的入口。 */
+function isOpenEntry(node: Jki): boolean {
+  return "any" in node.trigger && node.trigger.any.length === 0;
 }
 
 /** 写入错误信息时显示一个值。 */
@@ -296,7 +312,7 @@ export function checkJki(node: unknown, where: string, errors: string[]): void {
     } else if (!record.every((v) => v === null)) {
       err("定义中的 runtime.trigger_all 必须全为 null；运行中的到达记录只保存在快照中（§3、§9.5）");
     }
-  } else if (mode === "any" && runtime && Object.keys(runtime).length && "trigger_all" in runtime) {
+  } else if (mode === "any" && runtime && "trigger_all" in runtime) {
     err("any 节点不保存 trigger_all（§3）");
   }
 }
@@ -365,28 +381,6 @@ export class Model {
     let k = 0;
     for (const { name, size } of this.outputGroups) out[name] = values.slice(k, (k += size));
     return out;
-  }
-
-  /** §8.1：JKM.input 恰好列出根 JKS.trigger 中含输入入口（§3.2）的登记，值逐项相同。 */
-  private checkInput(): void {
-    const expected = new Map<string, string[]>();
-    for (const [g, obj] of this.jks) {
-      if (g.includes(".")) continue;
-      for (const [kind, refs] of Object.entries(obj.trigger as Record<string, string[]>)) {
-        const entry = refs.some((ref) => {
-          const node = this.jki.get(`${g}.${ref}`);
-          return node !== undefined && "any" in node.trigger && node.trigger.any.length === 0;
-        });
-        if (entry) expected.set(`${g}.${kind}`, refs);
-      }
-    }
-    for (const [key, refs] of expected) {
-      if (!(key in this.input)) this.err(`input 缺少 ${key}：根登记 ${key} 含输入入口，必须列出（§8.1）`);
-      else if (show(this.input[key]) !== show(refs)) this.err(`input.${key} 必须与根 JKS.trigger 中的登记逐项相同 ${show(refs)}，得到 ${show(this.input[key])}（§8.1）`);
-    }
-    for (const key of Object.keys(this.input)) {
-      if (!expected.has(key)) this.err(`input.${key} 不是根 JKS.trigger 中含输入入口的登记（§8.1）`);
-    }
   }
 
   /** 全部 JKS 共用的 thread；多个 thread 时返回 null。 */
@@ -539,10 +533,26 @@ export class Model {
 
   // -- 派生索引与模型级检查 --------------------------------------------------
 
+  /** 各步的先后固定：后面的步骤用前面建好的索引；错误也按这个顺序列出。 */
   private derive(): void {
+    this.indexMembers();
+    this.resolveRefs();
+    this.indexRegistrations();
+    this.checkEntries();
+    this.checkInput();
+    this.indexSubscribers();
+    this.checkLoops();
+  }
+
+  /** JKS → 全部后代 JKI。 */
+  private indexMembers(): void {
     for (const g of this.jks.keys()) {
       this.members.set(g, new Set([...this.jki.keys()].filter((p) => isUnder(p, g))));
     }
+  }
+
+  /** §3.1、§8.2：把每个 JKI 的 trigger 与 sources.s 解析成绝对路径。 */
+  private resolveRefs(): void {
     for (const [path, node] of this.jki) {
       const layer = path.slice(0, path.lastIndexOf("."));
       const [, refs] = triggerOf(node);
@@ -553,7 +563,10 @@ export class Model {
         this.err(`${path}.trigger：短 ID 与绝对路径指向同一 JKI，属于重复（§3.1）`);
       }
     }
+  }
 
+  /** §5.2：各 JKS 的登记。前置只能是本层直接成员的短 ID，全部登记合起来不重复。 */
+  private indexRegistrations(): void {
     for (const [g, obj] of this.jks) {
       const kinds = new Map<string, string[]>();
       const prereqs = new Set<string>();
@@ -586,10 +599,13 @@ export class Model {
         if (TX_TYPES.has(kind)) this.txGroups.add(g);
       }
     }
+  }
 
+  /** §3.2：trigger.any=[] 只允许用于根 JKS 已登记的直接成员；§3：pro.jksid 须解析到实际 JKS。 */
+  private checkEntries(): void {
     for (const [path, node] of this.jki) {
-      if ("any" in node.trigger && node.trigger.any.length === 0) {
-        if (path.split(".").length !== 2) {
+      if (isOpenEntry(node)) {
+        if (depth(path) !== 2) {
           this.err(`${path}：trigger.any=[] 只允许用于根 JKS 的直接成员；子 JKS 的入口必须写明上游（§3.2）`);
         } else if (!this.regOf.has(path)) {
           this.err(`${path}：trigger.any=[] 只允许用于已登记的输入入口（§3.2）`);
@@ -600,9 +616,32 @@ export class Model {
         this.err(`${path}：pro.jksid 必须是实际 JKS 的绝对路径（§3），得到 ${show(jksid)}`);
       }
     }
+  }
 
-    this.checkInput();
+  /** §8.1：JKM.input 恰好列出根 JKS.trigger 中含输入入口（§3.2）的登记，值逐项相同。 */
+  private checkInput(): void {
+    const expected = new Map<string, string[]>();
+    for (const [g, obj] of this.jks) {
+      if (g.includes(".")) continue;
+      for (const [kind, refs] of Object.entries(obj.trigger as Record<string, string[]>)) {
+        const entry = refs.some((ref) => {
+          const node = this.jki.get(`${g}.${ref}`);
+          return node !== undefined && isOpenEntry(node);
+        });
+        if (entry) expected.set(`${g}.${kind}`, refs);
+      }
+    }
+    for (const [key, refs] of expected) {
+      if (!(key in this.input)) this.err(`input 缺少 ${key}：根登记 ${key} 含输入入口，必须列出（§8.1）`);
+      else if (show(this.input[key]) !== show(refs)) this.err(`input.${key} 必须与根 JKS.trigger 中的登记逐项相同 ${show(refs)}，得到 ${show(this.input[key])}（§8.1）`);
+    }
+    for (const key of Object.keys(this.input)) {
+      if (!expected.has(key)) this.err(`input.${key} 不是根 JKS.trigger 中含输入入口的登记（§8.1）`);
+    }
+  }
 
+  /** JKI → 订阅者，按 §7.3 的路径顺序。 */
+  private indexSubscribers(): void {
     for (const [s, refs] of this.triggerRefs) {
       for (const x of refs) {
         if (!this.subscribers.has(x)) this.subscribers.set(x, []);
@@ -610,8 +649,11 @@ export class Model {
       }
     }
     for (const list of this.subscribers.values()) list.sort(comparePaths);
+  }
 
-    // §6.4：每个环（经 trigger 连接的回路）上至少要有一个登记为 out 的退出节点；只核对登记，不核对能否停下
+  /** §6.4：环的退出节点与纯通知环。 */
+  private checkLoops(): void {
+    // 每个环（经 trigger 连接的回路）上至少要有一个登记为 out 的退出节点；只核对登记，不核对能否停下
     const exits = new Set([...this.regOf].filter(([, [, kind]]) => kind === "out").map(([p]) => p));
     const loopEdges = new Map<string, string[]>();
     for (const s of this.jki.keys()) {
@@ -620,7 +662,7 @@ export class Model {
     const loop = findCycle(loopEdges);
     if (loop) this.err(`环 ${loop.join(" → ")} 上没有登记为 out 的退出节点（§6.4）`);
 
-    // §6.4：纯通知环（any、空 EX、在不变的 q 上发布、连接不受整合），即使有退出节点也永不终止
+    // 纯通知环（any、空 EX、在不变的 q 上发布、连接不受整合），即使有退出节点也永不终止
     const loud = (node: Jki) => {
       const mode = publishMode(node);
       return "any" in node.trigger && !hasEx(node)
@@ -631,10 +673,10 @@ export class Model {
       const reg = this.regOf.get(x);
       return !(reg && GATED_TYPES.has(reg[1]) && this.gated(reg[0], s));
     };
-    const quiet = new Set([...this.jki].filter(([, node]) => loud(node)).map(([p]) => p));
+    const noisy = new Set([...this.jki].filter(([, node]) => loud(node)).map(([p]) => p));
     const edges = new Map<string, string[]>();
-    for (const s of quiet) {
-      edges.set(s, this.triggerRefs.get(s)!.filter((x) => quiet.has(x) && ungated(x, s)));
+    for (const s of noisy) {
+      edges.set(s, this.triggerRefs.get(s)!.filter((x) => noisy.has(x) && ungated(x, s)));
     }
     const cycle = findCycle(edges);
     if (cycle) this.err(`纯通知环 ${cycle.join(" → ")}：永不终止，并使全部任务得不到执行（§6.4）`);
@@ -691,8 +733,7 @@ function exactKeys(value: unknown, fields: readonly string[]): value is Obj {
 /** §3.2：输入入口是 trigger.any=[] 且已被根 JKS 登记的直接成员（静态检查保证只出现在根 JKS 中）。 */
 export function isInputEntry(model: Model, path: unknown): boolean {
   if (!model.isJkiPath(path)) return false;
-  const node = model.jki.get(path)!;
-  return "any" in node.trigger && node.trigger.any.length === 0 && model.regOf.has(path);
+  return isOpenEntry(model.jki.get(path)!) && model.regOf.has(path);
 }
 
 /** §9.4。`model` 是脚本 model 字段所指的已加载模型。 */
@@ -717,6 +758,8 @@ export function checkRunScript(script: unknown, model: Model): string[] {
 export function checkSnapshot(snap: unknown, model: Model): string[] {
   if (!exactKeys(snap, SNAPSHOT_FIELDS)) return [`快照字段必须恰好是 ${show(SNAPSHOT_FIELDS)}（§9.5）`];
   const errors: string[] = [];
+  if (!(typeof snap.snapshot === "string" && snap.snapshot !== "")) errors.push("snapshot 必须是非空字符串");
+  if (snap.jkm !== model.name) errors.push(`jkm 必须是对应模型的 jkm ${show(model.name)}，得到 ${show(snap.jkm)}（§9.5）`);
   if (snap.version !== VERSION) errors.push(`version 必须是 "${VERSION}"`);
   const q = snap.q;
   const all = [...model.jki.keys()];
@@ -724,6 +767,7 @@ export function checkSnapshot(snap: unknown, model: Model): string[] {
     && Object.values(q).every(isBit))) {
     errors.push("q 必须给出全部 JKI 的 0／1 值（§9.5）");
   }
+  if (!isObj(snap.trigger_all)) errors.push("trigger_all 必须是对象（§9.5）");
   for (const [ref, record] of Object.entries(isObj(snap.trigger_all) ? snap.trigger_all : {})) {
     const node = model.jki.get(ref);
     const refs = node && "all" in node.trigger ? node.trigger.all : null;
@@ -731,6 +775,7 @@ export function checkSnapshot(snap: unknown, model: Model): string[] {
       && record.every((v) => v === null || isBit(v)) && record.some((v) => v !== null) && record.some((v) => v === null);
     if (!ok) errors.push(`trigger_all 中 ${ref} 的记录不合法（§9.5）`);
   }
+  if (!isObj(snap.rounds)) errors.push("rounds 必须是对象（§9.5）");
   for (const [ref, kinds] of Object.entries(isObj(snap.rounds) ? snap.rounds : {})) {
     if (!model.jks.has(ref) || !isObj(kinds)) {
       errors.push(`rounds 的键 ${ref} 不是 JKS 绝对路径`);
@@ -762,76 +807,18 @@ export function checkSnapshot(snap: unknown, model: Model): string[] {
       if (exactKeys(item, ["node"])) {
         ok = model.isJkiPath(item.node) && hasEx(model.jki.get(item.node)!);
       } else if (exactKeys(item, ["tx", "prereqs"])) {
-        const g = item.tx;
-        ok = typeof g === "string" && model.txGroups.has(g) && strList(item.prereqs, false)
-          && item.prereqs.every((r) => model.prereqs.get(g)!.has(r));
+        // prereqs 是 §5.3 记下的本次前置：transaction 到齐的一轮列出该登记的全部前置，各一次；
+        // transaction_any 只有发出通知的那一个前置
+        const kinds = typeof item.tx === "string" ? model.regTypes.get(item.tx) : undefined;
+        const p = item.prereqs;
+        if (kinds && strList(p, false)) {
+          const round = kinds.get("transaction") ?? [];
+          ok = (p.length === round.length && new Set(p).size === p.length && p.every((r) => round.includes(r)))
+            || (p.length === 1 && (kinds.get("transaction_any") ?? []).includes(p[0]));
+        }
       }
       if (!ok) errors.push(`threads.${name}.tasks 中的任务项不合法：${show(item)}`);
     }
   }
   return errors;
-}
-
-// ---------------------------------------------------------------------------
-// 文档中的 JSON 块
-// ---------------------------------------------------------------------------
-
-/** 含组（有 members 的对象）的值。 */
-function hasGroup(value: unknown): boolean {
-  if (Array.isArray(value)) return value.some(hasGroup);
-  if (typeof value !== "object" || value === null) return false;
-  return "members" in value || Object.values(value).some(hasGroup);
-}
-
-/**
- * 按 JKRD7 第 10 节与附件的排版输出 JKM 的 JSON 文本（不含末尾换行）：members 数组和含组的对象、数组逐项换行、
- * 缩进 2 格，其余值写成一行。节点因此一行一个，组的字段一行一个。展示页与 web/show/examples.json 共用。
- */
-export function formatJkmJson(value: unknown, indent = "", expand = hasGroup(value)): string {
-  if (!expand) {
-    if (Array.isArray(value)) return `[${value.map((v) => formatJkmJson(v)).join(", ")}]`;
-    if (typeof value === "object" && value !== null) {
-      return `{${Object.entries(value).map(([k, v]) => `${JSON.stringify(k)}: ${formatJkmJson(v)}`).join(", ")}}`;
-    }
-    return JSON.stringify(value);
-  }
-  const inner = indent + "  ";
-  const items = Array.isArray(value)
-    ? value.map((v) => inner + formatJkmJson(v, inner))
-    : Object.entries(value as object).map(([k, v]) => `${inner}${JSON.stringify(k)}: ${formatJkmJson(v, inner, k === "members" || hasGroup(v))}`);
-  const [open, close] = Array.isArray(value) ? ["[", "]"] : ["{", "}"];
-  return `${open}\n${items.join(",\n")}\n${indent}${close}`;
-}
-
-/** Markdown 中全部 ```json 代码块的原文。 */
-export function jsonBlocks(markdown: string): string[] {
-  return [...markdown.matchAll(/```json\n([\s\S]*?)```/g)].map((m) => m[1]);
-}
-
-/** JKRD7 正文中按 jkm 名称索引的模型。 */
-export function docModels(markdown: string): Map<string, Jkm> {
-  const models = new Map<string, Jkm>();
-  for (const block of jsonBlocks(markdown)) {
-    const data = JSON.parse(block) as unknown;
-    if (isObj(data) && typeof data.jkm === "string" && "roots" in data) models.set(data.jkm, data as unknown as Jkm);
-  }
-  return models;
-}
-
-/** JKRD7 正文中第一个含有键 key 的 JSON 块（深拷贝）。 */
-export function docBlock<T>(markdown: string, key: string): T {
-  for (const block of jsonBlocks(markdown)) {
-    const data = JSON.parse(block) as unknown;
-    if (isObj(data) && key in data) return data as T;
-  }
-  throw new Error(`JKRD7 中没有含 ${key} 的 JSON 块`);
-}
-
-/** JKRD7 正文中 id 为 jkiId 的 JKI 片段（深拷贝）。 */
-export function docFragment(markdown: string, jkiId: string): Jki {
-  for (const block of jsonBlocks(markdown)) {
-    const data = JSON.parse(block) as unknown;
-    if (isObj(data) && data.id === jkiId && !("members" in data)) return data as unknown as Jki;
-  }
-  throw new Error(`JKRD7 中没有 JKI 片段 ${jkiId}`);
 }

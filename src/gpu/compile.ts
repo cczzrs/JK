@@ -1,6 +1,6 @@
 /**
- * GPU 编译：把已通过静态检查的模型编译成平铺的 u32 数组（WebGPU.md §3），并确定
- * 每个实例的状态布局与记录布局（§4、§5）。主机端与 WGSL 内核共用这里的偏移。
+ * GPU 编译：把已通过静态检查的模型编译成平铺的 u32 数组（WebGPU.md §4），并确定
+ * 每个实例的状态布局与记录布局（§5）。主机端与 WGSL 内核共用这里的偏移。
  *
  * 节点编号 = JKRD7 §7.3 的路径顺序，所以订阅者列表天然有序，每个 JKS 的成员 JKI
  * 是一段连续编号，整合判定只需比较区间。
@@ -257,13 +257,13 @@ export function layout(c: Compiled, capacity: Partial<Capacity> = {}): Layout {
     ["JKS_LO", c.jksLo], ["JKS_HI", c.jksHi], ["OUTPUT", o],
   ];
   const m = {} as Layout["m"];
-  const words: number[] = [];
+  const modelData = new Uint32Array(Math.max(1, sections.reduce((total, [, data]) => total + data.length, 0)));
+  let at = 0;
   for (const [name, data] of sections) {
-    m[name] = words.length;
-    words.push(...data);
+    m[name] = at;
+    modelData.set(data, at); // 各段依次写入；值都是无符号 32 位
+    at += data.length;
   }
-  if (!words.length) words.push(0);
-  const modelData = new Uint32Array(words.map((v) => v >>> 0));
 
   const tkStride = 3 + c.maxOrder;
   const s = {} as Layout["s"];

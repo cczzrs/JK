@@ -5,7 +5,7 @@
  * 浏览器不能保存时，本页的选择照常生效。
  */
 
-import { byId } from "./dom.ts";
+import { byId, clone } from "./dom.ts";
 import { selectTab, setupTabs } from "./tabs.ts";
 
 export interface OutputChoices {
@@ -68,7 +68,12 @@ export class OutputChoiceStore {
   /** 换模型时的触发组选项：保存的组仍存在就选它，否则选默认组，再否则选第一个组。 */
   setGroups(names: readonly string[]): void {
     const select = byId(GROUP, HTMLSelectElement);
-    select.replaceChildren(...names.map((name) => Object.assign(document.createElement("option"), { value: name, textContent: name })));
+    select.replaceChildren(...names.map((name) => {
+      const option = clone<HTMLOptionElement>("option-template");
+      option.value = name;
+      option.textContent = name;
+      return option;
+    }));
     const wanted = [this.state.group, this.config.defaults.group].find((name) => names.includes(name));
     if (wanted) select.value = wanted;
   }
