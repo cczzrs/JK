@@ -1,7 +1,7 @@
 {
   "status": "passed",
-  "generated_at_utc": "2026-11-11T22:00:54+00:00",
-  "scope": "JKRD7 §2/§3/§5/§6.4/§8 static rules, bit spelling in the JSON source text, §9.5 snapshot checks, document JSON, model asset, fixtures, display-page examples, links and index; no execution (see reports/reference-run.json and reports/gpu-run.json)",
+  "generated_at_utc": "2026-11-12T05:46:28+00:00",
+  "scope": "JKRD7 §2/§3/§5/§6.4/§8 static rules, bit spelling in the JSON source text, snapshot checks (snapshot/Snapshot.md), document JSON, model asset, fixtures, display-page examples, links and index; no execution (see reports/reference-run.json and reports/gpu-run.json)",
   "checks": [
     {
       "check": "JKRD7 模型 M1",
@@ -9,10 +9,6 @@
     },
     {
       "check": "JKRD7 运行脚本 ascii-overlap",
-      "passed": true
-    },
-    {
-      "check": "JKRD7 快照 S1",
       "passed": true
     },
     {
@@ -45,6 +41,10 @@
     },
     {
       "check": "JKRD7 模型 M_REG",
+      "passed": true
+    },
+    {
+      "check": "Snapshot.md 快照 S1",
       "passed": true
     },
     {
@@ -546,28 +546,30 @@
   ],
   "errors": [],
   "sha256": {
-    "AGENTS.md": "bccb8c7327e2d2cf4d93fa9783716a9b4aaa5ef3fb9bef20aeec7709faca7f85",
-    "JKRD7.md": "9212f3c9f72fcb63a20db121a778316f0fcd4d58ea519c2272b872e3a12231d4",
-    "README.md": "5abf09b4ae3a5757195ef08208cb080763a081a04c29013adfaf6167663086ff",
-    "TypeScript.md": "9c6effa7ad7c11d5fb0589a4aca78eccf52540750c89e46ad0b72d1158ed7e45",
-    "WebGPU.md": "9fad74760dce45ed3e319ec504e7b6c0403eb72e3a099fdb210ed7e45a03cade",
+    "AGENTS.md": "cb3e4c15368dc3be0f4a4c277582faf7a4c3656af5993ada8b24a674c66fe990",
+    "JKRD7.md": "48d7474dbf962e5f492298f5e7a7a949b9e3733d5676f3b43312482fe97bc633",
+    "README.md": "b771d720068bf44f7804b0237ff0a680d9719f824bd77d678a66128108852119",
+    "TypeScript.md": "c63012281c93c4fc08bdf75dffc9b559a3a21ff43f9d7793515ad8610cc49a6c",
+    "WebGPU.md": "15d0812a9a6d78258800494b4f9a5930d3b410bd8fbd82ff6a55ec43ebdd1493",
     "assets/ascii-bit-design/digits.jkm.json": "16d529c40a5224562705ac52dc953e745f5912475bdb1900821296a1617c8189",
     "assets/jks-factory-v7-design/JKI.FACTORY.json": "410729692fba6f0e70c69ec78436c27923c4e6de6fb0ed244ce378eeacda19d8",
     "assets/jks-factory-v7-design/RAM.FACTORY.json": "9ec8a03b18c4552d3db4ec42fddbfdfe39f3fd6e29a5d06675ba727f61c42f8f",
     "assets/jks-factory-v7-design/design-contract.json": "1e2f03cf60e4c4f233aaa9f361827debd2b17997653fce593effac4649d67c54",
     "assets/jks-factory-v7-design/generation-example.json": "f1b5561b14982b07b1ce41edb0285a1402e2b1f0f6eacba35199e60214b6c648",
-    "docs/jkrd7-maintenance.md": "e7fdb736084e7bb8de2c2b31db5b03fc9efb66b37a7cb6d19b534c82dbea8da5",
+    "docs/jkrd7-maintenance.md": "6179c7969e295b4ab777e664f2e6773c7afbb9ce04333dcb7aa4cd693d1c7cc3",
     "docs/jkrd7-proposal-2026-11-05.md": "050f4b365a837e3b23f0167bbf6997e98601ce760bc98689128b5f8f3491e269",
     "docs/jkrd7-proposal-2026-11-06.md": "9fcbd3027b60425e3a803a49803c66b24986f6036073a7786c23a1ac175d4e03",
     "docs/modules/factory-pending.md": "e8139c930aa319f881d2ffcdeafeac86492a8ecfce65cda7fa020ba346718dc3",
-    "docs/web-show.md": "d6e7674cc2faa69d398b97ebec8f08a67a812e477f4ba02736eb8187d2596830",
-    "jk.config.json": "512a4dc93a3a3c2639176e2caa23f774e698cf766577f95d45b7274711c0d6fb",
+    "docs/web-show.md": "ff06a9309f0b92f59684752867b77c35303ab3fe34c7744bb54abed9f9566e50",
+    "jk.config.json": "f5eebe0da0001c96bb8bdc422d808cdc6941270915ecb7a9847210d9c2539d74",
+    "snapshot/Snapshot.md": "430e2846df114e86f070c95a9d5f083e1a594f9cbba5a7852ac5779b738254e3",
+    "snapshot/snapshot.ts": "6355e2525202e9b4bf0206ca89cb5b40ea3bcaaf40815401f034aa08c95b5231",
     "src/doc.ts": "b35ec3bc87314457157bca33c296c1bebbe0d19c6ea3f46d6557bd30621dfc31",
-    "src/model.ts": "24789c99f2ca7cb26ba104895fad39d26b40c9680baea747f36d013d2e77474d",
+    "src/model.ts": "277319631bb97e646322a39a3bbc14a995d0623b61f6923bb79d321cd8127178",
     "src/testing/fixtures.ts": "a44f18158a5c96fc008088729c6c45efe3c4a936e946c64751a9c70cf79c9263",
-    "src/testing/static.ts": "5b8b4c776e70b5fc039a500ebc44e99fb22613a0682186f2ed2a822dfa88ca66",
-    "tools/validate.ts": "b0e0c8f2b2856449b8de5f73661f0427b9304c23f4670d5ab59e3f7267d5ea75",
-    "ultra.md": "56193a0953083557c0d32cf21e6933e953293bcd5225c3ef1a2c32c1a5a82d75",
+    "src/testing/static.ts": "da9c053efcc99b47d64815da8bfa59df75b0ae9a0a12109b031ad57940b45a5a",
+    "tools/validate.ts": "36446b90260b5106e3fc3484bf5695000cf5d8b6bb459b2450e89745e28eaf48",
+    "ultra.md": "6a283b7a75b076b273f87bc81543034f8dad9a01e4a7ca3f9f0aa65ed76d92c9",
     "web/show/examples.json": "a7d145ca88ae81b4b34ccc43732ab3a2d799e0ea8e554e393ca7a10ec2f25b5c"
   }
 }

@@ -6,8 +6,10 @@
  * 整理成展示用的数据（执行记录、计数、FIFO 列表、逐步的动画与说明），不参与执行，也不补充规则。
  */
 
-import { CpuExecutor, type TaskItem, type TraceEntry, compareRoundKeys } from "../../src/cpu.ts";
-import { type Bit, type Model, isInputEntry, sortPaths } from "../../src/model.ts";
+import { CpuExecutor, type TaskItem, type TraceEntry } from "../../src/cpu.ts";
+import { type Bit, type Model, isInputEntry } from "../../src/model.ts";
+import type { Snapshot } from "../../snapshot/snapshot.ts";
+import { loadSnapshot } from "../../snapshot/cpu.ts";
 import type { RecordEntry } from "../../src/record.ts";
 import { observeKey } from "./scene/model-view.ts";
 
@@ -60,6 +62,8 @@ export interface Unit {
   /** 是否记录了执行细节（跳过动画运行时不记录）。 */
   detailed: boolean;
   steps: Step[];
+  /** 这一步执行的节点任务个数：批执行（§7.5）时一步执行一整批，否则为 1（事件、事务为 0）。 */
+  batch: number;
 }
 
 /** 一次输入：at 为注入时已完成的处理单元数，script 表示来自运行脚本。 */
@@ -90,6 +94,8 @@ export interface FifoRow {
   target: string;
   detail: string;
   item: unknown;
+  /** 属于任务 FIFO 队首的下一批（§7.5 可并行批）。 */
+  batch?: boolean;
 }
 
 /** 把一个单元的执行细节分成步，并整理出动画数据与各层事务 FIFO 的内容。 */
@@ -183,10 +189,35 @@ export class Session {
   /** 运行日志中最近一个处理单元的编号。 */
   private unit = 0;
 
+  /** 只用于显示 GPU 结果的会话：第几个实例（从 1 起）；交互执行的会话为 null。 */
+  gpu: { instance: number } | null = null;
+
   constructor(model: Model, historyRows = 120) {
     this.model = model;
     this.historyRows = historyRows;
     this.ex = new CpuExecutor(model); // 输出观察取自模型的 output（§8.1）
+  }
+
+  /**
+   * 显示 GPU 后端的结果：q、到达记录、轮记录与 FIFO 取自 GPU 状态缓冲区读回的快照（snapshot/Snapshot.md），
+   * 执行记录、写入次数与输出取自 GPU 的执行记录（§9.4）。处理单元编号不在记录中，输出行的处理单元为 −1。
+   */
+  static fromGpu(model: Model, records: readonly RecordEntry[], snapshot: Snapshot, instance: number, historyRows = 120): Session {
+    const session = new Session(model, historyRows);
+    session.gpu = { instance };
+    loadSnapshot(session.ex, snapshot);
+    for (const record of records) {
+      session.recordCount += 1;
+      session.recent.push(record);
+      if (session.recent.length > historyRows) session.recent.shift();
+      if ("q" in record) {
+        session.counts.set(record.q, (session.counts.get(record.q) ?? 0) + 1);
+        session.stats.evaluations += 1;
+      } else if ("output" in record) {
+        session.outputs.push({ unit: -1, source: record.output, values: Object.values(record.values).flat() });
+      }
+    }
+    return session;
   }
 
   /** 两个 FIFO 都为空（静止）。 */
@@ -202,8 +233,8 @@ export class Session {
     return this.ex.thread;
   }
 
-  latestOutput(): { source: string; values: Bit[] } | undefined {
-    return this.ex.outputs.at(-1);
+  latestOutput(): OutputRow | undefined {
+    return this.outputs.at(-1);
   }
 
   /** 在处理单元之间追加一批输入（§9.1）。先检查全部入口再逐条追加，不会因中途出错留下半批。 */
@@ -240,7 +271,8 @@ export class Session {
     const head = ex.log[start];
     if (head.kind !== "unit") throw new Error("运行日志缺少处理单元项");
     const first = this.outputs.length - trace.filter((e) => e.kind === "output").length;
-    return { n: head.n, kind: head.unit, path: head.path, detailed: detail, steps: detail ? buildSteps(this.model, trace, first) : [] };
+    const batch = ex.log.slice(start).filter((e) => e.kind === "unit" && e.unit === "node").length;
+    return { n: head.n, kind: head.unit, path: head.path, detailed: detail, steps: detail ? buildSteps(this.model, trace, first) : [], batch };
   }
 
   /** 把新增的运行日志并入执行记录与计数。 */
@@ -291,23 +323,13 @@ export class Session {
 
   /** 任务 FIFO 的展示行。 */
   taskRows(): FifoRow[] {
-    return this.ex.tasks.toArray().map(taskRow);
+    const next = this.ex.nextBatch().length;
+    return this.ex.tasks.toArray().map((task, i) => ({ ...taskRow(task), batch: i < next }));
   }
 
-  /** 未到齐的 all 到达记录与登记轮记录，顺序与快照相同（§9.5）。 */
-  roundsView(): { trigger_all: Record<string, (Bit | null)[]>; rounds: Record<string, Partial<Record<string, string[]>>> } {
-    const triggerAll: Record<string, (Bit | null)[]> = {};
-    for (const p of sortPaths(this.ex.triggerAll.keys())) {
-      const record = this.ex.triggerAll.get(p)!;
-      if (record.some((v) => v !== null)) triggerAll[p] = [...record];
-    }
-    const rounds: Record<string, Partial<Record<string, string[]>>> = {};
-    const keys = [...this.ex.rounds.keys()].map((k) => k.split("|") as [string, string]).sort(compareRoundKeys);
-    for (const [g, kind] of keys) {
-      const record = this.ex.rounds.get(`${g}|${kind}`)!;
-      if (record.length) (rounds[g] ??= {})[kind] = [...record];
-    }
-    return { trigger_all: triggerAll, rounds };
+  /** 未到齐的 all 到达记录与登记轮记录，顺序与快照相同（snapshot/Snapshot.md）。 */
+  roundsView(): ReturnType<CpuExecutor["arrivals"]> {
+    return this.ex.arrivals();
   }
 
   /** 一个 JKS 的 all、transaction 本轮记录（§5.4）。 */

@@ -3,6 +3,7 @@
  */
 
 import type { StylesConfig } from "../config.ts";
+import { type Obj, boolean, bounded, color, isColor, object, own } from "./normalize.ts";
 
 export interface EdgeStyle {
   color: string;
@@ -33,16 +34,7 @@ export interface NetworkStyles {
   tags: Record<string, NodeStyle>;
 }
 
-type Obj = Record<string, unknown>;
-type Limit = { min: number; max: number };
 
-const object = (value: unknown): value is Obj => value !== null && typeof value === "object" && !Array.isArray(value);
-const own = (value: unknown, key: string): unknown => (object(value) && Object.hasOwn(value, key) ? value[key] : undefined);
-const isColor = (value: unknown): value is string => typeof value === "string" && /^#[\da-f]{6}$/i.test(value);
-const color = (value: unknown, fallback: string): string => (isColor(value) ? value.toLowerCase() : fallback);
-const boolean = (value: unknown, fallback: boolean): boolean => (typeof value === "boolean" ? value : fallback);
-const bounded = (value: unknown, fallback: number, limits: Limit): number =>
-  Math.min(limits.max, Math.max(limits.min, typeof value === "number" && Number.isFinite(value) ? value : fallback));
 
 function edgeStyle(raw: unknown, defaults: EdgeStyle, limits: StylesConfig["edges"]["limits"]): EdgeStyle {
   return {

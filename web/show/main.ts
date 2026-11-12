@@ -24,6 +24,8 @@ import { NetworkStylePanel } from "./ui/network-style-panel.ts";
 import { pixelsToBatches } from "./ui/image-input.ts";
 import { byId, clone, errorMessage, pretty, setText } from "./ui/dom.ts";
 import { OutputChoiceStore } from "./ui/output-choices.ts";
+import { selectTab, setupTabs } from "./ui/tabs.ts";
+import type { GpuSnapshotResult } from "../../snapshot/gpu.ts";
 
 const $ = (id: string): HTMLElement => byId(id);
 const input = (id: string): HTMLInputElement => byId(id, HTMLInputElement);
@@ -104,13 +106,18 @@ jkmPanel.addEventListener("cosmic-workspace-error", (event) => message((event as
 // 窗口显示或展开时补上它的内容（隐藏、收起的窗口不随执行刷新）。
 jkmPanel.addEventListener("cosmic-window-show", () => render());
 /** 输出数据格式及列表、输出渲染的选择与运行控制的三个勾选框：恢复上次的选择，改动时保存并刷新。 */
-const { skip, slice, byOutputFormat } = APP_CONFIG.playback;
+const { skip, slice, byOutputFormat, batch } = APP_CONFIG.playback;
 const outputChoices = new OutputChoiceStore({
   ...APP_CONFIG.view.outputChoices,
-  defaults: { ...APP_CONFIG.view.outputChoices.defaults, skip, slice, byOutputFormat, labelsHidden: APP_CONFIG.scene.nodeLabelsHidden },
+  defaults: {
+    ...APP_CONFIG.view.outputChoices.defaults, skip, slice, byOutputFormat, batch,
+    labelsHidden: APP_CONFIG.scene.nodeLabelsHidden, loopsShown: APP_CONFIG.scene.loops.shown,
+  },
 }, () => renderPanels());
-showLabelsButton(outputChoices.labelsHidden);
-view.setLabels(!outputChoices.labelsHidden);
+showLabelsButton(outputChoices.flag("labelsHidden"));
+view.setLabels(!outputChoices.flag("labelsHidden"));
+button("loops-toggle").setAttribute("aria-pressed", String(outputChoices.flag("loopsShown")));
+view.setLoops(outputChoices.flag("loopsShown"));
 const networkStylePanel = new NetworkStylePanel({
   root: jkmPanel,
   config: APP_CONFIG.scene.styles,
@@ -127,6 +134,7 @@ const playback = new Playback({
   },
   message: (text, error) => message(text, error),
   skip: () => input("skip").checked,
+  batch: () => input("batch-mode").checked,
   speed: () => Number(input("speed").value),
 });
 
@@ -174,8 +182,12 @@ async function readJsonFile(file: File): Promise<unknown> {
   return parseJson(await file.text());
 }
 
+/** 会执行的操作：显示 GPU 结果时先切回 CPU 现场（GPU 结果只读）。 */
+const EXECUTING = new Set(["play", "step", "step-back", "unit-jump-go", "send", "reset", "script-run", "model-apply", "image-convert"]);
+
 function action(id: string, fn: () => unknown, errorId?: string): void {
   $(id).addEventListener("click", async () => {
+    if (EXECUTING.has(id)) showCpu();
     if (errorId) setText(errorId, "");
     try {
       await fn();
@@ -235,13 +247,15 @@ function forScene(step: Step): Step {
   const byFormat = input("by-output-format").checked;
   if (slice && !byFormat) return step;
   const session = current().session;
+  const listed = new Map<number, ReturnType<typeof listedMembers>>(); // 每条输出只查一次列表
   return {
     ...step,
     transfers: step.transfers.filter((t) => {
       if (t.relation !== "observe" || t.output === undefined) return true;
       if (!slice && t.source !== session.outputs[t.output]?.source) return false;
       if (!byFormat) return true;
-      const members = listedMembers(session, t.output);
+      if (!listed.has(t.output)) listed.set(t.output, listedMembers(session, t.output));
+      const members = listed.get(t.output);
       return members === "all" || Boolean(members?.has(t.source));
     }),
   };
@@ -318,13 +332,14 @@ function loadModel(data: unknown, path?: string, builtin = false): void {
   $("cosmic-model-name").title = raw.jkm;
   setText("cosmic-model-md5", raw.version);
   setText("model-summary", `${raw.version} · ${model.jki.size} JKI / ${model.jks.size} JKS · JKRD7 静态检查通过`);
-  setText("metadata", pretty({ jkm: raw.jkm, version: raw.version, threads: raw.threads, input: raw.input, output: raw.output, roots: raw.roots.map((g) => g.id) }));
+  // 与 examples.json 同一排版（src/doc.ts）：字段一行一个，值写成一行
+  setText("metadata", formatJkmJson({ jkm: raw.jkm, version: raw.version, threads: raw.threads, input: raw.input, output: raw.output, roots: raw.roots.map((g) => g.id) }, "", true));
   for (const id of ["events-queue-name", "tasks-queue-name"]) setText(id, `thread ${session.thread ?? "—"}`);
   area("model-json").value = formatJkmJson(raw);
   input("model-path").value = state.modelPath;
   area("input-json").value = pretty(defaults.input);
   area("script-json").value = pretty(currentScript());
-  area("output-json").value = pretty(raw.output);
+  area("output-json").value = formatJkmJson(raw.output, "", true);
   outputChoices.setGroups(Object.keys(raw.output));
   $("input-buttons").replaceChildren();
   for (const entryPath of inputs) {
@@ -336,6 +351,7 @@ function loadModel(data: unknown, path?: string, builtin = false): void {
     entry.title = `注入 ${entryPath}`;
     entry.addEventListener("click", () => {
       try {
+        showCpu();
         playback.inject([entryPath]);
         message(`已注入 ${entryPath}；${playback.running ? "播放中，将自动处理。" : "点击播放或单步处理。"}`);
       } catch (error) {
@@ -352,10 +368,12 @@ function loadModel(data: unknown, path?: string, builtin = false): void {
     choice(id).value = inputs[Math.min(index, inputs.length - 1)] ?? "";
   }
   gpuRecords = null;
+  forgetGpu();
   button("gpu-download").disabled = true;
   setText("gpu-result", "尚未在 GPU 上执行。");
   networkStylePanel.setModel(model);
   view.setModel(model);
+  playback.start(); // 换模型后进入播放中（用户 2026-11-11）
   render();
   message(`已加载 ${raw.jkm} · JKRD7 静态检查通过。`);
 }
@@ -364,6 +382,7 @@ function loadModel(data: unknown, path?: string, builtin = false): void {
 function restart(script: string[][] | null = null): void {
   const { loaded: l } = current();
   playback.begin(new Session(l.model, APP_CONFIG.view.traceRows), script);
+  playback.start(); // 重载与执行运行脚本后进入播放中
 }
 
 // -- 控件 -----------------------------------------------------------------
@@ -421,13 +440,24 @@ action("camera-reset", () => view.fit());
 action("node-labels", () => {
   const hidden = labelsButton.getAttribute("aria-pressed") !== "true";
   showLabelsButton(hidden);
-  outputChoices.setLabelsHidden(hidden);
+  outputChoices.setFlag("labelsHidden", hidden);
   view.setLabels(!hidden);
 });
 action("black-background", () => {
   const black = button("black-background").getAttribute("aria-pressed") !== "true";
   button("black-background").setAttribute("aria-pressed", String(black));
   view.setBlackBackground(black);
+});
+// 批执行从当前位置起生效：只改当前会话的执行方式，执行记录不变（§7.5）
+input("batch-mode").addEventListener("change", () => {
+  if (state.session) state.session.ex.batch = input("batch-mode").checked;
+  render();
+});
+action("loops-toggle", () => {
+  const shown = button("loops-toggle").getAttribute("aria-pressed") !== "true";
+  button("loops-toggle").setAttribute("aria-pressed", String(shown));
+  outputChoices.setFlag("loopsShown", shown);
+  view.setLoops(shown);
 });
 action("jks-boxes", () => {
   const visible = button("jks-boxes").getAttribute("aria-pressed") !== "true";
@@ -540,7 +570,6 @@ action("script-run", () => {
   restart(script.batches);
   desktop.hide("script-dialog");
   message(`正在执行运行脚本 ${script.run} · ${script.batches.length} 批。`);
-  playback.play();
 }, "script-error");
 
 /** GPU 后端：从初值整段执行运行脚本（每个实例一个调用），与 CPU 后端逐字节对拍。 */
@@ -558,6 +587,10 @@ async function gpuRun(): Promise<void> {
     const result = await gpuRunner.run(device, l, script, count);
     gpuDispatches += result.dispatches;
     gpuRecords = result.records ? { run: script.run, text: result.records } : null;
+    gpuResults = result.results;
+    input("gpu-view-instance").max = String(result.results.length);
+    button("gpu-view-gpu").disabled = false;
+    if (cpuSession) showGpu(); // 正在显示 GPU 结果时换成这一次的结果
     button("gpu-download").disabled = !gpuRecords;
     setText("gpu-result", result.text + (devices.adapter ? ` · ${devices.adapter}` : ""));
   } finally {
@@ -565,6 +598,64 @@ async function gpuRun(): Promise<void> {
     render();
   }
 }
+// -- GPU 结果的显示（WebGPU.md 第 2 阶段） ---------------------------------------
+
+/** 最近一次 GPU 执行的各实例结果；显示 GPU 结果时，交互执行的会话暂存在 cpuSession。 */
+let gpuResults: GpuSnapshotResult[] | null = null;
+let cpuSession: Session | null = null;
+
+/** 显示第 n 个 GPU 实例的结果（快照与执行记录），交互执行的会话暂存。 */
+function showGpu(): void {
+  const { loaded } = current();
+  const n = Number(input("gpu-view-instance").value);
+  const result = gpuResults?.[n - 1];
+  if (!result) throw new Error(`没有第 ${n} 个 GPU 实例`);
+  if (!result.snapshot) throw new Error(`第 ${n} 个 GPU 实例出错，没有结束时的快照`);
+  playback.pause();
+  cpuSession ??= current().session;
+  state.session = Session.fromGpu(loaded.model, result.records, result.snapshot, n, APP_CONFIG.view.traceRows);
+  state.unit = null;
+  state.unitStep = -1;
+  render();
+  message(`正在显示第 ${n} 个 GPU 实例的结果（只读）。`);
+}
+
+/** 回到交互执行的现场。 */
+function showCpu(): void {
+  if (!cpuSession) return;
+  state.session = cpuSession;
+  cpuSession = null;
+  state.unit = null;
+  selectTab("gpu-view", "cpu");
+  render();
+}
+
+/** 换模型时丢弃 GPU 结果。 */
+function forgetGpu(): void {
+  cpuSession = null;
+  gpuResults = null;
+  selectTab("gpu-view", "cpu");
+  button("gpu-view-gpu").disabled = true;
+}
+
+setupTabs("gpu-view", (value) => {
+  try {
+    if (value === "gpu") showGpu();
+    else showCpu();
+  } catch (error) {
+    selectTab("gpu-view", "cpu");
+    message(errorMessage(error), true);
+  }
+});
+input("gpu-view-instance").addEventListener("change", () => {
+  if (!cpuSession) return;
+  try {
+    showGpu();
+  } catch (error) {
+    message(errorMessage(error), true);
+  }
+});
+
 action("gpu-run", () => gpuRun(), "gpu-result");
 action("gpu-download", () => {
   if (gpuRecords) download(`${gpuRecords.run}.gpu.trace.jsonl`, gpuRecords.text, "application/x-ndjson");
@@ -666,6 +757,10 @@ window.addEventListener("pagehide", () => {
   imageBitmap?.close();
   devices.dispose();
 });
+// 离开页面时已释放视图与设备；页面从往返缓存恢复时重新加载，而不是留下不可用的页面。
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) location.reload();
+});
 
 // -- 启动 -----------------------------------------------------------------
 
@@ -707,7 +802,6 @@ try {
   if (!initial) throw new Error(`没有默认示例 ${APP_CONFIG.model.example}`);
   loadModel(structuredClone(initial), undefined, true);
   await view.ready;
-  playback.play(); // 刚打开默认为播放中：静止时等待输入，输入后自动处理
 } catch (error) {
   if (!disposed) message(`初始化失败：${errorMessage(error)}`, true);
 } finally {

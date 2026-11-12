@@ -14,7 +14,8 @@ import { formatRecords } from "../src/record.ts";
 import { runScriptCpu } from "../src/executor.ts";
 import { CpuExecutor, TxLimit } from "../src/cpu.ts";
 import { exitLoopModel } from "../src/testing/fixtures.ts";
-import { ASCII_MODEL, DOC, SOURCE_FILES, parseArgs, readJson, readText, writeReport } from "./common.ts";
+import { globSync } from "node:fs";
+import { ASCII_MODEL, DOC, ROOT, SOURCE_FILES, parseArgs, readJson, readText, writeReport } from "./common.ts";
 import { serve } from "./server.ts";
 import { CHROME_ARGS, chromeOptions, runInChrome } from "./chrome.ts";
 import type { CaseResult, ShowCase, ShowJob } from "../web/show/verify.ts";
@@ -79,6 +80,7 @@ function buildCases(): ShowCase[] {
   const ascii = readJson<Jkm>(ASCII_MODEL);
   const asciiScript = docBlock<RunScript>(doc, "run");
   cases.push(showCase("十选一 ASCII：JKRD7 §9.4 运行脚本，GPU 64 个实例对拍", "script", "ASCII_DIGITS", ascii, asciiScript, { gpu: 64 }));
+  cases.push(showCase("十选一 ASCII：批执行（§7.5）运行 §9.4 脚本，执行记录与串行相同", "batch", "ASCII_DIGITS", ascii, asciiScript));
   const scripts = new Map<string, RunScript>();
   for (const name of DOC_MODELS) {
     const data = models.get(name);
@@ -155,15 +157,17 @@ async function main(): Promise<number> {
         + "timeline jump/back/forward by re-execution, Canvas 2D fallback, image-to-input, a transaction stopped at the step limit, "
         + "an old-format model rejected, all layouts, JKS details, GPU backend instances; the page's exported records are compared "
         + "byte for byte with the CPU backend (src/executor.ts), and the displayed units, FIFO sizes, outputs, last history row, "
-        + "per-node q in the inspector and q/count labels in the 3D scene with the CPU backend's state",
+        + "per-node q in the inspector and q/count labels in the 3D scene with the CPU backend's state; "
+        + "the output list window (row count and last row per record mode: every output, slice or real run, and each output group as trigger group), "
+        + "the output render window (kara clears, render-all restores the row count; ASCII text for the done group of the ASCII model) "
+        + "and which output-node animations the scene keeps (by output format, slice record)",
       scope: "single-thread models from JKRD7 §9.4/§10 and the ASCII attachment; this machine's Chrome and GPU only; "
         + "snapshot export/restore and the shared model pool are not part of the page yet",
       render: result.render,
       user_agent: result.userAgent,
       cases: results,
     }, [DOC, ASCII_MODEL, "tools/show.ts", "tools/server.ts", "tools/chrome.ts",
-      "web/show/index.html", "web/show/main.ts", "web/show/session.ts", "web/show/panels.ts", "web/show/playback.ts",
-      "web/show/scene/view.ts", "web/show/verify.ts", ...SOURCE_FILES]);
+      ...globSync(["web/show/**/*.ts", "web/show/**/*.html", "web/show/**/*.css", "web/show/**/*.json"], { cwd: ROOT }), ...SOURCE_FILES]);
   }
   return failed.length ? 1 : 0;
 }

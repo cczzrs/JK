@@ -1,8 +1,8 @@
 /**
  * JKRD7 静态检查（JKRD7 §11.1）。
  *
- * 检查 JKRD7.md 中的全部 JSON 块、十选一模型附件、§2/§3/§5/§6.4/§8 规则的负例与正例、bit 的原文写法、
- * 快照（§9.5）的正例与负例、待适配工厂附件的 JSON 语法、展示页的内置示例、本地 Markdown 链接和
+ * 检查 JKRD7.md 与 snapshot/Snapshot.md 中的全部 JSON 块、十选一模型附件、§2/§3/§5/§6.4/§8 规则的负例与正例、
+ * bit 的原文写法、快照（snapshot/Snapshot.md）的正例与负例、待适配工厂附件的 JSON 语法、展示页的内置示例、本地 Markdown 链接和
  * jk.config.json 中的路径。不执行模型。
  *
  *   node tools/validate.ts [--write-report]
@@ -10,10 +10,11 @@
 
 import { globSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { Model, checkJki, checkRunScript, checkSnapshot, isObj, parseJson } from "../src/model.ts";
+import { Model, checkJki, checkRunScript, isObj, parseJson } from "../src/model.ts";
+import { checkSnapshot } from "../snapshot/snapshot.ts";
 import { DOC_MODELS, jsonBlocks } from "../src/doc.ts";
 import { NEGATIVE, POSITIVE, SNAPSHOT_CASES, TEXT_CASES } from "../src/testing/static.ts";
-import { ASCII_MODEL, DOC, ROOT, exists, parseArgs, readJson, readText, rel, writeReport } from "./common.ts";
+import { ASCII_MODEL, DOC, ROOT, SNAPSHOT_DOC, exists, parseArgs, readJson, readText, rel, writeReport } from "./common.ts";
 import { EXAMPLES_FILE, examplesText } from "./examples.ts";
 
 /** 正文中必须有的完整模型：§8.1 的 M1 与第 10 节的模型。 */
@@ -24,13 +25,13 @@ const PENDING_ASSETS = [
   "assets/jks-factory-v7-design/design-contract.json",
   "assets/jks-factory-v7-design/generation-example.json",
 ];
-const MARKDOWN = ["*.md", "docs/*.md", "docs/modules/*.md"];
+const MARKDOWN = ["*.md", "docs/*.md", "docs/modules/*.md", "snapshot/*.md"];
 const REPORT = "reports/static-validation.json";
 
 class Checker {
   readonly errors: string[] = [];
   readonly items: { check: string; passed: boolean }[] = [];
-  readonly files = new Set([DOC, "jk.config.json"]);
+  readonly files = new Set([DOC, SNAPSHOT_DOC, "jk.config.json"]);
 
   record(name: string, problems: string[]): void {
     this.items.push({ check: name, passed: problems.length === 0 });
@@ -45,7 +46,8 @@ class Checker {
 
   docBlocks(): void {
     const parsed: unknown[] = [];
-    jsonBlocks(readText(DOC)).forEach((block, i) => {
+    // Snapshot.md 的快照示例对应 JKRD7 正文中的模型，所以两份文档的 JSON 块一起核对
+    [DOC, SNAPSHOT_DOC].flatMap((file) => jsonBlocks(readText(file))).forEach((block, i) => {
       try {
         parsed.push(parseJson(block));
       } catch (e) {
@@ -58,9 +60,9 @@ class Checker {
       let name: string;
       let problems: string[] = [];
       if (isObj(data) && "snapshot" in data) {
-        name = `JKRD7 快照 ${String(data.snapshot)}`;
+        name = `Snapshot.md 快照 ${String(data.snapshot)}`;
         const base = models.get(data.jkm as string);
-        problems = base ? checkSnapshot(data, new Model(base, data.jkm as string)) : [`快照对应的模型 ${String(data.jkm)} 不在正文中`];
+        problems = base ? checkSnapshot(data, new Model(base, data.jkm as string)) : [`快照对应的模型 ${String(data.jkm)} 不在 JKRD7 正文中`];
       } else if (isObj(data) && "run" in data) {
         name = `JKRD7 运行脚本 ${String(data.run)}`;
         const path = String(data.model);
@@ -105,7 +107,7 @@ class Checker {
     for (const [name, build, fragment] of NEGATIVE) this.expect(`负例：${name}`, new Model(build(), name).errors, fragment);
     // bit 的原文写法（§2 第 2 条）：文本先经 parseJson 解析
     for (const [name, text, fragment] of TEXT_CASES) this.expect(`原文：${name}`, new Model(parseJson(text()), name).errors, fragment);
-    // 快照（§9.5）
+    // 快照（snapshot/Snapshot.md）
     for (const [name, build, fragment] of SNAPSHOT_CASES) {
       const { model, snapshot } = build();
       const loaded = new Model(model, name);
@@ -171,12 +173,12 @@ function main(): number {
     + `原文 ${TEXT_CASES.length} 例，快照 ${SNAPSHOT_CASES.length} 例）`);
   if (args.writeReport) {
     writeReport(REPORT, errors.length > 0, {
-      scope: "JKRD7 §2/§3/§5/§6.4/§8 static rules, bit spelling in the JSON source text, §9.5 snapshot checks, document JSON, "
+      scope: "JKRD7 §2/§3/§5/§6.4/§8 static rules, bit spelling in the JSON source text, snapshot checks (snapshot/Snapshot.md), document JSON, "
         + "model asset, fixtures, display-page examples, links and index; "
         + "no execution (see reports/reference-run.json and reports/gpu-run.json)",
       checks: checker.items,
       errors,
-    }, [...checker.files, "tools/validate.ts", "src/model.ts", "src/doc.ts", "src/testing/static.ts", "src/testing/fixtures.ts"]);
+    }, [...checker.files, "tools/validate.ts", "src/model.ts", "snapshot/snapshot.ts", "src/doc.ts", "src/testing/static.ts", "src/testing/fixtures.ts"]);
   }
   return errors.length ? 1 : 0;
 }

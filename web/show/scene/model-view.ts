@@ -17,7 +17,8 @@ export function observedPath(key: string): string {
 export interface Token {
   source: string;
   index: number;
-  op: "J" | "K";
+  /** EX 运算（relation 为 source 时）；触发引用没有运算。 */
+  op?: "J" | "K";
   /** source：EX 来源；source-definition：空 EX 的 sources.s；trigger：触发引用。 */
   relation: "source" | "source-definition" | "trigger";
 }
@@ -58,7 +59,7 @@ export function createDisplayModel(model: Model): DisplayModel {
       source, index, op: ops[index] ?? "K", relation: ops.length ? "source" : "source-definition",
     }));
     for (const [index, source] of (model.triggerRefs.get(path) ?? []).entries()) {
-      tokens.push({ source, index, op: "K", relation: "trigger" });
+      tokens.push({ source, index, relation: "trigger" });
     }
     const tags = [...(definition.pro?.tag ?? [])];
     return {

@@ -36,7 +36,7 @@ export function tabValue(id: string): string {
 export function setupTabs(id: string, onChange: (value: string) => void): void {
   const list = byId(id);
   const choose = (tab: HTMLButtonElement) => {
-    if (tab.getAttribute("aria-selected") === "true") return;
+    if (tab.disabled || tab.getAttribute("aria-selected") === "true") return;
     select(list, tab);
     onChange(tab.dataset.value ?? "");
   };
@@ -45,7 +45,7 @@ export function setupTabs(id: string, onChange: (value: string) => void): void {
     if (tab && list.contains(tab)) choose(tab);
   });
   list.addEventListener("keydown", (event) => {
-    const tabs = tabsOf(list);
+    const tabs = tabsOf(list).filter((tab) => !tab.disabled);
     const index = tabs.indexOf(document.activeElement as HTMLButtonElement);
     if (index < 0) return;
     const next = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: tabs.length - 1 }[event.key];

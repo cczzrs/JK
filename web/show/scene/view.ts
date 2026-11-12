@@ -19,11 +19,25 @@ import { type LabelHandle, NodeLabels } from "./node-labels.ts";
 import { RenderSchedule } from "./render-schedule.ts";
 import { type RendererOptions, type SceneRenderer, createRenderer, disposeRenderer } from "./renderer-backend.ts";
 import { disposeGroup } from "./resources.ts";
+import { type Signal, SignalLayer, type SpriteLabel, paintLabel } from "./signals.ts";
 
 const NODE_SIZE = 0.1;
 const TITLE_OFFSET = -0.19;
 const COUNT_OFFSET = -0.36;
-const COLORS = { X: 0x73aaff, Q: 0xf1f6ff, Y: 0x79dfae, J: 0xe898c0, K: 0x689ef3, error: 0xff596e } as Record<string, number>;
+/** 网络样式到达之前用的颜色：取 config.ts 中网络样式的默认值，与样式面板一致。 */
+const STYLE_DEFAULTS = APP_CONFIG.scene.styles;
+const hex = (color: string): number => new THREE.Color(color).getHex();
+const COLORS = {
+  X: hex(STYLE_DEFAULTS.nodes.types.input.color),
+  Q: hex(STYLE_DEFAULTS.nodes.types.node.color),
+  Y: hex(STYLE_DEFAULTS.nodes.types.observe.color),
+} as Record<string, number>;
+const edgeDefault = (edge: { op?: string; relation: string }): number => hex(STYLE_DEFAULTS.edges.types[edgeStyleType(edge)].color);
+const HOT = APP_CONFIG.scene.hot;
+const LOOPS = APP_CONFIG.scene.loops;
+const LOOP_COLOR = hex(LOOPS.color);
+const EDGE_OPACITY = APP_CONFIG.scene.display.edgeOpacity;
+const HOT_COLOR = hex(HOT.color);
 
 type Box = THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMaterial>;
 
@@ -32,6 +46,8 @@ interface Visual {
   title: LabelHandle;
   count: LabelHandle;
   q: LabelHandle | null;
+  /** §6.4 退出节点的“出”标记（不是退出节点时为 null）。 */
+  exit: LabelHandle | null;
   id: string;
   /** Q：JKI；Y：观察点。 */
   type: "Q" | "Y";
@@ -56,12 +72,6 @@ interface GroupBox {
 }
 
 /** 节点上的短暂文字：q 写入或发布。 */
-interface PulseSprite {
-  sprite: THREE.Sprite;
-  text: string;
-  color: string;
-}
-
 /** 动画序列中的一段：一步，或合并后的整个单元。 */
 interface Segment {
   transfers: readonly Transfer[];
@@ -73,7 +83,7 @@ interface DrawEdge {
   target: string;
   targetKey: string;
   sourceKey: string;
-  op: string;
+  op?: string;
   index: number;
   relation: string;
   laneIndex: number;
@@ -84,19 +94,6 @@ interface DrawEdge {
   visible?: boolean;
   styleOpacity?: number;
   highlight: THREE.Mesh<THREE.TubeGeometry, THREE.MeshBasicMaterial> | null;
-}
-
-interface Signal {
-  edge: DrawEdge;
-  text: THREE.Sprite;
-  tip: THREE.Mesh<THREE.ConeGeometry, THREE.MeshBasicMaterial>;
-  value: string;
-}
-
-interface SpriteLabel {
-  text: string;
-  color: string;
-  size: number;
 }
 
 export interface ViewStatus {
@@ -144,29 +141,6 @@ export function arrowEnd(curve: THREE.Curve<THREE.Vector3>, center: THREE.Vector
   return outside;
 }
 
-function paintLabel(canvas: HTMLCanvasElement, text: string, color: string, size: number): void {
-  const ctx = canvas.getContext("2d")!;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.font = `500 ${size}px ui-monospace, SFMono-Regular, monospace`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillStyle = color;
-  ctx.fillText(text, 128, 32);
-}
-
-/** 动画中随信号移动的数值标签（离屏画布纹理，不是页面 HTML）。 */
-function spriteLabel(text: string, color = "#a5bcd3", size = 22): THREE.Sprite {
-  const canvas = document.createElement("canvas");
-  canvas.width = 256;
-  canvas.height = 64;
-  paintLabel(canvas, text, color, size);
-  const map = new THREE.CanvasTexture(canvas);
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map, transparent: true, depthTest: false }));
-  sprite.scale.set(1.35, 0.3375, 1);
-  sprite.renderOrder = 4;
-  sprite.userData.label = { text, color, size } satisfies SpriteLabel;
-  return sprite;
-}
 
 export class NetworkView implements CanvasView {
   readonly ready: Promise<void>;
@@ -178,16 +152,23 @@ export class NetworkView implements CanvasView {
   private readonly scene = new THREE.Scene();
   private readonly camera: THREE.PerspectiveCamera;
   private readonly group = new THREE.Group();
-  private readonly signalGroup = new THREE.Group();
+  /** 信号动画层（软件渲染器经下面三个 getter 读取）。 */
+  private readonly signalLayer = new SignalLayer<DrawEdge>();
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
   private readonly labelAppearance = new WeakMap<object, { size?: number; color: THREE.Color | string; scale?: THREE.Vector3 }>();
   readonly visuals = new Map<string, Visual>();
   edges: DrawEdge[] = [];
-  signals: Signal[] = [];
-  pulses: PulseSprite[] = [];
+  get signals(): readonly Signal<DrawEdge>[] {
+    return this.signalLayer.signals;
+  }
+  get pulses(): SignalLayer<DrawEdge>["pulses"] {
+    return this.signalLayer.pulses;
+  }
+  get signalProgress(): number {
+    return this.signalLayer.progress;
+  }
   groupBoxes: GroupBox[] = [];
-  signalProgress = 0;
   grid: THREE.GridHelper | null = null;
   batches: NetworkBatches | null = null;
   appearance: { background: string; opacity: number; foreground: string; fontScale: number } | null = null;
@@ -215,11 +196,16 @@ export class NetworkView implements CanvasView {
   private layoutWorker: Worker | null = null;
   private edgeTime = 0;
   private lastEdgeUpdate = 0;
+  /** 系统的“减少动态效果”设置：开启时连线不摆动（用户 2026-11-11）。 */
+  private readonly motion = matchMedia("(prefers-reduced-motion: reduce)");
+  /** 系统设置改变时重画一次。 */
+  private readonly motionChanged = (): void => this.renderSchedule.invalidate();
   private nodeLabelsHidden = APP_CONFIG.scene.nodeLabelsHidden;
   private blackBackground = APP_CONFIG.scene.blackBackground;
   private selected: string | null = null;
   private counts: ReadonlyMap<string, number> = new Map();
   private jk: Model | null = null;
+  private loopsShown: boolean = LOOPS.shown;
   private session: Session | null = null;
   private playback = { speed: APP_CONFIG.playback.speed.value, skip: APP_CONFIG.playback.skip };
   private animationStart: number | undefined;
@@ -243,13 +229,14 @@ export class NetworkView implements CanvasView {
     };
     this.device = device;
     this.onStep = onStep;
+    this.motion.addEventListener("change", this.motionChanged);
     this.scene.fog = new THREE.FogExp2(0x0a1422, 0.012);
     const { projection, initial } = APP_CONFIG.scene.camera;
     this.camera = new THREE.PerspectiveCamera(projection.fov, 1, projection.near, projection.far);
     this.camera.position.set(initial.position.x, initial.position.y, initial.position.z);
     this.camera.lookAt(initial.target.x, initial.target.y, initial.target.z);
     this.scene.add(this.group);
-    this.scene.add(this.signalGroup);
+    this.scene.add(this.signalLayer.group);
     this.ready = this.init().then(() => {
       if (this.disposed) {
         this.releaseRenderer();
@@ -324,7 +311,7 @@ export class NetworkView implements CanvasView {
     handle.textColor.set(this.appearance ? this.appearance.foreground : (base.color as THREE.Color));
   }
 
-  private styleSignalLabel(signal: Signal): void {
+  private styleSignalLabel(signal: Signal<DrawEdge>): void {
     const handle = signal.text;
     const original = handle.userData.label as SpriteLabel;
     let base = this.labelAppearance.get(handle);
@@ -378,6 +365,7 @@ export class NetworkView implements CanvasView {
     visual.title.position.copy(visual.mesh.position).add(new THREE.Vector3(0, TITLE_OFFSET - offset, 0));
     visual.count.position.copy(visual.mesh.position).add(new THREE.Vector3(0, COUNT_OFFSET - offset, 0));
     visual.q?.position.copy(visual.mesh.position);
+    visual.exit?.position.copy(visual.mesh.position).add(new THREE.Vector3(NODE_SIZE * visual.mesh.scale.x / 2 + 0.12, 0.08, 0));
   }
 
   private styleVisual(visual: Visual): void {
@@ -387,41 +375,31 @@ export class NetworkView implements CanvasView {
     visual.styleColor = style ? new THREE.Color(style.color).getHex() : visual.base;
     visual.title.visible = visual.count.visible = visual.mesh.visible && style?.labels !== false && !this.nodeLabelsHidden;
     this.styleNodeMarker(visual);
+    if (visual.exit) visual.exit.visible = visual.mesh.visible;
     this.placeVisualLabels(visual);
     visual.mesh.updateMatrixWorld();
   }
 
   private syncSignalStyles(): void {
-    for (const signal of this.signals) {
-      const visible = signal.edge.visible !== false;
-      const opacity = this.networkStyles ? Math.min(1, (signal.edge.styleOpacity ?? 0.4) / 0.4) : 1;
-      signal.text.visible = signal.tip.visible = visible;
-      signal.text.material.opacity = opacity;
-      signal.tip.material.transparent = opacity < 1;
-      signal.tip.material.opacity = opacity;
-    }
+    this.signalLayer.syncStyles(this.networkStyles !== null, EDGE_OPACITY);
   }
 
   // -- 渲染器 ---------------------------------------------------------------
 
   private async init(options: RendererOptions = {}): Promise<void> {
-    let result = await createRenderer(this, { device: this.device, ...options });
-    if (result.backend === "webgpu" && (result.renderer as THREE.WebGPURenderer)._isDeviceLost) {
-      disposeRenderer(result.renderer);
-      result = await createRenderer(this, { mode: "canvas" });
-    }
+    // 设备丢失的检查与回调都在 createRenderer 中；这里只在丢失的仍是当前渲染器时降级。
+    let created: SceneRenderer | null = null;
+    const result = await createRenderer(this, {
+      device: this.device, ...options,
+      onDeviceLost: (message) => {
+        if (created && this.renderer === created) void this.fail(new Error(message));
+      },
+    });
+    created = result.renderer;
     this.renderer = result.renderer;
     this.backendName = result.backend;
     this.fallbackReason = result.reason;
     const renderer = this.renderer;
-    if (result.backend === "webgpu") {
-      const gpu = renderer as THREE.WebGPURenderer;
-      const handleLoss = gpu.onDeviceLost.bind(gpu);
-      gpu.onDeviceLost = (info) => {
-        handleLoss(info);
-        if (this.renderer === renderer) void this.fail(new Error(info.message || "GPU 设备连接丢失"));
-      };
-    }
     const settings = APP_CONFIG.scene.renderer;
     this.renderSchedule = new RenderSchedule(result.backend === "canvas" ? settings.software : settings.gpu);
     renderer.setPixelRatio(result.backend === "canvas" ? settings.software.pixelRatio : Math.min(globalThis.devicePixelRatio || 1, settings.gpu.maxPixelRatio));
@@ -706,8 +684,9 @@ export class NetworkView implements CanvasView {
         q.scale.set(0.46, 0.115, 1);
         q.position.copy(pos);
       }
+      const exit = this.jk?.exitNodes.has(key) ? labels.add(LOOPS.marker, { color: LOOPS.color, size: 22, renderOrder: 6 }) : null;
       const visual: Visual = {
-        mesh, title, count, q, id, type, hasEX, base: COLORS[type], styleColor: COLORS[type], lastCount: 0,
+        mesh, title, count, q, exit, id, type, hasEX, base: COLORS[type], styleColor: COLORS[type], lastCount: 0,
         batchIndex: this.visuals.size, tags: [], isInput: false, qValue: null,
       };
       this.visuals.set(key, visual);
@@ -755,7 +734,7 @@ export class NetworkView implements CanvasView {
     for (const v of this.visuals.values()) batches.setNode(v.batchIndex, v.mesh);
     this.edges.forEach((e, i) => {
       batches.setEdge(i, e.curve, e.endT, e.arrow);
-      batches.setEdgeStyle(i, COLORS[e.op] ?? COLORS.K, false);
+      batches.setEdgeStyle(i, edgeDefault(e), false);
     });
     batches.commit();
     this.createGroups(labels);
@@ -859,6 +838,12 @@ export class NetworkView implements CanvasView {
     this.renderSchedule.invalidate();
   }
 
+  /** “显示环”：全部环上的触发线用环的颜色。 */
+  setLoops(shown: boolean): void {
+    this.loopsShown = shown;
+    this.refresh();
+  }
+
   setLabels(enabled: boolean): void {
     this.nodeLabelsHidden = !enabled;
     for (const v of this.visuals.values()) this.styleVisual(v);
@@ -928,11 +913,12 @@ export class NetworkView implements CanvasView {
   }
 
   /** 验收用：场景当前显示的节点 q、执行次数与其他计数。 */
-  inspect(): { nodes: Record<string, { q: Bit | null; count: number; visible: boolean }>; observe: number; groups: number; layout: string } {
+  inspect(): { nodes: Record<string, { q: Bit | null; count: number; visible: boolean }>; observe: number; exits: number; groups: number; layout: string } {
     const nodes: Record<string, { q: Bit | null; count: number; visible: boolean }> = {};
     for (const [key, v] of this.visuals) if (v.type === "Q") nodes[key] = { q: v.qValue, count: v.lastCount, visible: v.mesh.visible };
     return {
       nodes, observe: [...this.visuals.values()].filter((v) => v.type === "Y").length,
+      exits: [...this.visuals.values()].filter((v) => v.exit !== null).length,
       groups: this.groupBoxes.filter((g) => g.helper.visible).length, layout: this.layout?.mode ?? "",
     };
   }
@@ -945,15 +931,28 @@ export class NetworkView implements CanvasView {
   }
 
   /** 节点的颜色（q=0 变暗）、标题颜色与“q · 次数”标签。 */
+  /** 选中的 JKI 所在的环（§6.4）在 jk.loops 中的下标；不在环上时为 undefined。 */
+  private selectedLoop(): number | undefined {
+    return this.selected === null ? undefined : this.jk?.loopOf.get(this.selected);
+  }
+
+  /** 连线是不是第 loop 个环上的触发线（两端都在这个环上）。 */
+  private onLoop(e: DrawEdge, loop: number | undefined): boolean {
+    const loopOf = this.jk?.loopOf;
+    return loop !== undefined && e.relation === "trigger" && loopOf?.get(e.sourceKey) === loop && loopOf.get(e.targetKey) === loop;
+  }
+
   private paintVisual(key: string, v: Visual, count: number, group: ReturnType<NetworkView["selectedGroup"]>): void {
     const q = v.type === "Q" ? this.qOf(key) : null;
-    this.scratch.setHex(count > 1000 ? COLORS.error : v.styleColor);
+    this.scratch.setHex(count > HOT.count ? HOT_COLOR : v.styleColor);
     if (q === 0) this.scratch.multiplyScalar(APP_CONFIG.scene.qDisplay.zeroBrightness);
     v.mesh.material.color.copy(this.scratch);
-    const title = key === this.selected ? 0x85efd0 : group?.prereqs.has(key) ? 0xffd27a : group?.members.has(key) ? 0xbfe9ff : 0xffffff;
+    const loop = this.selectedLoop();
+    const title = key === this.selected ? 0x85efd0 : group?.prereqs.has(key) ? 0xffd27a : group?.members.has(key) ? 0xbfe9ff
+      : loop !== undefined && this.jk?.loopOf.get(key) === loop ? LOOP_COLOR : 0xffffff;
     v.title.color.setHex(title);
     if (v.type === "Q" && (count !== v.lastCount || q !== v.qValue)) {
-      const countColor = count > 1000 ? "#ff697e" : "#5c7a96";
+      const countColor = count > HOT.count ? HOT.label : "#5c7a96";
       v.count.setText(`q=${q ?? "—"} · ${count} 次`, countColor, 17);
       this.styleNodeLabel(v.count, { color: countColor, size: 17 });
       v.lastCount = count;
@@ -961,14 +960,14 @@ export class NetworkView implements CanvasView {
     }
   }
 
-  /** 只更新 q 被写入过的节点；某个节点的次数越过 1000 时整体刷新（连线要变红）。 */
+  /** 只更新 q 被写入过的节点；某个节点的次数越过 hot.count 时整体刷新（连线要变红）。 */
   private refreshNodes(paths: readonly string[]): void {
     const group = this.selectedGroup();
     for (const path of paths) {
       const v = this.visuals.get(path);
       if (!v) continue;
       const count = this.counts.get(path) ?? 0;
-      if (count > 1000 && v.lastCount <= 1000) {
+      if (count > HOT.count && v.lastCount <= HOT.count) {
         this.refresh();
         return;
       }
@@ -982,11 +981,12 @@ export class NetworkView implements CanvasView {
   private refresh(): void {
     const group = this.selectedGroup();
     const selectedId = this.selected === null || group ? undefined : this.visuals.get(this.selected)?.id;
+    const loop = this.selectedLoop();
     const high = new Set<string>();
     for (const [key, v] of this.visuals) {
       this.styleVisual(v);
       const count = this.counts.get(key) ?? 0;
-      if (count > 1000) high.add(v.id);
+      if (count > HOT.count) high.add(v.id);
       this.paintVisual(key, v, count, group);
       this.batches?.setNode(v.batchIndex, v.mesh);
     }
@@ -995,15 +995,18 @@ export class NetworkView implements CanvasView {
     }
     for (const [index, e] of this.edges.entries()) {
       const style = this.networkStyles?.edges[edgeStyleType(e)];
-      e.visible = style?.visible !== false && (style?.opacity ?? 0.4) > 0
+      e.visible = style?.visible !== false && (style?.opacity ?? EDGE_OPACITY) > 0
         && this.visuals.get(e.sourceKey)?.mesh.visible !== false && this.visuals.get(e.targetKey)?.mesh.visible !== false;
-      e.styleOpacity = style?.opacity ?? 0.4;
+      e.styleOpacity = style?.opacity ?? EDGE_OPACITY;
       // 选中 JKI：与它相连的连线；选中 JKS：从前置到受整合订阅者的触发连线（§5.3）。
+      // 选中环上的节点时，它所在的环整体高亮（§6.4）。
       const active = e.visible && ((Boolean(selectedId) && (e.source === selectedId || e.targetKey === this.selected))
-        || (group !== null && e.relation === "trigger" && group.prereqs.has(e.source) && this.jk!.gated(group.group, e.targetKey)));
+        || (group !== null && e.relation === "trigger" && group.prereqs.has(e.source) && this.jk!.gated(group.group, e.targetKey))
+        || this.onLoop(e, loop));
       const red = high.has(e.source) || high.has(e.target);
-      const color = red ? COLORS.error : style ? new THREE.Color(style.color).getHex() : COLORS[e.op] ?? COLORS.K;
-      e.arrow.scale.setScalar(active ? 1.35 : 1);
+      const looped = this.onLoop(e, loop) || (this.loopsShown && this.onLoop(e, this.jk?.loopOf.get(e.targetKey)));
+      const color = red ? HOT_COLOR : looped ? LOOP_COLOR : style ? hex(style.color) : edgeDefault(e);
+      e.arrow.scale.setScalar(active ? APP_CONFIG.scene.display.activeScale : 1);
       this.batches?.setEdgeStyle(index, color, active, this.networkStyles ? { opacity: e.styleOpacity, visible: e.visible } : null);
       // 管状几何在 WebGPU 上有真实粗细；LineBasicMaterial 的 linewidth 不起作用。
       if (active && !e.highlight) {
@@ -1014,7 +1017,7 @@ export class NetworkView implements CanvasView {
         if (active && !e.highlight.visible) updateTubeGeometry(e.highlight.geometry, e.curve);
         e.highlight.visible = active;
         e.highlight.material.color.setHex(color);
-        e.highlight.material.opacity = Math.min(1, e.styleOpacity / 0.4);
+        e.highlight.material.opacity = Math.min(1, e.styleOpacity / EDGE_OPACITY);
         e.highlight.material.transparent = e.highlight.material.opacity < 1;
       }
     }
@@ -1026,63 +1029,39 @@ export class NetworkView implements CanvasView {
   // -- 动画 ---------------------------------------------------------------
 
   private clearSignals(): void {
-    disposeGroup(this.signalGroup);
-    this.signals = [];
-    this.pulses = [];
+    this.signalLayer.clear();
     this.renderSchedule.invalidate();
   }
 
   private showTransfers(transfers: readonly Transfer[], pulses: readonly Pulse[] = []): void {
     this.clearSignals();
     if (!this.available) return;
-    const colors = APP_CONFIG.scene.signals;
-    for (const edge of this.edges) {
-      if (edge.visible === false) continue;
-      const transfer = transfers.find((t) => t.source === edge.source && t.target === edge.target
-        && t.relation === edge.relation && (t.index === undefined || t.index === edge.index));
-      if (!transfer) continue;
-      const text = spriteLabel(transfer.value, "#eefcf8", 34);
-      text.scale.set(1.5, 0.375, 1);
-      this.signalGroup.add(text);
-      const tip = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.11, 8).translate(0, -0.055, 0), new THREE.MeshBasicMaterial({ color: colors[transfer.relation] }));
-      this.signalGroup.add(tip);
-      const signal: Signal = { edge, text, tip, value: transfer.value };
-      this.signals.push(signal);
-      this.styleSignalLabel(signal);
-    }
-    for (const pulse of pulses) {
-      const visual = this.visuals.get(pulse.path);
-      if (!visual || visual.mesh.visible === false) continue;
-      const color = pulse.kind === "write" ? colors.write : colors.publish;
-      const sprite = spriteLabel(pulse.text, color, 30);
-      sprite.scale.set(1.2, 0.3, 1).multiplyScalar(this.appearance?.fontScale ?? 1);
-      sprite.position.copy(visual.mesh.position).add(new THREE.Vector3(0, pulse.kind === "write" ? 0.3 : 0.48, 0));
-      this.signalGroup.add(sprite);
-      this.pulses.push({ sprite, text: pulse.text, color });
-    }
+    const position = (path: string): THREE.Vector3 | null => {
+      const visual = this.visuals.get(path);
+      return visual && visual.mesh.visible !== false ? visual.mesh.position : null;
+    };
+    this.signalLayer.show(transfers, pulses, this.edges, position, this.appearance?.fontScale ?? 1);
+    for (const signal of this.signals) this.styleSignalLabel(signal);
     this.syncSignalStyles();
     this.progress(0);
   }
 
   private progress(t: number): void {
-    this.signalProgress = t;
+    this.signalLayer.setProgress(t);
     if (this.signals.length) this.renderSchedule.invalidate();
-    for (const { edge, text, tip } of this.signals) {
-      const at = t * edge.endT;
-      tip.position.copy(edge.curve.getPoint(at));
-      tip.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), edge.curve.getTangent(at).normalize());
-      text.position.copy(edge.curve.getPoint(Math.max(0, at - 0.09))).add(new THREE.Vector3(0, 0.23, 0));
-    }
   }
 
   private render(): void {
     if (!this.available || !this.renderer || !this.controls) return;
     const now = performance.now();
     this.controls.update();
-    const frame = this.renderSchedule.sample(now, { active: this.signals.length > 0 && this.signalProgress < 1, hidden: document.hidden });
+    // 减少动态效果时连线静止，没有变化就不重画（animate 为 false：只在失效、交互或信号播放时绘制）。
+    const frame = this.renderSchedule.sample(now, {
+      animate: !this.motion.matches, active: this.signals.length > 0 && this.signalProgress < 1, hidden: document.hidden,
+    });
     if (!frame) return;
-    this.edgeTime += frame.deltaSeconds;
-    // 连线以 20 Hz 缓慢摆动；缓冲区持久，箭头、高亮与信号保持一致。
+    if (!this.motion.matches) this.edgeTime += frame.deltaSeconds;
+    // 连线以 20 Hz 缓慢摆动（减少动态效果时摆动时间不走，连线静止）；缓冲区持久，箭头、高亮与信号保持一致。
     if (now - this.lastEdgeUpdate >= 50) {
       this.lastEdgeUpdate = now;
       for (const [index, e] of this.edges.entries()) {
@@ -1115,6 +1094,7 @@ export class NetworkView implements CanvasView {
 
   dispose(): void {
     this.disposed = true;
+    this.motion.removeEventListener("change", this.motionChanged);
     cancelAnimationFrame(this.animationFrame);
     this.layoutGeneration += 1;
     this.layoutWorker?.terminate();

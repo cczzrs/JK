@@ -6,11 +6,12 @@ import * as THREE from "three/webgpu";
 import {
   cameraProjectionMatrix, cameraViewMatrix, instancedBufferAttribute, modelWorldMatrix, positionGeometry, texture, uv, vec4,
 } from "three/tsl";
+import { APP_CONFIG } from "../config.ts";
 
 const CELL = 64;
 const ATLAS_SIZE = 1024;
 const FONT_SIZE = 32;
-const DEFAULT_SCALE: [number, number, number] = [1.35, 0.3375, 1];
+const DEFAULT_SCALE = APP_CONFIG.scene.display.labelScale;
 const ATTRIBUTE_SIZES = { center: 3, offset: 2, size: 2, rect: 4, tint: 3 } as const;
 type AttributeName = keyof typeof ATTRIBUTE_SIZES;
 
@@ -27,11 +28,11 @@ class GlyphAtlas {
   private readonly glyphs = new Map<string, Glyph>();
   private dirty = false;
 
-  constructor(createCanvas: () => HTMLCanvasElement) {
-    this.canvas = createCanvas();
+  constructor() {
+    this.canvas = document.createElement("canvas");
     this.canvas.width = this.canvas.height = ATLAS_SIZE;
     this.context = this.canvas.getContext("2d")!;
-    this.context.font = `500 ${FONT_SIZE}px ui-monospace, SFMono-Regular, monospace`;
+    this.context.font = `500 ${FONT_SIZE}px ${APP_CONFIG.scene.display.labelFont}`;
     this.context.textAlign = "center";
     this.context.textBaseline = "middle";
     this.context.fillStyle = "#ffffff";
@@ -242,18 +243,16 @@ export class LabelHandle {
  * 标签组：group 加入场景一次；句柄提供 position／scale／color／visible 与 setText()。
  * 绘制前调用 flush()；没有变化的标签不重画图集，也不写缓冲区。clear() 在更换模型时释放页面资源，保留字形图集。
  */
+/** 每页标签实例的最少容量。 */
+const PAGE_CAPACITY = 8192;
+
 export class NodeLabels {
   readonly group = new THREE.Group();
-  private readonly pageCapacity: number;
-  private readonly createCanvas: () => HTMLCanvasElement;
   private readonly labels = new Set<LabelHandle>();
   private pages: LabelPage[] = [];
   private atlas: GlyphAtlas | null = null;
 
-  constructor({ pageCapacity = 8192, createCanvas = () => document.createElement("canvas") } = {}) {
-    if (!Number.isSafeInteger(pageCapacity) || pageCapacity < 1) throw new Error("标签页容量必须是正整数");
-    this.pageCapacity = pageCapacity;
-    this.createCanvas = createCanvas;
+  constructor() {
     this.group.name = "Node labels";
   }
 
@@ -268,8 +267,8 @@ export class NodeLabels {
     const capacity = Math.max(1, 2 ** Math.ceil(Math.log2(Math.max(1, length))));
     let page = this.pages.find((item) => item.mesh.renderOrder === label.renderOrder && item.capacity - item.used >= capacity);
     if (!page) {
-      this.atlas ??= new GlyphAtlas(this.createCanvas);
-      page = new LabelPage(this.atlas, Math.max(this.pageCapacity, capacity), label.renderOrder);
+      this.atlas ??= new GlyphAtlas();
+      page = new LabelPage(this.atlas, Math.max(PAGE_CAPACITY, capacity), label.renderOrder);
       this.pages.push(page);
       this.group.add(page.mesh);
     }
@@ -284,7 +283,7 @@ export class NodeLabels {
         continue;
       }
       if (!label.changed() && label.wasVisible) continue;
-      this.atlas ??= new GlyphAtlas(this.createCanvas);
+      this.atlas ??= new GlyphAtlas();
       const atlas = this.atlas;
       const glyphs = Array.from(label.text, (character) => atlas.get(character));
       if (!label.slot || label.slot.length < glyphs.length || label.slot.page.mesh.renderOrder !== label.renderOrder) {

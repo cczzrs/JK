@@ -7,7 +7,8 @@ import type { NetworkStyles, NodeStyle } from "../ui/network-style-state.ts";
 
 export interface StyledEdge {
   relation: string;
-  op: string;
+  /** EX 运算 J、K，或输出观察线的 Y；触发引用没有运算。 */
+  op?: string;
 }
 
 export interface StyledNode {

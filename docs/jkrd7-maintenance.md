@@ -1,5 +1,152 @@
 # JKRD7 维护记录
 
+## 2026-11-11：README 更新展示页的待处理项与验收数字
+
+依据：用户指令“更新 README”（针对“展示页的待处理清单和验收数字已过时”）。只改 README，行为不变。
+
+| 位置 | 修改前 | 修改后 |
+| --- | --- | --- |
+| 核对·命令块 | 五条命令，到 `node tools/show.ts` | 末尾加 `npm run test:ui` |
+| 核对·工具说明 | 没有 `test:ui` | 新增一条：用 Node 自带的测试运行器检查展示页界面的纯函数，不需要浏览器 |
+| 待处理事项·检查结果 | “GPU 对拍 6/6、展示页验收 17/17。” | “GPU 对拍 6/6、展示页验收 18/18、展示页界面单元测试 7/7。” |
+| 待处理区·4. 展示页 | 四项：读取 GPU 状态缓冲区；退出节点的可视化；§7.5 可并行批的显示与批执行模式；ultra.md 第 5 节的清理 | 写明四项已于 2026-11-11 完成；目前没有待处理项，剩下的发布前转换属于 V4，快照窗口与 GPU 单步属于快照模块 |
+| 延后处理区·验证与工程 | “展示页界面纯函数的单元测试 / 可选”一行 | 删除（已由 `npm run test:ui` 完成） |
+
+## 2026-11-11：快照移出主要路线，规则与相关内容移到 snapshot/Snapshot.md，运行代码移到 snapshot/
+
+依据：
+
+- 用户指令：“关于快照的所有设计规则或相关内容都放到 snapshot/Snapshot.md 文档里。关于快照的运行代码也都放到 snapshot 文件夹内。快照模块不属于 JKRD7 的主要路线。”（`snapshot/Snapshot.md` 由用户新建，原为空文件。）
+
+行为变化：
+
+- 快照格式、检查内容、两个后端导出与载入的结果、命令行 `--start`、`--save` 的行为都不变。只是位置移动：规则文字从 JKRD7 §9.5 移到 [snapshot/Snapshot.md](../snapshot/Snapshot.md)，代码从 `src/` 移到 `snapshot/`。
+- 依赖方向：`snapshot/` 引用 `src/`；`src/` 的规则与两个后端不再引用快照。为此两个后端的接口有改动（见“其他文件”）。验收案例仍在 `src/testing/`，它们引用 `snapshot/`。
+- 快照检查的错误信息去掉了“（§9.5）”字样。
+- 静态检查同时读取 JKRD7.md 与 Snapshot.md 的 JSON 块；快照示例的检查项名称由“JKRD7 快照 S1”改为“Snapshot.md 快照 S1”；CPU 验收案例“快照（§9.5）”改名为“快照（Snapshot.md）”。项数不变（135、26、6）。
+- Snapshot.md 第 6.2 节新记入 2026-11-11 探针发现的四种“检查放行”的情况，以及“节点任务的目标须 EX 非空”“`snapshot` 须非空字符串”两处只在代码中的约束。都只是记录，没有改检查。
+
+### JKRD7
+
+| 位置 | 修改前 | 修改后 |
+| --- | --- | --- |
+| 开头·状态 | 到“以及 bit 原文写法与快照的静态案例。” | 句末加“同日把运行现场快照（原 §9.5）移到 snapshot/Snapshot.md，快照模块不属于本文的主要路线。” |
+| §2 第 7 条 | “运行脚本（§9.4）与运行现场快照（§9.5）是独立的 JSON 文件，不属于 JKM。” | “运行脚本（§9.4）是独立的 JSON 文件，不属于 JKM。”（快照的这一句移到 Snapshot.md 第 2 节） |
+| §3 runtime.trigger_all | “运行中的记录只保存在快照中（§9.5）” | “运行中的记录不写进定义” |
+| §9.2 模块表·运行现场与恢复 | “运行现场的持久化与恢复格式” | 加“不属于本文的主要路线，见 snapshot/Snapshot.md” |
+| §9.3 第 2 项 | “快照的保存时机、存储位置与故障恢复流程（快照格式见 §9.5）。” | “运行现场的保存时机、存储位置与故障恢复流程。属于快照模块，见 snapshot/Snapshot.md 第 6 节。”（编号不变） |
+| §9.5 运行现场快照 | 整节：定义、M_TX 示例、字段表、FIFO 项写法、本次前置、“定义加快照可继续执行” | 整节删除，原文移到 Snapshot.md 第 2 节 |
+| §11.1 工具表 | validate 一行含“运行脚本与快照”“（含 bit 的原文写法与快照）”；reference 一行含“运行脚本与快照” | 去掉“快照” |
+| §11.1 命令 | `--script <运行脚本> [--batch] [--start <快照>] [--save <快照>]`；`--script <运行脚本> [--start <快照>] [--save <快照>]` | 去掉 `--start`、`--save`（写在 Snapshot.md 第 4 节） |
+| §11.2 | “快照”“快照格式”两行 | 删除，移到 Snapshot.md 第 5 节 |
+| §11.2 GPU 后端 | “…随机模型、从快照继续：执行记录与结束时的快照与 CPU 后端逐字节相同” | “…随机模型：执行记录与 CPU 后端逐字节相同”（快照的两项移到 Snapshot.md 第 5 节） |
+
+### README
+
+| 位置 | 修改前 | 修改后 |
+| --- | --- | --- |
+| 概要·运行脚本与快照 | 一条 | 拆成“运行脚本”“快照”两条；快照一条写明不属于主要路线并指向 Snapshot.md |
+| 阅读入口 | — | 新增“快照模块（不属于主要路线）”一行 |
+| 核对·tools/validate.ts | “JKRD7 中的 JSON” | “JKRD7 与 Snapshot.md 中的 JSON” |
+| 核对·`--script` | 两条命令各列 `--start`、`--save` | 改为指向 Snapshot.md 第 4 节 |
+| 待处理事项·延后处理区的说明 | 列有“快照相关的问题” | 改为“快照相关的问题不在本表，见 Snapshot.md 第 6 节” |
+| 延后处理区·快照 | R2、R5、C5 三行表格与“另有”三项 | 一句指向 Snapshot.md 第 6 节（原文移到那里） |
+
+### 其他文件
+
+| 文件 | 修改前 | 修改后 |
+| --- | --- | --- |
+| snapshot/Snapshot.md | 空文件（用户新建） | 快照的定位、格式（原 JKRD7 §9.5）、各字段的写法、文本格式（原 TypeScript.md 第 6 节）、代码说明（含原 WebGPU.md 第 7 节的快照段）、验收、待定与待处理（原 README 延后处理区与 JKRD7 §9.3 第 2 项）、沿革 |
+| snapshot/snapshot.ts（新增） | — | `Snapshot` 类型、`checkSnapshot`（原 src/model.ts）、`requireSnapshot`、`formatSnapshot`（原 src/record.ts） |
+| snapshot/cpu.ts（新增） | — | `takeSnapshot(ex, name)`、`loadSnapshot(ex, snap)`（原 `CpuExecutor.snapshot()`、`loadSnapshot()`） |
+| snapshot/gpu.ts（新增） | — | `encodeSnapshot`、`decodeSnapshot`（原 `GpuExecutor.encodeState()` 的快照部分与 `decodeState()`）；`runWithSnapshots` |
+| src/model.ts | 含快照类型与 `checkSnapshot` | 删除；`isBit`、`show`、`strList`、`exactKeys` 改为导出 |
+| src/cpu.ts | `snapshot()`、`loadSnapshot()`；`arrivals()` 的返回类型取自 `Snapshot` | 两个方法删除；`arrivals()` 的返回类型直接写出 |
+| src/record.ts | `formatSnapshot` | 删除 |
+| src/executor.ts | `ScriptOptions.start`（快照） | 改为 `before`：注入第一批之前调用的函数 |
+| src/gpu/backend.ts | `GpuInstance.start` 是快照；`GpuResult.snapshot`；`runScript` 有 `start` 参数；`encodeState`、`decodeState` | `GpuInstance.start` 是已编码的状态区；`GpuResult.state` 是结束时的状态区；`runScript` 去掉 `start`；`initState` 只写模型初值 |
+| src/testing/cases.ts、gpu-cases.ts、static.ts | 从 src 引用快照；示例取自 JKRD7 | 从 snapshot/ 引用；`CaseContext` 新增 `snapshotDoc`，示例取自 Snapshot.md |
+| tools/validate.ts、reference.ts、gpu.ts、common.ts；web/gpu.ts | — | 引用改到 snapshot/；新增 `SNAPSHOT_DOC`；链接检查加 `snapshot/*.md`；报告的文件清单加入 snapshot/ 的三个文件 |
+| web/show/session.ts、gpu-run.ts、main.ts | `ex.loadSnapshot()`、`gpu.run()`、`GpuResult` | `loadSnapshot(ex, …)`、`runWithSnapshots()`、`GpuSnapshotResult`；显示不变 |
+| tsconfig.json、jk.config.json | — | 类型检查范围加入 `snapshot`；索引加入 Snapshot.md 与三个代码文件 |
+| AGENTS.md | — | 新增一条：快照模块不属于主要路线，规则在 Snapshot.md，代码在 snapshot/，src/ 不引用它 |
+| TypeScript.md | 目录、命令、模块表、第 6 节含快照 | 目录加 snapshot/；快照文件的文本格式移到 Snapshot.md 第 3 节；其余改为指向 |
+| WebGPU.md | 依据含 §9.5；第 7 节“快照”段；第 9 节“从快照继续”一行与命令行说明 | 改为指向 Snapshot.md；第 7 节按新接口写（起始状态、结束状态） |
+| docs/web-show.md | “（§9.5）”“README R2”“README C5” | 改为指向 Snapshot.md |
+| reports/ | 修改前的报告 | 静态、CPU、GPU 三份重新生成；展示页报告未重新生成（验收 18/18 通过，展示页另有进行中的改动） |
+
+没有修改：ultra.md 与两份提案（历史记录，其中的“§9.5”指当时的章节）。
+
+## 2026-11-11：展示页的待处理项（GPU 结果、环与退出节点、批执行）与清理
+
+依据：
+
+- 用户逐项批准展示页的待处理项：“6. 批准。7. 批准。8. 提供。9. 保留并写进文档。10. 改成 h1。11. 要。12. 清理。13. 批准。14. 清理。”
+- 对做法的回答：GPU 状态“对拍后可切换显示”；环与退出节点“标记加选中高亮”；批执行“勾选框，默认不勾选”。
+
+行为变化：
+
+- JKRD7 规则、执行记录与两个后端的执行语义不变。
+- 展示页可切换显示 GPU 实例的结果（读回的快照与执行记录，只读）；场景标出退出节点、可高亮环；运行控制提供批执行（§7.5）；“次数超过 1000 变红”保留并写入配置与文档；品牌文字为 h1；连线摆动跟随系统的“减少动态效果”；新增界面单元测试 `npm run test:ui`；页面打开时删除旧存储键。
+- 清理（ultra.md 第 5 节的展示页事项）：两条渲染路径的显示常量收进 `scene.display`；回退颜色取网络样式的默认值（触发线回退色与样式一致）；`Token.op` 只用于 EX 来源；设备丢失的检查与回调集中在 `createRenderer`；去掉没有调用方的构造参数；减少动态效果时没有变化就不重画；页面从往返缓存恢复时重新加载；8 处无角色元素上的 aria-label 改为 region、img 或删除；两套偏好校验工具合并为 `ui/normalize.ts`；轮记录视图改用执行器的 `arrivals()`；信号动画拆到 `scene/signals.ts`；外观面板拆到 `ui/appearance-panel.ts`；输出列表的推导拆到 `output-list.ts`。
+
+### JKRD7
+
+无修改。README 无修改。
+
+### 其他文件
+
+| 文件 | 修改前 | 修改后 |
+| --- | --- | --- |
+| src/model.ts | 环只在检查中用，不公开 | 公开 `loops`、`loopOf`、`exitNodes`（Tarjan 强连通分量，只供展示） |
+| src/cpu.ts | `batch` 只读；取批时直接取出；快照中排序到达与轮记录 | `batch` 可在处理单元之间切换；`Fifo.at`、`batchOf`、`nextBatch()`（只供展示）；`arrivals()` 供快照与页面共用 |
+| web/show/session.ts | — | `Session.fromGpu`、`gpu`；`Unit.batch`；任务行标出下一批；`latestOutput` 取会话的输出；轮记录视图用 `arrivals()` |
+| web/show/main.ts、gpu-run.ts | GPU 对拍只给结果文字与第一个实例的记录 | 返回各实例的结果；“CPU 现场 / GPU 结果”切换；执行操作前先切回；显示环与批执行的接线；往返缓存恢复时重新加载 |
+| web/show/playback.ts | — | 新会话按“批执行”设置；跳转时逐个执行 |
+| web/show/panels.ts、output-list.ts（新增） | 列表推导在 panels.ts | 推导移到 output-list.ts；状态面板标明 GPU 结果；节点详情“所在的环”；单元摘要显示一批的任务数 |
+| web/show/scene/view.ts、signals.ts（新增）、canvas-renderer.ts、network-batches.ts、node-labels.ts、renderer-backend.ts、model-view.ts、network-style.ts | 回退颜色与显示常量写死；信号动画在 view.ts；设备丢失两处处理 | 见上面的清理；退出节点“出”标记与环的高亮；减少动态效果 |
+| web/show/ui/appearance-panel.ts、normalize.ts（新增）、cosmic-workspace.ts、cosmic-state.ts、network-style-state.ts、output-choices.ts、tabs.ts | — | 外观面板拆出；校验工具合并；保存“显示环”“批执行”；删除旧键；标签页跳过禁用的标签 |
+| web/show/index.html、cosmic.css、style.css | 品牌为 div；h3 分节标题 | h1 与 h2；显示环、批执行、GPU 结果的控件；所在的环；下一批的标记样式；aria-label 修正 |
+| web/show/config.ts | — | `scene.display`、`scene.hot`、`scene.loops`、`playback.batch`、存储键的 `retired` |
+| web/show/verify.ts、tools/show.ts | 17 个案例 | 18 个（新增批执行）；每个执行案例核对退出节点标记与所在的环，GPU 对拍案例核对 GPU 结果的显示 |
+| web/show/tests/ui.test.ts（新增）、package.json | — | 界面单元测试 7 项；`npm run test:ui`，并纳入 `npm run check` |
+| TypeScript.md、docs/web-show.md | — | 文件树、命令、决定、待处理与验收按上述更新 |
+| reports/ | 修改前的报告 | 重新生成 |
+
+## 2026-11-11：展示页复核后的改进与决定
+
+依据：
+
+- 复核 ultra 整理（上一条）与 2026-11-10 的展示页改动后，提出 6 项改进与 8 个待决问题。用户回复：“批准建议改的 6 项。批准这里所有需要决定的 8 个问题，其中第 4 ‘最近一行’的格式：现在固定是二进制，不变，因为本来就在 ASCII 二进制里的渲染。”
+
+行为变化：
+
+- JKRD7 规则、执行记录与两个后端的执行语义不变。
+- 播放：HTML 中播放按钮的初值改为“Ⅱ 暂停中”，模型加载成功后才进入播放中；换模型、重载、执行运行脚本之后也进入播放中（新增 `Playback.start()`，播放按钮仍是切换开关）；播放到静止后不再每 100 ms 轮询，由输入唤醒（删除 `engine.idlePollMs`）。
+- 输出数据格式及列表：只显示最近 500 行（`view.outputListRows`），复制与渲染仍用全部行；不勾选“切片记录”时，“指定触发组”的行也与真实运行一样（已标记节点用各自到达时的 q，“全部输出数据”只剩触发的成员）。
+- 场景动画的取舍每条输出只查一次列表。
+- 输出观察的 `output-json` 与网络概览的元数据改用 `formatJkmJson` 排版；程序坞短字“观察”改为“列表”；本地存储键 `jk.show.output-choices` 改名为 `jk.show.choices`（原有保存不再读取）。
+- 输出渲染“最近一行”保持二进制（用户决定）。
+- 展示页报告的哈希改为覆盖 `web/show/` 下全部 .ts、.html、.css、.json（原来手写 12 个）；报告说明与 docs/web-show.md 第 9 节补上输出窗口与动画取舍的验收项。
+
+### JKRD7
+
+无修改。README 无修改。
+
+### 其他文件
+
+| 文件 | 修改前 | 修改后 |
+| --- | --- | --- |
+| web/show/playback.ts | 静止时每 `idlePollMs` 调度一次；只有 `play()`（切换） | 静止后停止调度，`wake()` 唤醒；新增 `start()` |
+| web/show/main.ts | 只在刚打开时 `play()`；运行脚本后 `play()`；元数据与 output-json 用 `pretty` | `loadModel`、`restart` 末尾 `start()`；元数据与 output-json 用 `formatJkmJson`；`forScene` 按输出缓存列表查询 |
+| web/show/panels.ts | 列表显示全部行；触发组的行总是切片 | 显示最近 500 行并注明；真实运行下触发组的行用到达时的 q |
+| web/show/index.html | 播放按钮初值“▶ 播放中”；程序坞“观察” | 初值“Ⅱ 暂停中”；程序坞“列表”；`#output-list-limit`；切片记录与触发组的说明 |
+| web/show/config.ts | `engine.idlePollMs`；存储键 `jk.show.output-choices` | 删除 `idlePollMs`；新增 `view.outputListRows: 500`；存储键 `jk.show.choices` |
+| web/show/verify.ts | 事务上限案例总是点击播放 | 已在播放中时不再点击；新增真实运行下触发组的行数与内容核对 |
+| tools/show.ts | 报告哈希 12 个手写文件 | `web/show/` 下全部源文件；说明补输出窗口与动画取舍 |
+| docs/web-show.md | — | 决定表、第 7 节元数据、第 9 节验收与核对日期按上述更新 |
+| reports/ | 修改前的报告 | static-validation.json、show-run.json 重新生成 |
+
 ## 2026-11-11：结构与代码整理；bit 按 JSON 原文核对；快照检查补全
 
 依据：

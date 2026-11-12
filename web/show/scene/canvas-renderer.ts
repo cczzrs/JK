@@ -33,6 +33,7 @@ export interface CanvasView {
     title: LabelHandle;
     count: LabelHandle;
     q: LabelHandle | null;
+    exit: LabelHandle | null;
   }>;
   readonly signals: readonly {
     edge: { visible?: boolean; curve: THREE.Curve<THREE.Vector3>; endT: number };
@@ -52,13 +53,15 @@ const BOX_EDGES = [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7
 // 先裁剪再除以 w：穿过相机的几何不会翻转或发散。
 const CLIP_PLANES: Plane[] = [(v) => v.w + v.x, (v) => v.w - v.x, (v) => v.w + v.y, (v) => v.w - v.y, (v) => v.w + v.z, (v) => v.w - v.z];
 const WEBGPU_CLIP_PLANES: Plane[] = [...CLIP_PLANES.slice(0, 4), (v) => v.z, CLIP_PLANES[5]];
+const DISPLAY = APP_CONFIG.scene.display;
+const SHADES = DISPLAY.faceShades;
 const FACES = [
-  { indices: [1, 3, 7, 5], normal: [1, 0, 0], shade: 0.8 },
-  { indices: [0, 4, 6, 2], normal: [-1, 0, 0], shade: 0.65 },
-  { indices: [2, 6, 7, 3], normal: [0, 1, 0], shade: 1 },
-  { indices: [0, 1, 5, 4], normal: [0, -1, 0], shade: 0.55 },
-  { indices: [4, 5, 7, 6], normal: [0, 0, 1], shade: 0.92 },
-  { indices: [0, 2, 3, 1], normal: [0, 0, -1], shade: 0.72 },
+  { indices: [1, 3, 7, 5], normal: [1, 0, 0], shade: SHADES[0] },
+  { indices: [0, 4, 6, 2], normal: [-1, 0, 0], shade: SHADES[1] },
+  { indices: [2, 6, 7, 3], normal: [0, 1, 0], shade: SHADES[2] },
+  { indices: [0, 1, 5, 4], normal: [0, -1, 0], shade: SHADES[3] },
+  { indices: [4, 5, 7, 6], normal: [0, 0, 1], shade: SHADES[4] },
+  { indices: [0, 2, 3, 1], normal: [0, 0, -1], shade: SHADES[5] },
 ] as const;
 
 interface Command {
@@ -99,8 +102,9 @@ export class CanvasRenderer {
   private camera: THREE.PerspectiveCamera | null = null;
   private disposed = false;
 
-  constructor(view: CanvasView, canvas: HTMLCanvasElement = document.createElement("canvas")) {
+  constructor(view: CanvasView) {
     this.view = view;
+    const canvas = document.createElement("canvas");
     this.domElement = canvas;
     this.context = canvas.getContext("2d", { alpha: true, willReadFrequently: true });
     if (!this.context) throw new Error("浏览器无法建立 Canvas 2D 软件渲染画布。");
@@ -325,9 +329,9 @@ export class CanvasRenderer {
       if (edge.visible === false) continue;
       const active = Boolean(edge.highlight?.visible);
       const color = this.style(edge.highlight?.material.color ?? this.view.batches?.edgeColor(index) ?? 0xffffff);
-      const opacity = edge.styleOpacity ?? 0.4;
-      this.curve(edge.curve, color, active ? this.config.activeLineWidth : this.config.lineWidth, active ? Math.min(1, opacity / 0.4) : opacity, edge.endT);
-      this.arrow(edge.curve, edge.endT, color, edge.arrow.scale.x, Math.min(1, opacity / 0.4));
+      const opacity = edge.styleOpacity ?? DISPLAY.edgeOpacity;
+      this.curve(edge.curve, color, active ? this.config.activeLineWidth : this.config.lineWidth, active ? Math.min(1, opacity / DISPLAY.edgeOpacity) : opacity, edge.endT);
+      this.arrow(edge.curve, edge.endT, color, edge.arrow.scale.x, Math.min(1, opacity / DISPLAY.edgeOpacity));
     }
     for (const visual of this.view.visuals.values()) {
       const size = visual.mesh.geometry.parameters;
@@ -335,6 +339,7 @@ export class CanvasRenderer {
       this.label(visual.title);
       this.label(visual.count);
       this.label(visual.q);
+      this.label(visual.exit);
     }
     for (const signal of this.view.signals) {
       if (signal.edge.visible === false || signal.text.visible === false || signal.tip.visible === false) continue;
@@ -381,7 +386,7 @@ export class CanvasRenderer {
     for (const label of this.labels) {
       context.globalAlpha = label.alpha ?? 1;
       context.fillStyle = label.color;
-      context.font = `500 ${label.fontSize}px ${this.config.fontFamily}`;
+      context.font = `500 ${label.fontSize}px ${DISPLAY.labelFont}`;
       context.fillText(label.text, label.point.x, label.point.y);
     }
     context.globalAlpha = 1;

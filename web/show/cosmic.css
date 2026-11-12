@@ -144,6 +144,7 @@
 
 #jkm-panel .cosmic-brand {
   grid-column: 1 / -1;
+  margin: 0;
   padding: 7px 0 2px;
   color: inherit;
   text-align: center;
@@ -999,7 +1000,7 @@
   border-top: 1px solid color-mix(in srgb, var(--cosmic-border-color) 14%, transparent);
 }
 
-#jkm-panel .cosmic-control-section h3 {
+#jkm-panel .cosmic-control-section h2 {
   margin: 0 0 10px;
   font-size: calc(12px * var(--window-font-scale));
   font-weight: 650;
@@ -1452,4 +1453,9 @@
   position: absolute;
   inset: auto 0 -1px;
   border-block-end: 2px solid var(--cosmic-accent);
+}
+
+/* 任务 FIFO：队首的下一批（§7.5 可并行批），左侧竖线标出（不只靠颜色，强制配色下也可见）。 */
+#jkm-panel .cosmic-window .queue-row[data-batch] {
+  border-inline-start: 3px solid var(--cosmic-accent);
 }

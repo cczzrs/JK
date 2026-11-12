@@ -1,6 +1,6 @@
 /**
  * “输出数据格式及列表”与“输出渲染”窗口的选择、运行控制的三个勾选框（跳过动画、切片记录、按输出格式），
- * 以及场景控制的“隐藏名称和次数”按钮：
+ * 以及场景控制的“隐藏名称和次数”“显示环”两个按钮：
  * 默认值取自 config.ts，最新选择保存在浏览器本地，下次打开时恢复。
  * 浏览器不能保存时，本页的选择照常生效。
  */
@@ -18,23 +18,28 @@ export interface OutputChoices {
   format: string;
   /** 渲染模式（标签页 output-render-mode）。 */
   render: string;
-  /** 运行控制的勾选框：跳过动画、切片记录、按输出格式。 */
+  /** 运行控制的勾选框：跳过动画、切片记录、按输出格式、批执行。 */
   skip: boolean;
   slice: boolean;
   byOutputFormat: boolean;
-  /** 场景控制的“隐藏名称和次数”按钮（node-labels）：true 为已隐藏。 */
+  batch: boolean;
+  /** 场景控制的按钮：“隐藏名称和次数”（true 为已隐藏）、“显示环”。 */
   labelsHidden: boolean;
+  loopsShown: boolean;
 }
 
+/** 场景控制按钮的状态（由页面按按钮读写，这里只保存）。 */
+export type SceneFlag = "labelsHidden" | "loopsShown";
+
 export interface OutputChoicesConfig {
-  storage: { key: string; version: number };
+  storage: { key: string; version: number; retired: readonly string[] };
   defaults: OutputChoices;
 }
 
 const TABS = { mode: "output-mode", render: "output-render-mode" } as const;
 const SELECTS = { when: "output-trigger-when", content: "output-trigger-content", format: "output-format" } as const;
 const GROUP = "output-trigger-group";
-const CHECKS = { skip: "skip", slice: "slice-record", byOutputFormat: "by-output-format" } as const;
+const CHECKS = { skip: "skip", slice: "slice-record", byOutputFormat: "by-output-format", batch: "batch-mode" } as const;
 
 /** 标签组或下拉框中是否有 value 这一项。 */
 function offers(id: string, value: unknown): value is string {
@@ -49,6 +54,11 @@ export class OutputChoiceStore {
   /** 恢复保存的选择（不合法的项用默认值），写到页面上，并在每次改动时保存、调用 onChange。 */
   constructor(config: OutputChoicesConfig, onChange: () => void) {
     this.config = config;
+    try {
+      for (const key of config.storage.retired) localStorage.removeItem(key);
+    } catch {
+      // 浏览器不能访问存储时没有旧数据可清
+    }
     this.state = this.restore();
     for (const [key, id] of Object.entries(TABS) as [keyof typeof TABS, string][]) {
       selectTab(id, this.state[key]);
@@ -96,6 +106,7 @@ export class OutputChoiceStore {
       format: pick("format", SELECTS.format),
       group: typeof saved.group === "string" ? saved.group : defaults.group,
       labelsHidden: typeof saved.labelsHidden === "boolean" ? saved.labelsHidden : defaults.labelsHidden,
+      loopsShown: typeof saved.loopsShown === "boolean" ? saved.loopsShown : defaults.loopsShown,
       ...Object.fromEntries(Object.keys(CHECKS).map((key) => {
         const value = saved[key as keyof typeof CHECKS];
         return [key, typeof value === "boolean" ? value : defaults[key as keyof typeof CHECKS]];
@@ -103,13 +114,13 @@ export class OutputChoiceStore {
     };
   }
 
-  get labelsHidden(): boolean {
-    return this.state.labelsHidden;
+  flag(key: SceneFlag): boolean {
+    return this.state[key];
   }
 
-  /** 记下“隐藏名称和次数”按钮的状态。 */
-  setLabelsHidden(hidden: boolean): void {
-    this.update("labelsHidden", hidden, () => {});
+  /** 记下场景控制按钮的状态。 */
+  setFlag(key: SceneFlag, value: boolean): void {
+    this.update(key, value, () => {});
   }
 
   private update(key: keyof OutputChoices, value: string | boolean, onChange: () => void): void {

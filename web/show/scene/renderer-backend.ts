@@ -20,6 +20,8 @@ export interface RendererOptions {
   /** 取得共用的 WebGPU 设备。 */
   device?: () => Promise<GPUDevice>;
   timeoutMs?: number;
+  /** 渲染器创建之后设备丢失时调用（Three 自己的处理之后）。 */
+  onDeviceLost?: (message: string) => void;
 }
 
 function isWebGPU(renderer: SceneRenderer | null | undefined): renderer is THREE.WebGPURenderer {
@@ -52,6 +54,7 @@ export async function createRenderer(view: CanvasView, {
   mode = APP_CONFIG.scene.renderer.mode,
   device,
   timeoutMs = APP_CONFIG.scene.renderer.initTimeoutMs,
+  onDeviceLost,
 }: RendererOptions = {}): Promise<RendererResult> {
   const software = (reason: string | null): RendererResult => ({ renderer: new CanvasRenderer(view), backend: "canvas", reason });
   if (mode === "canvas") return software(null);
@@ -84,6 +87,11 @@ export async function createRenderer(view: CanvasView, {
       }),
     ]);
     if (!ready) return software("WebGPU 初始化已放弃");
+    const handleLoss = ready.onDeviceLost.bind(ready);
+    ready.onDeviceLost = (info) => {
+      handleLoss(info);
+      onDeviceLost?.(info.message || "GPU 设备连接丢失");
+    };
     return { renderer: ready, backend: "webgpu", reason: null };
   } catch (error) {
     abandoned = true;

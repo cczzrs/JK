@@ -8,6 +8,7 @@ import { parseJson } from "../src/model.ts";
 export const ROOT = resolve(import.meta.dirname, "..");
 /** 规则正文与十选一附件；与下面各函数的参数一样，都是相对仓库根目录的路径。 */
 export const DOC = "JKRD7.md";
+export const SNAPSHOT_DOC = "snapshot/Snapshot.md";
 export const ASCII_MODEL = "assets/ascii-bit-design/digits.jkm.json";
 
 export function readText(path: string): string {
@@ -42,6 +43,7 @@ function sha256(path: string): string {
 export const SOURCE_FILES = [
   "src/model.ts", "src/doc.ts", "src/record.ts", "src/cpu.ts", "src/executor.ts",
   "src/gpu/compile.ts", "src/gpu/kernel.ts", "src/gpu/backend.ts",
+  "snapshot/snapshot.ts", "snapshot/cpu.ts", "snapshot/gpu.ts",
   "src/testing/cases.ts", "src/testing/fixtures.ts", "src/testing/random.ts", "src/testing/static.ts",
 ];
 

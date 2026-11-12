@@ -1,16 +1,16 @@
 /**
  * GPU 后端主机端（WebGPU.md §7）：建立缓冲区、按输入批反复调度内核、取回并解码记录，
- * 以及在快照（JKRD7 §9.5）与 GPU 状态之间转换。
+ * 以及交回运行结束时的状态。
  *
  * 一个调用（invocation）执行一个实例；同一次运行可以同时执行许多实例，每个实例有自己的
- * 输入批和起始快照。只依赖 WebGPU 接口，浏览器中直接使用 navigator.gpu 得到的设备。
+ * 输入批和起始状态。只依赖 WebGPU 接口，浏览器中直接使用 navigator.gpu 得到的设备。
  */
 
-import { type Bit, type Model, type RunScript, type Snapshot, VERSION, checkSnapshot } from "../model.ts";
-import { TX_LIMITS, compareRoundKeys } from "../cpu.ts";
+import type { Bit, Model, RunScript } from "../model.ts";
+import { TX_LIMITS } from "../cpu.ts";
 import type { RecordEntry } from "../record.ts";
 import {
-  type Capacity, Compiled, ERRORS, F_ALL, F_INPUT, H, type Layout, NODE_BITS, NONE, REC_INJECT, REC_NOTIFY, REC_Q, layout,
+  type Capacity, Compiled, ERRORS, F_INPUT, H, type Layout, NODE_BITS, NONE, REC_INJECT, REC_NOTIFY, REC_Q, layout,
 } from "./compile.ts";
 import { PARAM_WORDS, WORKGROUP_SIZE, kernelSource } from "./kernel.ts";
 
@@ -26,7 +26,8 @@ export interface GpuOptions {
 
 export interface GpuInstance {
   batches: readonly (readonly string[])[];
-  start?: Snapshot;
+  /** 已编码的起始状态（长度为 Layout.stateWords）；省略时从模型初值开始。 */
+  start?: Uint32Array;
 }
 
 export interface GpuError {
@@ -39,8 +40,8 @@ export interface GpuError {
 export interface GpuResult {
   records: RecordEntry[];
   error: GpuError | null;
-  /** 运行结束时的快照；出错的实例没有快照。 */
-  snapshot: Snapshot | null;
+  /** 运行结束时的状态区；出错的实例为 null。 */
+  state: Uint32Array | null;
 }
 
 export interface GpuStats {
@@ -98,11 +99,11 @@ export class GpuExecutor {
   }
 
   /** 运行脚本（§9.4）：一个实例。 */
-  static async runScript(device: GPUDevice, model: Model, script: RunScript, start?: Snapshot,
+  static async runScript(device: GPUDevice, model: Model, script: RunScript,
     options: GpuOptions = {}): Promise<GpuResult> {
     const gpu = await GpuExecutor.create(device, model, options);
     try {
-      const [result] = await gpu.run([{ batches: script.batches, start }]);
+      const [result] = await gpu.run([{ batches: script.batches }]);
       return result;
     } finally {
       gpu.destroy();
@@ -146,7 +147,11 @@ export class GpuExecutor {
     const { device, l } = this;
     const n = instances.length;
     const state = new Uint32Array(n * l.stateWords);
-    instances.forEach((inst, i) => this.encodeState(state.subarray(i * l.stateWords, (i + 1) * l.stateWords), inst.start));
+    instances.forEach((inst, i) => {
+      const st = state.subarray(i * l.stateWords, (i + 1) * l.stateWords);
+      if (inst.start) st.set(inst.start);
+      else this.initState(st);
+    });
 
     const usage = GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC;
     const stateBuf = device.createBuffer({ size: state.byteLength, usage });
@@ -161,7 +166,7 @@ export class GpuExecutor {
         .concat([{ binding: 4, resource: { buffer: paramBuf } }]),
     });
 
-    const results: GpuResult[] = instances.map(() => ({ records: [], error: null, snapshot: null }));
+    const results: GpuResult[] = instances.map(() => ({ records: [], error: null, state: null }));
     const batches = instances.reduce((most, inst) => Math.max(most, inst.batches.length), 0);
     try {
       for (let b = 0; b < batches; b++) {
@@ -206,7 +211,7 @@ export class GpuExecutor {
           if (!active) break;
         }
       }
-      // 运行结束：取回状态并生成快照
+      // 运行结束：取回状态
       const stateRead = device.createBuffer({ size: state.byteLength, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
       const encoder = device.createCommandEncoder();
       encoder.copyBufferToBuffer(stateBuf, 0, stateRead, 0, state.byteLength);
@@ -216,7 +221,7 @@ export class GpuExecutor {
       stateRead.unmap();
       stateRead.destroy();
       for (let i = 0; i < n; i++) {
-        if (!results[i].error) results[i].snapshot = this.decodeState(final.subarray(i * l.stateWords, (i + 1) * l.stateWords));
+        if (!results[i].error) results[i].state = final.subarray(i * l.stateWords, (i + 1) * l.stateWords);
       }
     } finally {
       for (const buf of [stateBuf, inBuf, recBuf, recRead, paramBuf]) buf.destroy();
@@ -245,82 +250,15 @@ export class GpuExecutor {
     }
   }
 
-  // -- 快照与状态（§9.5） -----------------------------------------------------------
+  // -- 状态 -------------------------------------------------------------------
 
-  /** 把起始状态（模型初值或快照）写入一个实例的状态区。 */
-  encodeState(st: Uint32Array, snap?: Snapshot): void {
+  /** 把模型初值写入一个实例的状态区。 */
+  initState(st: Uint32Array): void {
     const { c, l } = this;
     st.fill(0);
     st[H.BATCH] = NONE;
     for (let i = 0; i < c.n; i++) st[l.s.Q + i] = c.q0[i];
     st.fill(NONE, l.s.SLOT, l.s.SLOT + c.nSlots);
-    if (!snap) return;
-    const problems = checkSnapshot(snap, c.model);
-    if (problems.length) throw new Error("快照不合法：\n" + problems.join("\n"));
-    const idx = (p: string) => c.index.get(p)!;
-    for (const [p, v] of Object.entries(snap.q)) st[l.s.Q + idx(p)] = v;
-    for (const [p, record] of Object.entries(snap.trigger_all)) {
-      const i = idx(p);
-      record.forEach((v, k) => (st[l.s.SLOT + c.slotBase[i] + k] = v === null ? NONE : v));
-    }
-    c.roundNeed.forEach((_, r) => {
-      const saved = snap.rounds[c.jksPaths[c.roundJks[r]]]?.[c.roundKind[r]] ?? [];
-      const b = l.s.ROUND + c.roundBase[r];
-      st[b] = saved.length;
-      saved.forEach((p, k) => (st[b + 1 + k] = idx(p)));
-    });
-    const fifo = (c.thread !== undefined ? snap.threads[c.thread] : undefined) ?? { events: [], tasks: [] };
-    if (fifo.events.length > l.cap.events) throw new Error("快照中的事件数超过 GPU 事件 FIFO 容量");
-    if (fifo.tasks.length > l.cap.tasks) throw new Error("快照中的任务数超过 GPU 任务 FIFO 容量");
-    fifo.events.forEach((e, k) => (st[l.s.EV + k] = idx(e.source)));
-    st[H.EV_LEN] = fifo.events.length;
-    fifo.tasks.forEach((t, k) => {
-      const o = l.s.TK + k * l.tkStride;
-      if ("node" in t) {
-        st[o + 1] = idx(t.node);
-      } else {
-        st[o] = 1;
-        st[o + 1] = c.jksIndex.get(t.tx)!;
-        st[o + 2] = t.prereqs.length;
-        t.prereqs.forEach((p, j) => (st[o + 3 + j] = idx(p)));
-      }
-    });
-    st[H.TK_LEN] = fifo.tasks.length;
-  }
-
-  /** 由一个实例的状态区生成快照；实例正处于事务中时不是合法的快照点。 */
-  decodeState(st: Uint32Array, name = "S1"): Snapshot | null {
-    const { c, l } = this;
-    if (st[H.MODE] !== 0) return null;
-    const q: Record<string, Bit> = {};
-    c.paths.forEach((p, i) => (q[p] = st[l.s.Q + i] as Bit));
-    const triggerAll: Record<string, (Bit | null)[]> = {};
-    c.paths.forEach((p, i) => {
-      if (!(c.flags[i] & F_ALL)) return;
-      const record = Array.from({ length: c.slotLen[i] }, (_, k) => {
-        const v = st[l.s.SLOT + c.slotBase[i] + k];
-        return v === NONE ? null : (v as Bit);
-      });
-      if (record.some((v) => v !== null)) triggerAll[p] = record;
-    });
-    const keys = c.roundNeed.map((_, r) => [c.jksPaths[c.roundJks[r]], c.roundKind[r], r] as const)
-      .sort((a, b) => compareRoundKeys([a[0], a[1]], [b[0], b[1]]));
-    const rounds: Snapshot["rounds"] = {};
-    for (const [g, kind, r] of keys) {
-      const b = l.s.ROUND + c.roundBase[r];
-      if (st[b]) (rounds[g] ??= {})[kind] = Array.from({ length: st[b] }, (_, k) => c.paths[st[b + 1 + k]]);
-    }
-    const events: Snapshot["threads"][string]["events"] = [];
-    for (let k = 0; k < st[H.EV_LEN]; k++) events.push({ source: c.paths[st[l.s.EV + (st[H.EV_HEAD] + k) % l.cap.events]] });
-    const tasks: Snapshot["threads"][string]["tasks"] = [];
-    for (let k = 0; k < st[H.TK_LEN]; k++) {
-      const o = l.s.TK + ((st[H.TK_HEAD] + k) % l.cap.tasks) * l.tkStride;
-      if (st[o] === 0) tasks.push({ node: c.paths[st[o + 1]] });
-      else tasks.push({ tx: c.jksPaths[st[o + 1]], prereqs: Array.from({ length: st[o + 2] }, (_, j) => c.paths[st[o + 3 + j]]) });
-    }
-    const threads: Snapshot["threads"] = {};
-    if (c.thread !== undefined) threads[c.thread] = { events, tasks };
-    return { snapshot: name, jkm: c.name, version: VERSION, q, trigger_all: triggerAll, rounds, threads };
   }
 }
 

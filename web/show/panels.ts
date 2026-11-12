@@ -7,7 +7,8 @@ import { APP_CONFIG } from "./config.ts";
 import { GATED_TYPES, type Jki, type Jks, type PublishMode, isInputEntry, publishMode } from "../../src/model.ts";
 import type { TaskItem } from "../../src/cpu.ts";
 import type { RecordEntry } from "../../src/record.ts";
-import type { FifoRow, OutputRow, Session, Step } from "./session.ts";
+import type { FifoRow, Session, Step } from "./session.ts";
+import { ListBuilder, type ListRow, type ListSettings, type OutputFormat, outputCells, outputChar, outputNumber, rowGroups } from "./output-list.ts";
 import { type Loaded, state } from "./state.ts";
 import { byId, clone, pretty, setText } from "./ui/dom.ts";
 import { tabValue } from "./ui/tabs.ts";
@@ -74,12 +75,12 @@ export function renderPanels(): void {
 
 function renderStatus(l: Loaded, s: Session): void {
   const running = hooks.running();
-  setText("run-state", s.stopped ? "已停止" : s.idle ? "静止" : running ? "运行中" : "已暂停");
+  setText("run-state", s.gpu ? "GPU 结果" : s.stopped ? "已停止" : s.idle ? "静止" : running ? "运行中" : "已暂停");
   $("run-status").classList.toggle("running", running);
-  setText("compute-status", "CPU 后端");
-  const stats: Record<string, number> = {
+  setText("compute-status", s.gpu ? `GPU 结果 · 第 ${s.gpu.instance} 个实例（只读）` : "CPU 后端");
+  const stats: Record<string, number | string> = {
     "stat-nodes": l.model.jki.size, "stat-edges": l.edges, "stat-ex": l.operations, "stat-groups": l.model.jks.size,
-    "stat-units": s.units, "stat-events": s.ex.events.length, "stat-tasks": s.ex.tasks.length, "stat-gpu": hooks.gpuDispatches(),
+    "stat-units": s.gpu ? "—" : s.units, "stat-events": s.ex.events.length, "stat-tasks": s.ex.tasks.length, "stat-gpu": hooks.gpuDispatches(),
   };
   for (const [id, value] of Object.entries(stats)) setText(id, value);
   setText("total2", s.stats.evaluations);
@@ -100,7 +101,8 @@ function renderQueue(kind: "events" | "tasks", rows: FifoRow[] | null, size: num
     const row = clone("queue-row-template");
     row.querySelector("[data-kind]")!.textContent = item.kind;
     row.querySelector("[data-target]")!.textContent = item.target;
-    row.querySelector("[data-detail]")!.textContent = item.detail;
+    row.querySelector("[data-detail]")!.textContent = item.batch ? `${item.detail} · 下一批` : item.detail;
+    row.toggleAttribute("data-batch", Boolean(item.batch));
     row.title = JSON.stringify(item.item);
     row.querySelector("button")!.addEventListener("click", () => hooks.select(item.target));
     list.append(row);
@@ -147,8 +149,8 @@ function renderHistory(s: Session): void {
 function renderOutput(s: Session): void {
   const latest = s.latestOutput();
   const output = s.model.output; // JKM.output（§8.1）
-  setText("output-status", latest ? `${s.ex.outputs.length} 次输出 · ${latest.source}` : "output 成员的通知投递时读取 · 尚未输出");
-  setText("observe-summary", output.length ? `output: ${output.join(", ")} · ${s.ex.outputs.length} 条输出` : "模型没有输出节点（output 为空）");
+  setText("output-status", latest ? `${s.outputs.length} 次输出 · ${latest.source}` : "output 成员的通知投递时读取 · 尚未输出");
+  setText("observe-summary", output.length ? `output: ${output.join(", ")} · ${s.outputs.length} 条输出` : "模型没有输出节点（output 为空）");
   if (hooks.isOpen("output")) {
     $("output-rows").replaceChildren();
     const labels = s.model.outputGroups.flatMap(({ name, size }) => Array.from({ length: size }, (_, i) => `${name}[${i}]`));
@@ -230,38 +232,6 @@ function renderBoard(s: Session): void {
 
 // -- 输出列表 ----------------------------------------------------------------
 
-/** 输出数据的显示格式：二进制、十进制、十六进制。 */
-export type OutputFormat = "bin" | "dec" | "hex";
-
-/** 一组 values 高位在前拼成的整数，按 format 显示。 */
-function outputNumber(values: readonly number[], format: OutputFormat): string {
-  if (!values.length) return "—";
-  if (format === "bin") return values.join("");
-  const n = BigInt(`0b${values.join("")}`);
-  return format === "dec" ? n.toString() : `0x${n.toString(16).toUpperCase()}`;
-}
-
-/** 8 个值且是可打印 ASCII 时的字符，否则为空。 */
-function outputChar(values: readonly number[]): string {
-  if (values.length !== 8) return "";
-  const code = parseInt(values.join(""), 2);
-  return code >= 32 && code <= 126 ? String.fromCharCode(code) : "";
-}
-
-/** 输出列表的记录方式（展示页自定，不改变执行记录）。 */
-interface ListSettings {
-  /** all：每条输出记录一行；trigger：按触发组记录。 */
-  mode: "all" | "trigger";
-  /** 触发组：output 的组名。 */
-  group: string;
-  /** 触发条件：事件到达；到达且来源的 q 为 0 或 1。 */
-  when: "arrive" | "q0" | "q1";
-  /** 记录内容：全部输出数据，或只记已标记节点。 */
-  content: "all" | "marked";
-  /** 每条输出的记录内容：slice 读取全部成员（切片）；real 只记到达的成员（真实运行）。 */
-  slice: "slice" | "real";
-}
-
 function listSettings(): ListSettings {
   const value = (id: string) => byId(id, HTMLSelectElement).value;
   return {
@@ -271,74 +241,6 @@ function listSettings(): ListSettings {
     content: value("output-trigger-content") as ListSettings["content"],
     slice: byId("slice-record", HTMLInputElement).checked ? "slice" : "real",
   };
-}
-
-/** 列表的一行：所在处理单元、来源成员、此刻全部成员的 q（展平），以及要记录的成员（null 为全部）。 */
-interface ListRow {
-  /** 对应的输出记录在本会话中的序号（从 0 起）。 */
-  index: number;
-  unit: number;
-  source: string;
-  values: readonly number[];
-  paths: ReadonlySet<string> | null;
-}
-
-/** 由输出记录逐条推出列表行；marks 是自上次记录以来有事件到达的 output 成员。 */
-class ListBuilder {
-  readonly rows: ListRow[] = [];
-  private cursor = 0;
-  private readonly marks = new Set<string>();
-  private readonly trigger: ReadonlySet<string>;
-  readonly session: Session;
-  readonly settings: ListSettings;
-  readonly key: string;
-
-  constructor(session: Session, settings: ListSettings, key: string) {
-    this.session = session;
-    this.settings = settings;
-    this.key = key;
-    const { model } = session;
-    const members = settings.mode === "trigger" ? model.groupOutput(model.output)[settings.group] ?? [] : [];
-    this.trigger = new Set(members);
-  }
-
-  update(): void {
-    const { outputs, model } = this.session;
-    const { mode, when, content } = this.settings;
-    for (; this.cursor < outputs.length; this.cursor++) {
-      const o: OutputRow = outputs[this.cursor];
-      if (mode === "all") {
-        this.rows.push({ index: this.cursor, unit: o.unit, source: o.source, values: o.values, paths: this.settings.slice === "real" ? new Set([o.source]) : null });
-        continue;
-      }
-      this.marks.add(o.source);
-      if (!this.trigger.has(o.source)) continue;
-      const q = o.values[model.output.indexOf(o.source)];
-      if ((when === "q0" && q !== 0) || (when === "q1" && q !== 1)) continue;
-      this.rows.push({ index: this.cursor, unit: o.unit, source: o.source, values: o.values, paths: content === "marked" ? new Set(this.marks) : null });
-      this.marks.clear();
-    }
-  }
-}
-
-/** 一行的各列：values、数值、字符都按 output 的组分开（§9.4）；只记已标记节点时每组只列这些节点。 */
-type Pairs = readonly (readonly [string, number])[];
-
-/** 一行按 output 分组的 [成员, q]；只记已标记节点时每组只留这些节点，去掉空组。 */
-function rowGroups(s: Session, row: ListRow): (readonly [string, Pairs])[] {
-  const { output } = s.model;
-  return Object.entries(s.model.groupOutput(output.map((path, i) => [path, row.values[i]] as const)))
-    .map(([name, pairs]) => [name, row.paths ? pairs.filter(([path]) => row.paths!.has(path)) : pairs] as const)
-    .filter(([, pairs]) => pairs.length);
-}
-
-function outputCells(s: Session, row: ListRow, index: number, format: OutputFormat): string[] {
-  const groups = rowGroups(s, row);
-  const bits = (pairs: readonly (readonly [string, number])[]) => pairs.map(([, q]) => q);
-  const each = (fn: (pairs: readonly (readonly [string, number])[]) => string) => groups.map(([name, pairs]) => `${name} ${fn(pairs)}`).join(" · ");
-  const values = each((pairs) => `[${pairs.map(([path, q]) => (row.paths ? `${path}=${q}` : String(q))).join(", ")}]`);
-  const chars = groups.filter(([, pairs]) => outputChar(bits(pairs))).map(([name, pairs]) => `${name} ${outputChar(bits(pairs))}`).join(" · ");
-  return [String(index + 1), String(row.unit), row.source, values, each((pairs) => outputNumber(bits(pairs), format)), chars];
 }
 
 export function outputFormat(): OutputFormat {
@@ -401,6 +303,9 @@ function renderOutputList(s: Session): void {
     shown = 0;
     shownFormat = format;
   }
+  // 只显示最近 outputListRows 行；复制与渲染仍用全部行
+  const limit = APP_CONFIG.view.outputListRows;
+  if (shown === 0) shown = Math.max(0, b.rows.length - limit);
   const fragment = document.createDocumentFragment();
   for (; shown < b.rows.length; shown++) {
     const row = clone("output-list-row-template");
@@ -409,6 +314,10 @@ function renderOutputList(s: Session): void {
     fragment.append(row);
   }
   body.append(fragment);
+  while (body.children.length > limit) body.firstElementChild!.remove();
+  const limited = $("output-list-limit");
+  limited.hidden = b.rows.length <= limit;
+  limited.textContent = limited.hidden ? "" : `显示最近 ${limit} / ${b.rows.length} 行；复制包含全部行。`;
   setText("output-list-count", trigger ? `${b.rows.length} 条记录（${s.outputs.length} 条输出）` : `${s.outputs.length} 条输出`);
   $("output-list-empty").hidden = b.rows.length > 0;
   byId("output-copy-data", HTMLButtonElement).disabled = !s.model.outputGroups.some((g) => g.name === "data");
@@ -475,6 +384,11 @@ function renderNode(l: Loaded, s: Session, path: string, node: Jki): void {
     `${index + 1}. ${sub}${gate && model.gated(gate[0], sub) ? `（受 ${gate[0]} 的 ${gate[1]} 整合）` : ""}`);
   setText("node-subscribers", subscribers.join("\n") || "没有订阅者");
   setText("node-pending", `${s.pendingTasks(path)} 个（thread 任务 FIFO）`);
+  const loop = l.model.loopOf.get(path);
+  const members = loop === undefined ? [] : l.model.loops[loop];
+  const exits = members.filter((p) => l.model.exitNodes.has(p));
+  setText("node-loop", loop === undefined ? "不在环上"
+    : `环 ${loop + 1}：${members.join("、")}\n退出节点（out 登记）：${exits.join("、") || "—"}${l.model.exitNodes.has(path) ? "\n本节点是退出节点" : ""}`);
   $("node-arrivals").hidden = !all;
   setText("node-all", all ? JSON.stringify(s.ex.triggerAll.get(path)) : "—");
   setText("node-json", pretty(node));
@@ -569,6 +483,7 @@ export function renderUnit(): void {
     return;
   }
   setText("unit-summary", `第 ${unit.n} 个处理单元 · ${UNIT_LABELS[unit.kind]} ${unit.path}`
+    + (unit.batch > 1 ? ` · 一批 ${unit.batch} 个节点任务（§7.5）` : "")
     + (unit.detailed ? ` · ${unit.steps.length} 步` : " · 跳过动画时处理，未记录细节"));
   setText("unit-step-label", !unit.steps.length ? "—"
     : state.unitStep >= 0 ? `第 ${state.unitStep + 1} / ${unit.steps.length} 步` : `共 ${unit.steps.length} 步`);

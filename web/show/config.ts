@@ -323,8 +323,6 @@ export const APP_CONFIG = freezeTree({
   engine: {
     /** 一段连续处理（从开始处理到静止）最多处理的单元数；到达后暂停，现场完整保留。属于页面调度，不是规则。 */
     playUnits: 100000,
-    /** 播放中静止时，检查新输入的间隔（毫秒）。播放到静止不自动停下。 */
-    idlePollMs: 100,
     /** 跳过动画时，每帧最多处理的单元数与时间预算。 */
     frameUnits: 128,
     frameBudgetMs: 4,
@@ -335,6 +333,8 @@ export const APP_CONFIG = freezeTree({
     speed: { value: 1, min: 0.25, max: 4, step: 0.25 }, skip: true,
     /** 运行控制的“按输出格式”：输出节点的动画按“输出数据格式及列表”当前的行取舍。 */
     byOutputFormat: true,
+    /** 运行控制的“批执行”（§7.5 可并行批，用户 2026-11-11）：默认不勾选。 */
+    batch: false,
     /** 运行控制的“切片记录”：勾选时每条输出读取全部 output 成员；不勾选时动画和记录都与真实运行一样（只有到达的成员）。 */
     slice: true,
     duration: 0.85, maxVisuals: 400,
@@ -359,6 +359,24 @@ export const APP_CONFIG = freezeTree({
     appearance: { backgroundEdge: "#08121f" },
     /** q=0 的节点按此比例变暗（q=1 保持原色）。 */
     qDisplay: { zeroBrightness: 0.38 },
+    /**
+     * 两条渲染路径（WebGPU 与 Canvas 2D）共用的显示常量：连线的默认透明度（网络样式到达前）；
+     * 立方体六个面（+x、−x、+y、−y、+z、−z）的明暗；选中时箭头与节点的放大倍数；标签字体与标签的世界尺寸。
+     */
+    display: {
+      edgeOpacity: 0.4,
+      faceShades: [0.8, 0.65, 1, 0.55, 0.92, 0.72],
+      activeScale: 1.35,
+      labelFont: "ui-monospace, SFMono-Regular, monospace",
+      labelScale: [1.35, 0.3375, 1] as [number, number, number],
+    },
+    /** 执行次数超过 count 的节点与它相连的连线变红，标签的次数也变红（用户 2026-11-11 决定保留）。 */
+    hot: { count: 1000, color: "#ff596e", label: "#ff697e" },
+    /**
+     * §6.4 的环与退出节点（用户 2026-11-11）：退出节点一直带 marker 标记；“显示环”开启时全部环上的触发线用 color；
+     * 选中环上的节点时高亮它所在的环。shown 是“显示环”的默认状态。
+     */
+    loops: { color: "#ffb347", marker: "出", shown: false },
     /** JKS 边界框：颜色按登记类型（含事务登记、含 all、其他），选中时高亮。 */
     jks: { visible: false, any: 0x50657a, all: 0x8fb3d9, transaction: 0xf0a35e, selected: 0x85efd0 },
     /** 动画标记的颜色：通知、EX 读取、输出读取的箭头，以及 q 写入、发布的文字。 */
@@ -378,7 +396,6 @@ export const APP_CONFIG = freezeTree({
         minNodePixels: 2,
         minFontPixels: 8,
         maxFontPixels: 28,
-        fontFamily: "ui-monospace, SFMono-Regular, monospace",
         lineWidth: 1,
         activeLineWidth: 2,
         arrowPixels: 4,
@@ -398,6 +415,8 @@ export const APP_CONFIG = freezeTree({
     /** 本单元窗口最多列出的步数与每步的行数。 */
     unit: { steps: 200, lines: 60 },
     outputRows: 100,
+    /** “输出数据格式及列表”最多显示的行数（最近的行）；复制与输出渲染仍用全部行。 */
+    outputListRows: 500,
     /**
      * “输出数据格式及列表”与“输出渲染”的选择：默认值；最新选择保存在浏览器本地。
      * mode：all 每条输出 / trigger 指定触发组；group：触发组，空串为模型的第一个 output 组；
@@ -406,7 +425,8 @@ export const APP_CONFIG = freezeTree({
      * scene.nodeLabelsHidden，也一起保存。
      */
     outputChoices: {
-      storage: { key: "jk.show.output-choices", version: 1 },
+      /** retired：改名前的键，打开页面时删除（用户 2026-11-11）。 */
+      storage: { key: "jk.show.choices", version: 1, retired: ["jk.show.output-choices"] },
       defaults: { mode: "all", group: "", when: "arrive", content: "all", format: "bin", render: "rgb" },
     },
     board: { width: 256, height: 128, cellSize: 24, zero: "#263b4d", one: "#81e7bf" },

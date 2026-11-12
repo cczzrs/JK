@@ -4,6 +4,7 @@
  */
 
 import type { DesktopConfig, Limit, WindowSpec, Zone } from "../config.ts";
+import { type Obj, color, finite, object } from "./normalize.ts";
 
 export type DisplayMode = "dual" | "single";
 
@@ -72,15 +73,9 @@ export interface Bounds {
   height: number;
 }
 
-type Obj = Record<string, unknown>;
 type Limits = Partial<Record<string, Limit>>;
 
-const object = (value: unknown): value is Obj => value !== null && typeof value === "object" && !Array.isArray(value);
-const finite = (value: unknown, fallback: number): number =>
-  typeof value === "number" && Number.isFinite(value) ? value : fallback;
 export const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), Math.max(min, max));
-const color = (value: unknown, fallback: string): string =>
-  typeof value === "string" && /^#[\da-f]{6}$/i.test(value) ? value.toLowerCase() : fallback;
 
 export const isRailAppearanceTarget = (key: string): key is "menu" | "dock" => key === "menu" || key === "dock";
 

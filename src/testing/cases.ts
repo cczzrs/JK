@@ -1,6 +1,8 @@
 /** JKRD7 §11.2 的验收案例（CPU 后端）。命令行见 tools/reference.ts。 */
 
-import { type Jki, type Jkm, type RunScript, type Snapshot, Model } from "../model.ts";
+import { type Jki, type Jkm, type RunScript, Model } from "../model.ts";
+import type { Snapshot } from "../../snapshot/snapshot.ts";
+import { loadSnapshot, takeSnapshot } from "../../snapshot/cpu.ts";
 import { DOC_MODELS, docBlock, docFragment, docModels } from "../doc.ts";
 import { CpuExecutor, TxLimit, Unsupported } from "../cpu.ts";
 import { formatRecords } from "../record.ts";
@@ -20,6 +22,8 @@ export interface CaseResult {
 export interface CaseContext {
   /** JKRD7.md 全文。 */
   doc: string;
+  /** snapshot/Snapshot.md 全文。 */
+  snapshotDoc: string;
   /** 十选一模型（assets/ascii-bit-design/digits.jkm.json）。 */
   ascii: Jkm;
   /** 按仓库相对路径读取模型文件（运行脚本的 model 字段）。 */
@@ -349,20 +353,20 @@ export function runCases(ctx: CaseContext): CaseResult[] {
       `Q24 的输出记录 ${hex(codes)}，执行记录 ${a.record().length} 条（其中输出记录 ${a.outputs.length} 条），批执行模式记录相同`);
   }
 
-  // 快照（§9.5）
+  // 快照（snapshot/Snapshot.md）
   {
-    const expected = docBlock<Snapshot>(ctx.doc, "snapshot");
+    const expected = docBlock<Snapshot>(ctx.snapshotDoc, "snapshot");
     const data = model("M_TX");
     const engine = () => new CpuExecutor(new Model(data, "M_TX"));
     const r = engine();
     r.inject("G1.Q10");
     r.inject("G1.Q10");
     while (!r.log.some((e) => e.kind === "tx_end")) r.step();
-    const snap = r.snapshot("S1");
+    const snap = takeSnapshot(r, "S1");
     const cut = r.record().length;
     r.run();
     const resumed = engine();
-    resumed.loadSnapshot(JSON.parse(JSON.stringify(snap)) as Snapshot);
+    loadSnapshot(resumed, JSON.parse(JSON.stringify(snap)) as Snapshot);
     resumed.run();
     const ok = deepEqual(snap, expected) && formatRecords(resumed.record()) === formatRecords(r.record().slice(cut));
 
@@ -374,10 +378,10 @@ export function runCases(ctx: CaseContext): CaseResult[] {
       const full = new CpuExecutor(new Model(dataR, "random"));
       for (const item of batches[0]) full.inject(item);
       for (let k = rng.randint(0, 25); k > 0; k--) full.step();
-      const snapR = JSON.parse(JSON.stringify(full.snapshot())) as Snapshot;
+      const snapR = JSON.parse(JSON.stringify(takeSnapshot(full))) as Snapshot;
       const cutR = full.record().length;
       const rest = new CpuExecutor(new Model(dataR, "random"));
-      rest.loadSnapshot(snapR);
+      loadSnapshot(rest, snapR);
       for (const engineR of [full, rest]) {
         engineR.run();
         for (const batch of batches.slice(1)) {
@@ -387,8 +391,8 @@ export function runCases(ctx: CaseContext): CaseResult[] {
       }
       if (formatRecords(rest.record()) !== formatRecords(full.record().slice(cutR))) bad++;
     }
-    check("快照（§9.5）", ok && bad === 0,
-      `M_TX 的中间状态与 §9.5 一致，从快照继续的记录与不中断运行相同；随机模型 150 次中途快照，不同的有 ${bad} 次`);
+    check("快照（Snapshot.md）", ok && bad === 0,
+      `M_TX 的中间状态与 Snapshot.md 第 2 节一致，从快照继续的记录与不中断运行相同；随机模型 150 次中途快照，不同的有 ${bad} 次`);
   }
 
   return results;

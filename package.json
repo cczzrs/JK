@@ -13,8 +13,9 @@
     "reference": "node tools/reference.ts",
     "gpu": "node tools/gpu.ts",
     "show": "node tools/show.ts",
+    "test:ui": "node --test web/show/tests/ui.test.ts",
     "serve": "node tools/serve.ts",
-    "check": "npm run typecheck && npm run validate && npm run reference"
+    "check": "npm run typecheck && npm run validate && npm run reference && npm run test:ui"
   },
   "devDependencies": {
     "@types/node": "26.6.6",

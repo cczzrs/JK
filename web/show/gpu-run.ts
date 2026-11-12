@@ -6,6 +6,7 @@
 import type { Model, RunScript } from "../../src/model.ts";
 import { formatRecords } from "../../src/record.ts";
 import { GpuExecutor } from "../../src/gpu/backend.ts";
+import { type GpuSnapshotResult, runWithSnapshots } from "../../snapshot/gpu.ts";
 import type { Loaded } from "./state.ts";
 
 export interface GpuRunResult {
@@ -16,6 +17,8 @@ export interface GpuRunResult {
   /** 第一个实例的执行记录（出错时为 null）。 */
   records: string | null;
   dispatches: number;
+  /** 各实例的结果：执行记录与运行结束时从 GPU 状态缓冲区读回的快照（页面可切换显示）。 */
+  results: GpuSnapshotResult[];
 }
 
 export class GpuRunner {
@@ -56,11 +59,11 @@ export class GpuRunner {
 
   async run(device: GPUDevice, loaded: Loaded, script: RunScript, count: number): Promise<GpuRunResult> {
     const [reference, gpu] = await Promise.all([this.reference(script, loaded.raw), this.executor(device, loaded.model)]);
-    const results = await gpu.run(Array.from({ length: count }, () => ({ batches: script.batches })));
+    const results = await runWithSnapshots(gpu, Array.from({ length: count }, () => ({ batches: script.batches })));
     const dispatches = gpu.stats.dispatches;
     const failed = results.find((r) => r.error);
     if (failed?.error) {
-      return { text: `GPU 实例出错：${failed.error.message}（第 ${failed.error.batch + 1} 批）。`, same: false, records: null, dispatches };
+      return { text: `GPU 实例出错：${failed.error.message}（第 ${failed.error.batch + 1} 批）。`, same: false, records: null, dispatches, results };
     }
     const texts = results.map((r) => formatRecords(r.records));
     const mismatch = texts.findIndex((text) => text !== reference.records);
@@ -68,13 +71,13 @@ export class GpuRunner {
       const a = texts[mismatch].split("\n");
       const b = reference.records.split("\n");
       const line = a.findIndex((text, i) => text !== b[i]) + 1;
-      return { text: `第 ${mismatch + 1} 个实例的执行记录与 CPU 后端不同（自第 ${line} 行起）。`, same: false, records: texts[0], dispatches };
+      return { text: `第 ${mismatch + 1} 个实例的执行记录与 CPU 后端不同（自第 ${line} 行起）。`, same: false, records: texts[0], dispatches, results };
     }
     const lines = reference.records ? reference.records.split("\n").length - 1 : 0;
     return {
       text: `${count} 个实例的执行记录与 CPU 后端逐字节相同 · 每个实例 ${lines} 行 · GPU ${gpu.stats.milliseconds.toFixed(1)} ms`
         + `（${dispatches} 次调度）· CPU 单实例 ${reference.ms.toFixed(1)} ms（Worker）`,
-      same: true, records: texts[0], dispatches,
+      same: true, records: texts[0], dispatches, results,
     };
   }
 

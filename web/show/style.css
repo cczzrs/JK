@@ -1279,7 +1279,7 @@ footer .dot {
 }
 
 /* GPU 后端对拍（运行脚本窗口）。 */
-.gpu-run-title {
+#jkm-panel .cosmic-window .gpu-run-title {
   margin: 18px 0 4px;
   font-size: 13px;
   font-weight: 600;

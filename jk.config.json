@@ -27,7 +27,8 @@
     "typescript": "TypeScript.md",
     "webgpu": "WebGPU.md",
     "web_show": "docs/web-show.md",
-    "ultra": "ultra.md"
+    "ultra": "ultra.md",
+    "snapshot": "snapshot/Snapshot.md"
   },
   "assets": {
     "ascii_digits": "assets/ascii-bit-design/digits.jkm.json",
@@ -43,6 +44,9 @@
     "gpu": "src/gpu/backend.ts",
     "gpu_compiler": "src/gpu/compile.ts",
     "gpu_kernel": "src/gpu/kernel.ts",
+    "snapshot": "snapshot/snapshot.ts",
+    "snapshot_cpu": "snapshot/cpu.ts",
+    "snapshot_gpu": "snapshot/gpu.ts",
     "limits": "single-thread models (JKRD7 §9.3); GPU backend checked only in this machine's Chrome"
   },
   "tools": {

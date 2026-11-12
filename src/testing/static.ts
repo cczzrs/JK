@@ -1,9 +1,10 @@
 /**
- * 静态检查的正例与负例（JKRD7 §2、§3、§5、§6.4、§8），bit 的原文写法（§2 第 2 条），以及快照（§9.5）。
+ * 静态检查的正例与负例（JKRD7 §2、§3、§5、§6.4、§8），bit 的原文写法（§2 第 2 条），以及快照（snapshot/Snapshot.md）。
  * 命令行见 tools/validate.ts。
  */
 
-import { type Jki, type Jkm, type Jks, type Snapshot, parseJson } from "../model.ts";
+import { type Jki, type Jkm, type Jks, parseJson } from "../model.ts";
+import type { Snapshot } from "../../snapshot/snapshot.ts";
 import { jkm, jks, syncInput } from "./fixtures.ts";
 
 type Any = Record<string, unknown>;
@@ -230,7 +231,7 @@ export const TEXT_CASES: [string, () => string, string | null][] = [
 ];
 
 // ---------------------------------------------------------------------------
-// 快照（§9.5）
+// 快照（snapshot/Snapshot.md）
 // ---------------------------------------------------------------------------
 
 /** 基准模型的一个合法快照：G2.Q3（all）已到达一个来源，两个 FIFO 各有待处理的项。 */

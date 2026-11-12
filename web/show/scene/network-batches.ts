@@ -5,6 +5,9 @@
 import * as THREE from "three/webgpu";
 import { instancedBufferAttribute } from "three/tsl";
 import { disposeGroup, mergePendingRange } from "./resources.ts";
+import { APP_CONFIG } from "../config.ts";
+
+const DISPLAY = APP_CONFIG.scene.display;
 
 type Instanced = THREE.InstancedMesh<THREE.BufferGeometry, THREE.Material>;
 
@@ -49,7 +52,7 @@ export class NetworkBatches {
     this.edgeVisibility = new Uint8Array(edgeCount).fill(1);
     const cube = new THREE.BoxGeometry(nodeSize, nodeSize, nodeSize);
     const shades: number[] = [];
-    for (const shade of [0.8, 0.65, 1, 0.55, 0.92, 0.72]) for (let i = 0; i < 4; i++) shades.push(shade, shade, shade);
+    for (const shade of DISPLAY.faceShades) for (let i = 0; i < 4; i++) shades.push(shade, shade, shade);
     cube.setAttribute("color", new THREE.Float32BufferAttribute(shades, 3));
     this.nodes = this.instances(cube, new THREE.MeshBasicMaterial({ vertexColors: true }), nodeCount);
     const geometry = new THREE.BufferGeometry();
@@ -149,7 +152,7 @@ export class NetworkBatches {
     this.matrix.fromArray(this.arrowMatrices, index * 16);
     const selected = Boolean(this.active[index]);
     if (!this.edgeVisibility[index]) this.matrix.makeScale(0, 0, 0);
-    else if (selected) this.matrix.scale(this.point.setScalar(1.35));
+    else if (selected) this.matrix.scale(this.point.setScalar(DISPLAY.activeScale));
     this.write((selected ? this.selectedArrows : this.arrows).instanceMatrix, index * 16, this.matrix.elements);
     this.matrix.makeScale(0, 0, 0);
     this.write((selected ? this.arrows : this.selectedArrows).instanceMatrix, index * 16, this.matrix.elements);
@@ -158,7 +161,7 @@ export class NetworkBatches {
   /** 连线保留各自的透明度；选中的箭头用单独的不透明实例。 */
   setEdgeStyle(index: number, color: number, selected = false, style: { opacity: number; visible: boolean } | null = null): void {
     this.check(index, this.edgeCount);
-    const opacity = style?.opacity ?? 0.4;
+    const opacity = style?.opacity ?? DISPLAY.edgeOpacity;
     const visible = style?.visible !== false && opacity > 0 ? 1 : 0;
     const active = selected && visible ? 1 : 0;
     if (this.edgeColors[index] === color && this.active[index] === active && this.edgeOpacities[index] === opacity
@@ -176,7 +179,7 @@ export class NetworkBatches {
     const attribute = this.lines.geometry.attributes.color as THREE.BufferAttribute;
     const array = attribute.array as Float32Array;
     const start = index * this.segments * 8;
-    const alpha = visible ? (active ? Math.min(1, opacity / 0.4) : opacity) : 0;
+    const alpha = visible ? (active ? Math.min(1, opacity / DISPLAY.edgeOpacity) : opacity) : 0;
     for (let offset = start; offset < start + this.segments * 8; offset += 4) {
       array[offset] = r; array[offset + 1] = g; array[offset + 2] = b; array[offset + 3] = alpha;
     }
@@ -184,10 +187,10 @@ export class NetworkBatches {
     this.write(this.arrows.instanceColor!, index * 3, [r, g, b]);
     this.write(this.selectedArrows.instanceColor!, index * 3, [r, g, b]);
     // 只有设置了非默认透明度的网络才启用逐实例的箭头透明度。
-    if (style && opacity !== 0.4 && !this.arrowOpacity) this.enableArrowOpacity();
+    if (style && opacity !== DISPLAY.edgeOpacity && !this.arrowOpacity) this.enableArrowOpacity();
     if (this.arrowOpacity && this.selectedArrowOpacity) {
       this.write(this.arrowOpacity, index, [Math.min(1, opacity * 2)]);
-      this.write(this.selectedArrowOpacity, index, [Math.min(1, opacity / 0.4)]);
+      this.write(this.selectedArrowOpacity, index, [Math.min(1, opacity / DISPLAY.edgeOpacity)]);
     }
     this.arrows.visible = this.activeCount < this.edgeCount;
     this.selectedArrows.visible = this.activeCount > 0;
@@ -195,7 +198,7 @@ export class NetworkBatches {
 
   private enableArrowOpacity(): void {
     const make = (mesh: Instanced, factor: number): THREE.InstancedBufferAttribute => {
-      const values = Float32Array.from(this.edgeOpacities, (opacity) => Math.min(1, (Number.isFinite(opacity) ? opacity : 0.4) * factor));
+      const values = Float32Array.from(this.edgeOpacities, (opacity) => Math.min(1, (Number.isFinite(opacity) ? opacity : DISPLAY.edgeOpacity) * factor));
       const attribute = new THREE.InstancedBufferAttribute(values, 1).setUsage(THREE.DynamicDrawUsage);
       const material = new THREE.MeshBasicNodeMaterial({ transparent: true });
       material.opacityNode = instancedBufferAttribute(attribute);

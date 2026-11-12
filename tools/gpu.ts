@@ -10,8 +10,8 @@
  * --count <实例数>（吞吐参考的实例数）。
  */
 
-import type { RunScript, Snapshot } from "../src/model.ts";
-import { formatSnapshot } from "../src/record.ts";
+import type { RunScript } from "../src/model.ts";
+import { type Snapshot, formatSnapshot } from "../snapshot/snapshot.ts";
 import { ASCII_MODEL, DOC, SOURCE_FILES, parseArgs, readJson, writeReport, writeText } from "./common.ts";
 import { serve } from "./server.ts";
 import { CHROME_ARGS, chromeOptions, runInChrome } from "./chrome.ts";

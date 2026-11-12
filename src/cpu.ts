@@ -11,8 +11,8 @@
  */
 
 import {
-  type Bit, GATED_TYPES, type Jki, type Model, type PublishMode, type Snapshot, type SnapshotTask, VERSION,
-  checkSnapshot, hasEx, publishMode, publishes, segments, sortPaths, isInputEntry,
+  type Bit, GATED_TYPES, type Jki, type Model, type PublishMode,
+  hasEx, publishMode, publishes, segments, sortPaths, isInputEntry,
 } from "./model.ts";
 import type { RecordEntry } from "./record.ts";
 
@@ -62,6 +62,11 @@ export class Fifo<T> {
 
   peek(): T {
     return this.items[this.head];
+  }
+
+  /** 队首起第 i 项（不取出）。 */
+  at(i: number): T | undefined {
+    return this.items[this.head + i];
   }
 
   toArray(): T[] {
@@ -134,7 +139,8 @@ export interface CpuOptions {
 export class CpuExecutor {
   readonly m: Model;
   readonly thread: string | undefined;
-  readonly batch: boolean;
+  /** 按 §7.5 的可并行批执行；可以在处理单元之间切换（执行记录不变）。 */
+  batch: boolean;
   readonly maxUnits: number;
   readonly txSteps: number;
   readonly txDepth: number;
@@ -332,18 +338,29 @@ export class CpuExecutor {
 
   // -- 任务（§4.3、§6.2）与可并行批（§7.5） --------------------------------------
 
-  private takeBatch(fifo: Fifo<TaskItem>): string[] {
-    const first = fifo.shift() as { kind: "node"; node: string };
-    if (!this.batch) return [first.node];
-    const batch = [first.node];
-    const written = new Set([first.node]);
-    while (fifo.length && fifo.peek().kind === "node") {
-      const path = (fifo.peek() as { node: string }).node;
+  /** 从 fifo 队首起按 §7.5 的条件连续取的节点任务（不取出）：目标互不相同，且来源不含前面任务的目标。 */
+  private batchOf(fifo: Fifo<TaskItem>): string[] {
+    const batch: string[] = [];
+    const written = new Set<string>();
+    for (let i = 0; ; i++) {
+      const item = fifo.at(i);
+      if (item?.kind !== "node") break;
+      const path = item.node;
       if (written.has(path) || this.m.sourceRefs.get(path)!.some((s) => written.has(s))) break;
       batch.push(path);
       written.add(path);
-      fifo.shift();
     }
+    return batch;
+  }
+
+  /** thread 任务 FIFO 队首的下一批节点任务（事件 FIFO 不为空、或队首是事务任务时为空数组）。只供展示。 */
+  nextBatch(): string[] {
+    return this.events.length ? [] : this.batchOf(this.tasks);
+  }
+
+  private takeBatch(fifo: Fifo<TaskItem>): string[] {
+    const batch = this.batch ? this.batchOf(fifo) : [(fifo.peek() as { node: string }).node];
+    for (let i = 0; i < batch.length; i++) fifo.shift();
     return batch;
   }
 
@@ -431,7 +448,7 @@ export class CpuExecutor {
     this.note({ kind: "tx_end", g, depth });
   }
 
-  // -- 执行记录（§9.4）与快照（§9.5） --------------------------------------------
+  // -- 执行记录（§9.4）与运行现场（§9.2） ----------------------------------------
 
   record(): RecordEntry[] {
     const out: RecordEntry[] = [];
@@ -444,49 +461,20 @@ export class CpuExecutor {
     return out;
   }
 
-  snapshot(name = "S1"): Snapshot {
-    const task = (item: TaskItem): SnapshotTask =>
-      item.kind === "node" ? { node: item.node } : { tx: item.g, prereqs: [...item.prereqs] };
-    const rounds: Snapshot["rounds"] = {};
+  /** 进行中的到达记录（trigger_all）与轮记录（rounds），按路径排序，只列非空的项。 */
+  arrivals(): { trigger_all: Record<string, (Bit | null)[]>; rounds: Record<string, Partial<Record<"all" | "transaction", string[]>>> } {
+    const rounds: ReturnType<CpuExecutor["arrivals"]>["rounds"] = {};
     const keys = [...this.rounds.keys()].map((k) => k.split("|") as [string, string]).sort(compareRoundKeys);
     for (const [g, kind] of keys) {
       const record = this.rounds.get(`${g}|${kind}`)!;
       if (record.length) (rounds[g] ??= {})[kind as "all" | "transaction"] = [...record];
     }
-    const q: Record<string, Bit> = {};
-    for (const p of sortPaths(this.q.keys())) q[p] = this.q.get(p)!;
     const triggerAll: Record<string, (Bit | null)[]> = {};
     for (const p of sortPaths(this.triggerAll.keys())) {
       const r = this.triggerAll.get(p)!;
       if (r.some((v) => v !== null)) triggerAll[p] = [...r];
     }
-    const threads: Snapshot["threads"] = {};
-    if (this.thread !== undefined) {
-      threads[this.thread] = { events: this.events.toArray().map((source) => ({ source })), tasks: this.tasks.toArray().map(task) };
-    }
-    return { snapshot: name, jkm: this.m.name, version: VERSION, q, trigger_all: triggerAll, rounds, threads };
-  }
-
-  loadSnapshot(snap: Snapshot): void {
-    const problems = checkSnapshot(snap, this.m);
-    if (problems.length) throw new Error("快照不合法：\n" + problems.join("\n"));
-    this.q = new Map(Object.entries(snap.q));
-    for (const [path, record] of this.triggerAll) {
-      const saved = snap.trigger_all[path];
-      record.splice(0, record.length, ...(saved ?? record.map(() => null)));
-    }
-    for (const [key, record] of this.rounds) {
-      const [g, kind] = key.split("|");
-      const saved = snap.rounds[g]?.[kind as "all" | "transaction"] ?? [];
-      record.splice(0, record.length, ...saved);
-    }
-    const fifo = (this.thread !== undefined ? snap.threads[this.thread] : undefined) ?? { events: [], tasks: [] };
-    this.events = new Fifo();
-    for (const e of fifo.events) this.events.push(e.source);
-    this.tasks = new Fifo();
-    for (const t of fifo.tasks) {
-      this.tasks.push("node" in t ? { kind: "node", node: t.node } : { kind: "tx", g: t.tx, prereqs: [...t.prereqs] });
-    }
+    return { trigger_all: triggerAll, rounds };
   }
 
   // -- 观察 ---------------------------------------------------------------------
@@ -504,7 +492,7 @@ export class CpuExecutor {
   }
 }
 
-/** 快照中 rounds 的键顺序：先按 JKS 层数，再逐段比较路径文本，最后比较类型名。 */
+/** 轮记录的键顺序：先按 JKS 层数，再逐段比较路径文本，最后比较类型名。 */
 export function compareRoundKeys([g1, k1]: [string, string], [g2, k2]: [string, string]): number {
   const a = segments(g1);
   const b = segments(g2);

@@ -3,7 +3,9 @@
  * 由 tools/gpu.ts 自动打开时从 /__job 取任务并把结果交回 /__result；手动打开时直接运行验收案例。
  */
 
-import { type Jkm, type RunScript, type Snapshot, parseJson } from "../src/model.ts";
+import { type Jkm, type RunScript, parseJson } from "../src/model.ts";
+import type { Snapshot } from "../snapshot/snapshot.ts";
+import { runWithSnapshots } from "../snapshot/gpu.ts";
 import { docBlock } from "../src/doc.ts";
 import { scriptModel } from "../src/executor.ts";
 import { formatRecords } from "../src/record.ts";
@@ -43,7 +45,9 @@ try {
   const task: Job = job ?? { mode: "check" };
   if (task.mode === "script") {
     const model = scriptModel(task.script, task.model); // 与 CPU 后端相同的模型与运行脚本检查
-    const r = await GpuExecutor.runScript(device, model, task.script, task.start, task.options);
+    const gpu = await GpuExecutor.create(device, model, task.options);
+    const [r] = await runWithSnapshots(gpu, [{ batches: task.script.batches, start: task.start }]);
+    gpu.destroy();
     await finish({ records: formatRecords(r.records), error: r.error, snapshot: r.snapshot });
   } else {
     const doc = await text("/JKRD7.md");
@@ -51,7 +55,7 @@ try {
     const script = docBlock<RunScript>(doc, "run");
     const cache = new Map<string, unknown>([[script.model, parseJson(await text("/" + script.model))]]);
     const ctx = {
-      doc, ascii,
+      doc, ascii, snapshotDoc: await text("/snapshot/Snapshot.md"),
       loadModel: (path: string) => {
         if (!cache.has(path)) throw new Error(`页面没有预先读取 ${path}`);
         return cache.get(path);

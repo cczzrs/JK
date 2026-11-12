@@ -4,14 +4,14 @@
  * 两个后端对同一运行脚本必须产生逐字节相同的执行记录（§7.5）。
  */
 
-import { type RunScript, type Snapshot, Model, checkRunScript } from "./model.ts";
+import { type RunScript, Model, checkRunScript } from "./model.ts";
 import { CpuExecutor } from "./cpu.ts";
 
 export interface ScriptOptions {
   /** 按 §7.5 的可并行批执行。 */
   batch?: boolean;
-  /** 从快照（§9.5）继续。 */
-  start?: Snapshot;
+  /** 注入第一批之前对执行器做的准备（例如 snapshot/cpu.ts 载入快照）。 */
+  before?: (ex: CpuExecutor) => void;
 }
 
 /** 加载并检查运行脚本所指的模型。 */
@@ -26,7 +26,7 @@ export function scriptModel(script: RunScript, data: unknown): Model {
 /** 用 CPU 后端运行一个运行脚本，返回运行结束时的执行器。data 是脚本 model 字段所指的 JKM。 */
 export function runScriptCpu(script: RunScript, data: unknown, options: ScriptOptions = {}): CpuExecutor {
   const ref = new CpuExecutor(scriptModel(script, data), { batch: options.batch }); // 输出观察取自模型的 output（§8.1）
-  if (options.start) ref.loadSnapshot(options.start);
+  options.before?.(ref);
   for (const batch of script.batches) {
     for (const item of batch) ref.inject(item);
     ref.run();

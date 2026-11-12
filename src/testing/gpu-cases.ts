@@ -3,11 +3,14 @@
  * 命令行见 tools/gpu.ts（启动本机 Chrome 执行）。
  */
 
-import { Model, type RunScript, type Snapshot } from "../model.ts";
+import { Model, type RunScript } from "../model.ts";
+import { type Snapshot, formatSnapshot } from "../../snapshot/snapshot.ts";
+import { loadSnapshot, takeSnapshot } from "../../snapshot/cpu.ts";
+import { type GpuSnapshotInstance, runWithSnapshots } from "../../snapshot/gpu.ts";
 import { docBlock, docModels } from "../doc.ts";
 import { CpuExecutor, type CpuOptions, TxLimit } from "../cpu.ts";
 import { runScriptCpu } from "../executor.ts";
-import { bitsToInt, formatRecords, formatSnapshot } from "../record.ts";
+import { bitsToInt, formatRecords } from "../record.ts";
 import { GpuExecutor, type GpuInstance, type GpuOptions } from "../gpu/backend.ts";
 import { type CaseContext, type CaseResult, DOC_RUNS } from "./cases.ts";
 import {
@@ -16,9 +19,9 @@ import {
 import { Random } from "./random.ts";
 
 /** CPU 后端按 GPU 实例的方式运行：可选起始快照，然后逐批注入并运行到静止。 */
-function cpuInstance(data: unknown, inst: GpuInstance): CpuExecutor {
+function cpuInstance(data: unknown, inst: GpuSnapshotInstance): CpuExecutor {
   const ref = new CpuExecutor(new Model(data, "cpu"));
-  if (inst.start) ref.loadSnapshot(inst.start);
+  if (inst.start) loadSnapshot(ref, inst.start);
   for (const batch of inst.batches) {
     for (const item of batch) ref.inject(item);
     ref.run();
@@ -27,18 +30,18 @@ function cpuInstance(data: unknown, inst: GpuInstance): CpuExecutor {
 }
 
 /** 在 GPU 上执行一组实例，并与 CPU 逐个比较执行记录和结束时的快照。返回不一致的实例数。 */
-async function compare(device: GPUDevice, data: unknown, instances: GpuInstance[],
+async function compare(device: GPUDevice, data: unknown, instances: GpuSnapshotInstance[],
   options: GpuOptions = {}): Promise<{ bad: number; gpu: GpuExecutor; firstBad?: string }> {
   const gpu = await GpuExecutor.create(device, new Model(data, "gpu"), options);
   try {
-    const results = await gpu.run(instances);
+    const results = await runWithSnapshots(gpu, instances);
     let bad = 0;
     let firstBad: string | undefined;
     instances.forEach((inst, i) => {
       const cpu = cpuInstance(data, inst);
       const r = results[i];
       const sameRecords = formatRecords(cpu.record()) === formatRecords(r.records);
-      const sameSnap = r.snapshot !== null && formatSnapshot(cpu.snapshot("S1")) === formatSnapshot(r.snapshot);
+      const sameSnap = r.snapshot !== null && formatSnapshot(takeSnapshot(cpu, "S1")) === formatSnapshot(r.snapshot);
       if (r.error || !sameRecords || !sameSnap) {
         bad++;
         firstBad ??= r.error ? `实例 ${i}：${r.error.message}` : `实例 ${i}：${sameRecords ? "快照" : "执行记录"}不同`;
@@ -111,7 +114,7 @@ export async function runGpuCases(ctx: CaseContext, device: GPUDevice, log: (lin
 
   // 从快照继续
   {
-    const docSnap = docBlock<Snapshot>(ctx.doc, "snapshot");
+    const docSnap = docBlock<Snapshot>(ctx.snapshotDoc, "snapshot");
     const tx = models.get("M_TX")!;
     let bad = (await compare(device, tx, [{ start: docSnap, batches: [[]] }, { start: docSnap, batches: [[], ["G1.Q10"]] }])).bad;
     const rng = new Random(17);
@@ -122,13 +125,13 @@ export async function runGpuCases(ctx: CaseContext, device: GPUDevice, log: (lin
       const cpu = new CpuExecutor(new Model(data, "random"));
       for (const item of batches[0]) cpu.inject(item);
       for (let k = rng.randint(0, 25); k > 0; k--) cpu.step();
-      const snap = JSON.parse(JSON.stringify(cpu.snapshot())) as Snapshot;
+      const snap = JSON.parse(JSON.stringify(takeSnapshot(cpu))) as Snapshot;
       const thread = Object.values(snap.threads)[0];
       if (thread && (thread.events.length || thread.tasks.length)) pending++;
       bad += (await compare(device, data, [{ start: snap, batches: [[], ...batches.slice(1)] }])).bad;
     }
     check("GPU：从快照继续", bad === 0,
-      `§9.5 的 M_TX 快照与随机模型 150 次中途快照（其中 ${pending} 次带未处理的事件或任务）载入 GPU 后继续运行，与 CPU 不同的有 ${bad} 个`);
+      `Snapshot.md 的 M_TX 快照与随机模型 150 次中途快照（其中 ${pending} 次带未处理的事件或任务）载入 GPU 后继续运行，与 CPU 不同的有 ${bad} 个`);
   }
 
   // 容量与错误
@@ -161,7 +164,7 @@ export async function runGpuCases(ctx: CaseContext, device: GPUDevice, log: (lin
     };
     const txSteps = await txLimit(exitLoopModel("always_changed"), { txSteps: 50 }, { txSteps: 50 }, 9);
     const txDepth = await txLimit(inlineModel(), { txDepth: 2 }, { capacity: { depth: 2 } }, 8);
-    const ok = overflow.error?.code === 1 && overflow.snapshot === null && normal.error === null
+    const ok = overflow.error?.code === 1 && overflow.state === null && normal.error === null
       && formatRecords(normal.records) === formatRecords(cpu.record()) && stepped.error?.code === 6 && txSteps.same && txDepth.same;
     check("GPU：容量与错误", ok,
       `事件 FIFO 容量设为 6 时，一批 9 个输入的实例报告“${overflow.error?.message ?? "无"}”并停下，同一次运行中的另一个实例`

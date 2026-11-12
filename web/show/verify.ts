@@ -8,7 +8,7 @@ import type { Bit, RunScript } from "../../src/model.ts";
 import type { ShowApi } from "./main.ts";
 import { observeKey } from "./scene/model-view.ts";
 
-export type CaseKind = "script" | "animate" | "manual" | "timeline" | "canvas" | "image" | "txlimit" | "invalid" | "layouts";
+export type CaseKind = "script" | "animate" | "manual" | "timeline" | "canvas" | "image" | "txlimit" | "invalid" | "layouts" | "batch";
 
 export interface ShowCase {
   name: string;
@@ -139,6 +139,13 @@ function compare(api: ShowApi, c: ShowCase, problems: string[], quiet = true): v
     const want = c.expected.split("\n").filter((l) => l.startsWith('{"output"') && members.includes((JSON.parse(l) as { output: string }).output)).length;
     const got = el("output-list-body").children.length;
     if (got !== want) problems.push(`输出列表按触发组 ${name} 记录了 ${got} 行，应为 ${want} 行`);
+    // 不勾选切片记录（真实运行）：行数不变，“全部输出数据”只剩触发的成员
+    setChecked("slice-record", false);
+    const realRows = [...el("output-list-body").children].map((row) => row.children[3].textContent ?? "");
+    if (realRows.length !== want) problems.push(`真实运行下按触发组 ${name} 记录了 ${realRows.length} 行，应为 ${want} 行`);
+    const bad = realRows.find((cell) => !new RegExp(`^${name} \\[[^,\\]]+=[01]\\]$`).test(cell));
+    if (bad !== undefined) problems.push(`真实运行下按触发组 ${name} 的行应只有触发的成员，得到“${bad}”`);
+    setChecked("slice-record", true);
     // 按输出格式：每条输出各给一组输出节点动画，场景只保留成行的输出（全部成员）；不勾选时全部保留。
     const { model, outputs } = api.session();
     const transfers = outputs.flatMap((_, n) => model.output.map((path) => ({ source: path, target: observeKey(path), value: "", relation: "observe" as const, output: n })));
@@ -224,6 +231,14 @@ function compare(api: ShowApi, c: ShowCase, problems: string[], quiet = true): v
   }
   if (sceneWrong > 3) problems.push(`另有 ${sceneWrong - 3} 个场景节点不同`);
   if (scene.observe !== c.observeNodes) problems.push(`场景中有 ${scene.observe} 个观察点，应为 ${c.observeNodes} 个`);
+  // §6.4：每个退出节点带“出”标记；选中退出节点时节点详情列出它所在的环
+  const { exitNodes } = api.session().model;
+  if (scene.exits !== exitNodes.size) problems.push(`场景中有 ${scene.exits} 个退出节点标记，应为 ${exitNodes.size} 个`);
+  for (const path of exitNodes) {
+    api.selectNode(path);
+    if (!text("node-loop").includes("本节点是退出节点")) problems.push(`选中退出节点 ${path} 后“所在的环”显示“${text("node-loop")}”`);
+  }
+  api.selectNode(null);
 }
 
 async function load(api: ShowApi, c: ShowCase, timeoutMs: number): Promise<void> {
@@ -342,7 +357,7 @@ async function runCase(api: ShowApi, c: ShowCase, timeoutMs: number): Promise<st
   } else if (c.kind === "txlimit") {
     setValue("input-json", JSON.stringify(c.script.batches[0]));
     click("send");
-    click("play");
+    if (!api.isRunning()) click("play"); // 加载模型后已在播放中；播放按钮是切换开关
     await until("停止", () => !api.isRunning(), timeoutMs);
     if (text("run-state") !== "已停止") problems.push(`运行状态显示“${text("run-state")}”`);
     if (!text("message").includes(c.error ?? "")) problems.push(`消息是“${text("message")}”`);
@@ -361,9 +376,15 @@ async function runCase(api: ShowApi, c: ShowCase, timeoutMs: number): Promise<st
     await until("运行脚本完成", () => !api.isRunning() || api.isSettled(), timeoutMs);
     extra = `；图片生成 ${script.batches.length} 批`;
   } else {
+    setChecked("batch-mode", c.kind === "batch"); // 批执行（§7.5）：执行记录必须与串行相同
     await runScript(api, c, timeoutMs);
   }
   compare(api, c, problems, c.kind !== "txlimit");
+  if (c.kind === "batch") {
+    const sizes = api.session().ex.batchSizes;
+    extra = `；批执行，共 ${sizes.length} 批，最大一批 ${Math.max(0, ...sizes)} 个节点任务`;
+    setChecked("batch-mode", false);
+  }
   if (c.kind === "timeline" && c.timeline) {
     const t = c.timeline;
     setValue("unit-jump", String(t.k));
@@ -384,7 +405,24 @@ async function runCase(api: ShowApi, c: ShowCase, timeoutMs: number): Promise<st
     if (text("render-status") !== "WebGPU") problems.push(`恢复后渲染显示“${text("render-status")}”`);
     extra = "；Canvas 2D 渲染下运行，再恢复 WebGPU";
   }
-  if (c.gpu) await gpuCompare(c, timeoutMs, problems);
+  if (c.gpu) {
+    await gpuCompare(c, timeoutMs, problems);
+    // 切换显示 GPU 结果（读回的快照与 GPU 执行记录）：q、场景与输出列表都与 CPU 后端的结束状态一致；切回后恢复原会话
+    const before = api.session();
+    click("gpu-view-gpu");
+    if (!api.session().gpu) {
+      problems.push("切换到 GPU 结果后仍显示 CPU 现场");
+    } else {
+      sameQ(api, c.q, "GPU 结果", problems);
+      const scene = api.scene().nodes;
+      const wrong = Object.entries(c.q).filter(([path, value]) => scene[path]?.q !== value).length;
+      if (wrong) problems.push(`GPU 结果：场景中 ${wrong} 个 JKI 的 q 与 CPU 不同`);
+      const rows = el("output-list-body").children.length;
+      if (rows !== c.outputs) problems.push(`GPU 结果：输出列表有 ${rows} 行，应为 ${c.outputs} 行`);
+    }
+    click("gpu-view-cpu");
+    if (api.session() !== before) problems.push("切回 CPU 现场后不是原来的会话");
+  }
   if (problems.length) throw new Error(problems.join("；"));
   return `${c.expected.split("\n").length - 1} 条记录、${c.units} 个处理单元、${Object.keys(c.q).length} 个 q（节点详情与场景）与 CPU 后端一致`
     + `${extra}${c.gpu ? `；${text("gpu-result")}` : ""}`;

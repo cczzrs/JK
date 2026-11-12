@@ -1,7 +1,7 @@
 {
   "status": "passed",
-  "generated_at_utc": "2026-11-11T21:59:26+00:00",
-  "semantics": "JKRD7 §4–§7 serial reference (CPU backend): one unit at a time, event-first, path-ordered delivery, JKS integration, transactions with their own FIFOs, nested transactions executed layer by layer, transaction limits; §7.5 batches; §8.1 output list drives the output records; §9.4 run scripts and records; §9.5 snapshots",
+  "generated_at_utc": "2026-11-12T03:01:36+00:00",
+  "semantics": "JKRD7 §4–§7 serial reference (CPU backend): one unit at a time, event-first, path-ordered delivery, JKS integration, transactions with their own FIFOs, nested transactions executed layer by layer, transaction limits; §7.5 batches; §8.1 output list drives the output records; §9.4 run scripts and records; snapshots (snapshot/Snapshot.md)",
   "scope": "single-thread models; CPU backend in TypeScript on Node; GPU backend is checked separately (reports/gpu-run.json)",
   "cases": [
     {
@@ -130,26 +130,30 @@
       "detail": "Q24 的输出记录 [\"0x30\",\"0x31\",\"0x39\"]，执行记录 96 条（其中输出记录 27 条），批执行模式记录相同"
     },
     {
-      "case": "快照（§9.5）",
+      "case": "快照（Snapshot.md）",
       "passed": true,
-      "detail": "M_TX 的中间状态与 §9.5 一致，从快照继续的记录与不中断运行相同；随机模型 150 次中途快照，不同的有 0 次"
+      "detail": "M_TX 的中间状态与 Snapshot.md 第 2 节一致，从快照继续的记录与不中断运行相同；随机模型 150 次中途快照，不同的有 0 次"
     }
   ],
   "sha256": {
-    "JKRD7.md": "9212f3c9f72fcb63a20db121a778316f0fcd4d58ea519c2272b872e3a12231d4",
+    "JKRD7.md": "48d7474dbf962e5f492298f5e7a7a949b9e3733d5676f3b43312482fe97bc633",
     "assets/ascii-bit-design/digits.jkm.json": "16d529c40a5224562705ac52dc953e745f5912475bdb1900821296a1617c8189",
-    "src/cpu.ts": "781399ee745223d30d599b9fb99f24c2cfed0db1932f27ab1c1cd94dde04d14d",
+    "snapshot/Snapshot.md": "e2a9457162504459f3fdc4a6501837f65f27db94bde27545bbac3bcf072bb58f",
+    "snapshot/cpu.ts": "64b5c0312f6c1f5785136354fdfcb6461229fa9b631f0b8a1c4ee9330f6a638b",
+    "snapshot/gpu.ts": "f3f55622ec4aca17925c8190e4f80e4ef7c92b95c92f9c3ad49e21238d84f979",
+    "snapshot/snapshot.ts": "6355e2525202e9b4bf0206ca89cb5b40ea3bcaaf40815401f034aa08c95b5231",
+    "src/cpu.ts": "ff4232d8923a40e9ded1f5f2f58079751a972172f3754c1f8fd004d811abc7e7",
     "src/doc.ts": "b35ec3bc87314457157bca33c296c1bebbe0d19c6ea3f46d6557bd30621dfc31",
-    "src/executor.ts": "3e3273f03100668d89c9ceae1eabbb5708c6aa8b6691d7457e8c515b6e94bf5d",
-    "src/gpu/backend.ts": "b7a1880a39efe001c60877049a61c7fa768c1a36f2bf12317cde6f215939c6f2",
+    "src/executor.ts": "1bd746df062dfc8ecf1bdfe48e6f6916d842547be5a6d25ed37d197ea40b7eb0",
+    "src/gpu/backend.ts": "36b6a0a13ee3cdfeefaf00ace1bfa474f85f383bb96d8d23aad8c6f63a57a78e",
     "src/gpu/compile.ts": "d7f10ef1c97cc420a9fc8c6bba5f2a8527e69ac89d4f6eff87d1e5ea55c82d09",
     "src/gpu/kernel.ts": "ca2795eb82ce52068fd4cb1f98aa19835ca80da18002bc2e05e43d93ca2dc3b0",
-    "src/model.ts": "24789c99f2ca7cb26ba104895fad39d26b40c9680baea747f36d013d2e77474d",
-    "src/record.ts": "e95a7db92276ba36a7788968917775f21171d4a08a765638aa2a8587f2f82755",
-    "src/testing/cases.ts": "f6dc905e773221ebba44a6252416e405e681b6bbeb9cdfd3bb131032aa94fbf9",
+    "src/model.ts": "277319631bb97e646322a39a3bbc14a995d0623b61f6923bb79d321cd8127178",
+    "src/record.ts": "565bf28df42aaa82bda79a420d16ff1ab7141c19dc4dd359991dc561118efce5",
+    "src/testing/cases.ts": "8f4f428b89a3bce4d7452865244f58cf16ae9e79976f7b66023d88c54371c3ee",
     "src/testing/fixtures.ts": "a44f18158a5c96fc008088729c6c45efe3c4a936e946c64751a9c70cf79c9263",
     "src/testing/random.ts": "690b7384041ec9d52a2feb99bb8c988f36a2363abbe85d1ed6a00f9308b73fa4",
-    "src/testing/static.ts": "5b8b4c776e70b5fc039a500ebc44e99fb22613a0682186f2ed2a822dfa88ca66",
-    "tools/reference.ts": "1a796170b409c60b5ac2a33ba8e17d776c368597633d7d8b50ca21008f26f519"
+    "src/testing/static.ts": "da9c053efcc99b47d64815da8bfa59df75b0ae9a0a12109b031ad57940b45a5a",
+    "tools/reference.ts": "d2cd35e03f7a050e9ced767ba341fac723d01bde68695913b41554d864322b98"
   }
 }

@@ -27,7 +27,7 @@
 
 ```text
 src/                     命令行与浏览器共用，不依赖 Node
-  model.ts               规则：JSON 原文解析、JSON 结构、静态检查、引用解析、运行脚本与快照检查
+  model.ts               规则：JSON 原文解析、JSON 结构、静态检查、引用解析、运行脚本检查
   doc.ts                 JKRD7 正文中 JSON 块的提取、第 10 节模型名单、JKM 的排版
   record.ts              执行记录与固定文本格式
   cpu.ts                 CPU 后端（串行参考，默认）
@@ -35,13 +35,18 @@ src/                     命令行与浏览器共用，不依赖 Node
   gpu/
     compile.ts           模型 → 结构数组，状态与记录布局
     kernel.ts            生成 WGSL 内核
-    backend.ts           GPU 后端主机端：调度、记录解码、快照
+    backend.ts           GPU 后端主机端：调度、记录解码、起始与结束状态
   testing/
     cases.ts             §11.2 验收案例（CPU）
     gpu-cases.ts         GPU 验收案例（与 CPU 对拍）
     static.ts            静态检查的正例与负例、bit 的原文写法、快照的正例与负例
     fixtures.ts          模型构造、输入登记的同步、随机模型、深比较
     random.ts            可设种子的伪随机数
+snapshot/                快照模块（不属于主要路线；引用 src/，src/ 不引用它）
+  Snapshot.md            快照的规则与相关内容
+  snapshot.ts            快照的类型、检查与文件文本格式
+  cpu.ts                 CPU 后端的快照导出与载入
+  gpu.ts                 GPU 后端的快照编码、解码与带快照的运行
 tools/                   命令行（只在 Node 中运行）
   validate.ts            静态检查
   reference.ts           CPU 后端：验收案例、运行脚本
@@ -63,12 +68,14 @@ web/
     state.ts             页面状态：模型、会话、选中的对象、最近的处理单元
     session.ts           执行会话：包装 CPU 后端，只读；按执行细节分步
     panels.ts            面板：状态、FIFO、执行记录、输出、节点与 JKS 详情、本单元
+    output-list.ts       输出数据格式及列表的推导（不碰 DOM）：列表行与各列文字
     playback.ts          播放与时间轴（从初值重新执行到目标单元）
     gpu-run.ts、cpu-worker.ts  GPU 对拍：管线缓存，CPU 参考在 Worker 中计算
     gpu-device.ts        3D 渲染与 GPU 后端共用的设备
     verify.ts            自动验收（由 tools/show.ts 触发）
-    scene/               3D 场景（three）：布局、连线、标签、渲染、Canvas 2D 降级
-    ui/                  桌面窗口、节点树、网络样式、图片转输入、标签页、输出窗口选择的保存
+    scene/               3D 场景（three）：布局、连线、标签、信号动画、渲染、Canvas 2D 降级
+    ui/                  桌面窗口、外观面板、节点树、网络样式、图片转输入、标签页、偏好校验、选择的保存
+    tests/ui.test.ts     界面纯函数的单元测试（Node 自带的测试运行器）
 reports/                 四份核对报告
 ```
 
@@ -80,14 +87,15 @@ reports/                 四份核对报告
 | `npm run typecheck` | 类型检查 |
 | `node tools/validate.ts [--write-report]` | 静态检查 |
 | `node tools/reference.ts [--write-report]` | 用 CPU 后端跑验收案例 |
-| `node tools/reference.ts --script <运行脚本> [--batch] [--start <快照>] [--save <快照>]` | 用 CPU 后端运行，输出执行记录 |
+| `node tools/reference.ts --script <运行脚本> [--batch]` | 用 CPU 后端运行，输出执行记录。`--start`、`--save` 见 [snapshot/Snapshot.md](snapshot/Snapshot.md) |
 | `node tools/reference.ts --model <JKM> --inject <输入入口> …` | 把这些输入作为一批运行 |
 | `node tools/gpu.ts [--write-report]` | 用 GPU 后端跑验收案例 |
-| `node tools/gpu.ts --script <运行脚本> [--start <快照>] [--save <快照>]` | 用 GPU 后端运行，输出执行记录 |
+| `node tools/gpu.ts --script <运行脚本>` | 用 GPU 后端运行，输出执行记录。`--start`、`--save` 见 [snapshot/Snapshot.md](snapshot/Snapshot.md) |
 | `node tools/show.ts [--write-report]` | 展示页验收：在 Chrome 中通过页面控件运行，与 CPU 后端比较 |
 | `node tools/examples.ts` | 由 JKRD7 第 10 节与十选一附件重新生成 `web/show/examples.json`（改动这些模型后运行） |
 | `npm run serve` | 启动本机服务，在浏览器中打开 `http://127.0.0.1:8317/web/show/index.html`（展示页）或 `/web/index.html`（GPU 对拍） |
-| `npm run check` | 依次执行类型检查、静态检查、CPU 验收案例 |
+| `npm run test:ui` | 展示页界面纯函数的单元测试（偏好校验、图片转输入、展示投影与布局、输出列表的推导） |
+| `npm run check` | 依次执行类型检查、静态检查、CPU 验收案例、界面单元测试 |
 
 `tools/gpu.ts` 与 `tools/show.ts` 的其他参数：
 
@@ -120,17 +128,18 @@ reports/                 四份核对报告
 
 | 模块 | 内容 | JKRD7 |
 | --- | --- | --- |
-| [src/model.ts](src/model.ts) | JSON 原文解析（bit 只接受写成 0、1）、JKI 字段检查、JKM 加载（含输入登记 input 与根登记的核对、分组的输出列表 output）、引用解析、派生索引（成员、前置、带事务登记的 JKS、订阅者）、登记分层、环的退出节点（out 登记）、纯通知环、运行脚本与快照检查 | §2、§3、§5、§6.4、§8、§9.4、§9.5 |
-| [src/doc.ts](src/doc.ts) | 取出 JKRD7 正文中的 JSON 块（模型、JKI 片段、运行脚本、快照）；第 10 节的模型名单；按第 10 节的排版输出 JKM。不含规则 | 第 10 节 |
+| [src/model.ts](src/model.ts) | JSON 原文解析（bit 只接受写成 0、1）、JKI 字段检查、JKM 加载（含输入登记 input 与根登记的核对、分组的输出列表 output）、引用解析、派生索引（成员、前置、带事务登记的 JKS、订阅者）、登记分层、环的退出节点（out 登记）、纯通知环、运行脚本检查 | §2、§3、§5、§6.4、§8、§9.4 |
+| [src/doc.ts](src/doc.ts) | 取出 JKRD7 正文中的 JSON 块（模型、JKI 片段、运行脚本），也用于取出 Snapshot.md 中的快照示例；第 10 节的模型名单；按第 10 节的排版输出 JKM。不含规则 | 第 10 节 |
 | [src/record.ts](src/record.ts) | 执行记录的四种项与固定文本格式 | §9.4 |
-| [src/cpu.ts](src/cpu.ts) | 串行执行：触发、计算、发布、整合、事务与嵌套事务、事务上限、投递顺序；按 JKM.output 写输出记录；可并行批；快照导出与载入；可选的执行细节回调 `trace`（展示用，不进入记录，不改变执行） | §4—§7、§8.1、§9.1、§9.5 |
+| [src/cpu.ts](src/cpu.ts) | 串行执行：触发、计算、发布、整合、事务与嵌套事务、事务上限、投递顺序；按 JKM.output 写输出记录；可并行批；到达记录与轮记录的排序输出（`arrivals`）；可选的执行细节回调 `trace`（展示用，不进入记录，不改变执行） | §4—§7、§8.1、§9.1、§9.2 |
 | [src/executor.ts](src/executor.ts) | 按运行脚本运行 CPU 后端（GPU 后端的入口是 `GpuExecutor.runScript`） | §9.4 |
 | [src/gpu/](src/gpu/backend.ts) | GPU 后端 | WebGPU.md |
+| [snapshot/](snapshot/snapshot.ts) | 快照模块：检查、文本格式、两个后端的导出与载入 | [snapshot/Snapshot.md](snapshot/Snapshot.md) |
 | [web/show/](web/show/main.ts) | 展示页：显示与交互，执行交给两个后端 | §9.1、§9.2、§9.4 |
 | [src/testing/](src/testing/cases.ts) | 验收案例、正例与负例、随机模型 | §11.2 |
 | [tools/](tools/validate.ts) | 命令行 | §11.1 |
 
-## 6. 执行记录与快照的文本格式
+## 6. 执行记录的文本格式
 
 **执行记录**：
 
@@ -141,13 +150,7 @@ reports/                 四份核对报告
 
 例如 `{"q": "G1.Q15", "from": 0, "to": 0}`。两个后端都用 `formatRecord` 输出，比对时逐字节比较。
 
-**快照文件**：
-
-- 两格缩进；
-- `q` 与 `trigger_all` 按 JKRD7 §7.3 的路径顺序排列；
-- `rounds` 先按 JKS 层数排序，再按路径文本，最后按类型名。
-
-这两种格式与原 Python 工具的输出逐字节相同。
+快照文件的文本格式见 [snapshot/Snapshot.md](snapshot/Snapshot.md) 第 3 节。执行记录的格式与原 Python 工具的输出逐字节相同。
 
 ## 7. 从 Python 迁移时的核对
 
@@ -192,5 +195,5 @@ reports/                 四份核对报告
 - 展示页已有 JKM 工作区（[docs/web-show.md](docs/web-show.md)），3D 渲染与 GPU 后端共用设备。
 - 还没有做的：
   - 发布用的打包（例如用 esbuild 生成单个 JavaScript 文件）；
-  - 展示页的快照窗口与共享模型池（用户 2026-11-08 决定延后）；
+  - 展示页的共享模型池（用户 2026-11-08 决定延后）；快照窗口见 [snapshot/Snapshot.md](snapshot/Snapshot.md) 第 6 节；
   - 页面直接读取 GPU 状态缓冲区、GPU 单步（WebGPU.md 第 11 节第 2 阶段的其余部分）。

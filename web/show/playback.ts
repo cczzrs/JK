@@ -22,6 +22,8 @@ export interface PlaybackHooks {
   message(text: string, error?: boolean): void;
   skip(): boolean;
   speed(): number;
+  /** 运行控制的“批执行”（§7.5）。 */
+  batch(): boolean;
 }
 
 export class Playback {
@@ -47,6 +49,7 @@ export class Playback {
   /** 换成新的会话（新模型、重载、运行脚本）：时间轴重新开始。 */
   begin(session: Session, script: string[][] | null = null): void {
     this.pause();
+    session.ex.batch = this.hooks.batch();
     state.session = session;
     state.unit = null;
     state.unitStep = -1;
@@ -135,6 +138,7 @@ export class Playback {
     }
     state.unit = null;
     state.unitStep = -1;
+    next.ex.batch = false; // 跳转要停在指定的处理单元上：逐个执行，结束后恢复
     try {
       while (next.units < target) {
         this.feed(next);
@@ -142,17 +146,25 @@ export class Playback {
         next.step(false);
       }
     } finally {
+      next.ex.batch = this.hooks.batch();
       this.furthest = Math.max(this.furthest, next.units);
       this.hooks.render();
     }
   }
 
+  /** 播放按钮：在播放中与暂停中之间切换。 */
   play(): void {
     if (this.running) {
       this.pause();
       this.hooks.render();
       return;
     }
+    this.start();
+  }
+
+  /** 进入播放中（已在播放时不变）。刚打开、换模型、重载、执行运行脚本之后调用。 */
+  start(): void {
+    if (this.running) return;
     const { session } = current();
     if (session.stopped) throw new Error("执行已停止，请重载或后退后再运行");
     this.running = true;
@@ -209,7 +221,7 @@ export class Playback {
       } while (this.running && generation === this.version && skip && count < APP_CONFIG.engine.frameUnits
         && performance.now() - started < APP_CONFIG.engine.frameBudgetMs * this.hooks.speed());
       // 没有画面的单元（动画时长为 0）不等单元间隔，接着处理下一个单元。
-      this.nextDelay = this.quiet ? APP_CONFIG.engine.idlePollMs : skip || delay === 0 ? 0 : Math.max(delay, this.interval());
+      this.nextDelay = skip || delay === 0 ? 0 : Math.max(delay, this.interval());
       if (!count) return; // 静止中没有变化，不刷新
       if (this.running && !this.quiet) this.hooks.requestRender();
       else this.hooks.render();
@@ -220,7 +232,7 @@ export class Playback {
     }
   }
 
-  /** 播放中已静止时立即处理新输入，不等下一次检查（idlePollMs）。 */
+  /** 播放中已静止时，新输入到达就重新开始处理（静止时不轮询，只靠这里唤醒）。 */
   private wake(): void {
     if (!this.running || !this.quiet) return;
     if (this.timer !== null) clearTimeout(this.timer);
@@ -236,7 +248,7 @@ export class Playback {
       this.timer = null;
       if (!this.running || generation !== this.version) return;
       this.tick(generation);
-      if (this.running) this.schedule();
+      if (this.running && !this.quiet) this.schedule(); // 静止后停止调度，等 wake()
     }, this.nextDelay);
   }
 }

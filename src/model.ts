@@ -1,6 +1,6 @@
 /**
  * JKRD7 规则模型：解析 JSON 原文、加载 JKM、解析引用、静态检查（JKRD7 §2、§3、§5、§6.4 环的退出节点与纯通知环、§8），
- * 以及运行脚本（§9.4）与快照（§9.5）的检查。执行见 cpu.ts 与 gpu/；正文中 JSON 块的提取与 JKM 的排版见 doc.ts。
+ * 以及运行脚本（§9.4）的检查。执行见 cpu.ts 与 gpu/；正文中 JSON 块的提取与 JKM 的排版见 doc.ts。
  *
  * 只依赖语言本身，命令行（Node）与浏览器共用。
  */
@@ -80,20 +80,6 @@ export interface RunScript {
   batches: string[][];
 }
 
-/** §9.5 快照中的事件项与任务项。 */
-export type SnapshotEvent = { source: string };
-export type SnapshotTask = { node: string } | { tx: string; prereqs: string[] };
-
-export interface Snapshot {
-  snapshot: string;
-  jkm: string | null;
-  version: string;
-  q: Record<string, Bit>;
-  trigger_all: Record<string, (Bit | null)[]>;
-  rounds: Record<string, Partial<Record<"all" | "transaction", string[]>>>;
-  threads: Record<string, { events: SnapshotEvent[]; tasks: SnapshotTask[] }>;
-}
-
 // ---------------------------------------------------------------------------
 // 小工具
 // ---------------------------------------------------------------------------
@@ -104,7 +90,7 @@ export function isObj(value: unknown): value is Obj {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isBit(value: unknown): value is Bit {
+export function isBit(value: unknown): value is Bit {
   return value === 0 || value === 1;
 }
 
@@ -133,11 +119,11 @@ function isOpenEntry(node: Jki): boolean {
 }
 
 /** 写入错误信息时显示一个值。 */
-function show(value: unknown): string {
+export function show(value: unknown): string {
   return value === undefined ? "undefined" : JSON.stringify(value);
 }
 
-function strList(value: unknown, allowEmpty = true): value is string[] {
+export function strList(value: unknown, allowEmpty = true): value is string[] {
   return Array.isArray(value) && (allowEmpty || value.length > 0)
     && value.every((item) => typeof item === "string" && item !== "");
 }
@@ -310,7 +296,7 @@ export function checkJki(node: unknown, where: string, errors: string[]): void {
     if (!(Array.isArray(record) && record.length === refs.length)) {
       err("all 节点必须保留与 trigger.all 等长的 runtime.trigger_all（§3）");
     } else if (!record.every((v) => v === null)) {
-      err("定义中的 runtime.trigger_all 必须全为 null；运行中的到达记录只保存在快照中（§3、§9.5）");
+      err("定义中的 runtime.trigger_all 必须全为 null；运行中的到达记录不写进定义（§3）");
     }
   } else if (mode === "any" && runtime && "trigger_all" in runtime) {
     err("any 节点不保存 trigger_all（§3）");
@@ -354,6 +340,12 @@ export class Model {
   readonly txGroups = new Set<string>();
   /** JKI → 订阅者，按 §7.3 路径顺序。 */
   readonly subscribers = new Map<string, string[]>();
+  /** §6.4 的环：经 trigger 连接互相可达的 JKI 组（含自己触发自己），组内与组间都按路径排序。只供展示。 */
+  readonly loops: string[][] = [];
+  /** JKI → 它所在的环在 loops 中的下标。 */
+  readonly loopOf = new Map<string, number>();
+  /** §6.4：登记为 out 的退出节点。 */
+  readonly exitNodes = new Set<string>();
 
   constructor(data: unknown, source = "model") {
     this.source = source;
@@ -655,6 +647,12 @@ export class Model {
   private checkLoops(): void {
     // 每个环（经 trigger 连接的回路）上至少要有一个登记为 out 的退出节点；只核对登记，不核对能否停下
     const exits = new Set([...this.regOf].filter(([, [, kind]]) => kind === "out").map(([p]) => p));
+    for (const p of exits) this.exitNodes.add(p);
+    for (const group of components(this.triggerRefs)) {
+      if (group.length > 1 || this.triggerRefs.get(group[0])!.includes(group[0])) this.loops.push(sortPaths(group));
+    }
+    this.loops.sort((a, b) => comparePaths(a[0], b[0]));
+    this.loops.forEach((group, i) => group.forEach((p) => this.loopOf.set(p, i)));
     const loopEdges = new Map<string, string[]>();
     for (const s of this.jki.keys()) {
       if (!exits.has(s)) loopEdges.set(s, this.triggerRefs.get(s)!.filter((x) => !exits.has(x)));
@@ -694,6 +692,41 @@ export class Model {
 }
 
 /** edges：节点 → 触发它的节点。返回一个环，没有环时返回 null。 */
+/** 强连通分量（Tarjan）：互相可达的节点组。 */
+function components(edges: ReadonlyMap<string, readonly string[]>): string[][] {
+  const index = new Map<string, number>();
+  const low = new Map<string, number>();
+  const stack: string[] = [];
+  const onStack = new Set<string>();
+  const out: string[][] = [];
+  const visit = (node: string): void => {
+    index.set(node, index.size);
+    low.set(node, index.get(node)!);
+    stack.push(node);
+    onStack.add(node);
+    for (const next of edges.get(node) ?? []) {
+      if (!index.has(next)) {
+        visit(next);
+        low.set(node, Math.min(low.get(node)!, low.get(next)!));
+      } else if (onStack.has(next)) {
+        low.set(node, Math.min(low.get(node)!, index.get(next)!));
+      }
+    }
+    if (low.get(node) === index.get(node)) {
+      const group: string[] = [];
+      let item: string;
+      do {
+        item = stack.pop()!;
+        onStack.delete(item);
+        group.push(item);
+      } while (item !== node);
+      out.push(group);
+    }
+  };
+  for (const start of sortPaths(edges.keys())) if (!index.has(start)) visit(start);
+  return out;
+}
+
 function findCycle(edges: Map<string, string[]>): string[] | null {
   const state = new Map<string, 1 | 2>();
   const visit = (node: string, stack: string[]): string[] | null => {
@@ -720,13 +753,12 @@ function findCycle(edges: Map<string, string[]>): string[] | null {
 }
 
 // ---------------------------------------------------------------------------
-// 运行脚本（§9.4）与快照（§9.5）
+// 运行脚本（§9.4）
 // ---------------------------------------------------------------------------
 
 const RUN_FIELDS = ["run", "model", "batches"];
-const SNAPSHOT_FIELDS = ["snapshot", "jkm", "version", "q", "trigger_all", "rounds", "threads"];
 
-function exactKeys(value: unknown, fields: readonly string[]): value is Obj {
+export function exactKeys(value: unknown, fields: readonly string[]): value is Obj {
   return isObj(value) && Object.keys(value).length === fields.length && fields.every((f) => f in value);
 }
 
@@ -754,71 +786,3 @@ export function checkRunScript(script: unknown, model: Model): string[] {
   return errors;
 }
 
-/** §9.5：快照的结构及其与模型的一致性。 */
-export function checkSnapshot(snap: unknown, model: Model): string[] {
-  if (!exactKeys(snap, SNAPSHOT_FIELDS)) return [`快照字段必须恰好是 ${show(SNAPSHOT_FIELDS)}（§9.5）`];
-  const errors: string[] = [];
-  if (!(typeof snap.snapshot === "string" && snap.snapshot !== "")) errors.push("snapshot 必须是非空字符串");
-  if (snap.jkm !== model.name) errors.push(`jkm 必须是对应模型的 jkm ${show(model.name)}，得到 ${show(snap.jkm)}（§9.5）`);
-  if (snap.version !== VERSION) errors.push(`version 必须是 "${VERSION}"`);
-  const q = snap.q;
-  const all = [...model.jki.keys()];
-  if (!(isObj(q) && Object.keys(q).length === all.length && all.every((p) => p in q)
-    && Object.values(q).every(isBit))) {
-    errors.push("q 必须给出全部 JKI 的 0／1 值（§9.5）");
-  }
-  if (!isObj(snap.trigger_all)) errors.push("trigger_all 必须是对象（§9.5）");
-  for (const [ref, record] of Object.entries(isObj(snap.trigger_all) ? snap.trigger_all : {})) {
-    const node = model.jki.get(ref);
-    const refs = node && "all" in node.trigger ? node.trigger.all : null;
-    const ok = refs !== null && Array.isArray(record) && record.length === refs.length
-      && record.every((v) => v === null || isBit(v)) && record.some((v) => v !== null) && record.some((v) => v === null);
-    if (!ok) errors.push(`trigger_all 中 ${ref} 的记录不合法（§9.5）`);
-  }
-  if (!isObj(snap.rounds)) errors.push("rounds 必须是对象（§9.5）");
-  for (const [ref, kinds] of Object.entries(isObj(snap.rounds) ? snap.rounds : {})) {
-    if (!model.jks.has(ref) || !isObj(kinds)) {
-      errors.push(`rounds 的键 ${ref} 不是 JKS 绝对路径`);
-      continue;
-    }
-    for (const [kind, prereqs] of Object.entries(kinds)) {
-      const registered = model.regTypes.get(ref)!.get(kind) ?? [];
-      const ok = (kind === "all" || kind === "transaction") && strList(prereqs, false)
-        && new Set(prereqs).size === prereqs.length
-        && prereqs.every((p) => registered.includes(p)) && prereqs.length < registered.length;
-      if (!ok) errors.push(`rounds 中 ${ref}.${kind} 的记录不合法：只能列出未到齐的本轮前置（§9.5）`);
-    }
-  }
-  const threads = snap.threads;
-  if (!(isObj(threads) && Object.keys(threads).every((k) => model.threads.includes(k)))) {
-    return [...errors, "threads 的键必须是 JKM.threads 中声明的名称"];
-  }
-  for (const [name, fifo] of Object.entries(threads)) {
-    if (!exactKeys(fifo, ["events", "tasks"]) || !Array.isArray(fifo.events) || !Array.isArray(fifo.tasks)) {
-      errors.push(`threads.${name} 必须是 {events, tasks}`);
-      continue;
-    }
-    for (const item of fifo.events as unknown[]) {
-      const ok = exactKeys(item, ["source"]) && model.isJkiPath(item.source);
-      if (!ok) errors.push(`threads.${name}.events 中的事件项不合法：${show(item)}`);
-    }
-    for (const item of fifo.tasks as unknown[]) {
-      let ok = false;
-      if (exactKeys(item, ["node"])) {
-        ok = model.isJkiPath(item.node) && hasEx(model.jki.get(item.node)!);
-      } else if (exactKeys(item, ["tx", "prereqs"])) {
-        // prereqs 是 §5.3 记下的本次前置：transaction 到齐的一轮列出该登记的全部前置，各一次；
-        // transaction_any 只有发出通知的那一个前置
-        const kinds = typeof item.tx === "string" ? model.regTypes.get(item.tx) : undefined;
-        const p = item.prereqs;
-        if (kinds && strList(p, false)) {
-          const round = kinds.get("transaction") ?? [];
-          ok = (p.length === round.length && new Set(p).size === p.length && p.every((r) => round.includes(r)))
-            || (p.length === 1 && (kinds.get("transaction_any") ?? []).includes(p[0]));
-        }
-      }
-      if (!ok) errors.push(`threads.${name}.tasks 中的任务项不合法：${show(item)}`);
-    }
-  }
-  return errors;
-}

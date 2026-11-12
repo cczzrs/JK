@@ -33,7 +33,7 @@
         </div>
         <button id="import-btn" class="button">模型管理</button>
       </header>
-      <div id="jkm-panel" class="workspace-panel cosmic-workspace" aria-label="JKM 工作区">
+      <div id="jkm-panel" class="workspace-panel cosmic-workspace" role="region" aria-label="JKM 工作区">
 <svg class="cosmic-symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" width="0" height="0"><defs>
   <symbol id="cosmic-icon-scene" viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9zM4 7.5l8 4.5 8-4.5M12 12v9M8 5.25l8 4.5"/></symbol>
   <symbol id="cosmic-icon-controls" viewBox="0 0 24 24"><path d="M4 4v16m8-16v16m8-16v16"/><circle cx="4" cy="9" r="2.5"/><circle cx="12" cy="15" r="2.5"/><circle cx="20" cy="7" r="2.5"/></symbol>
@@ -74,7 +74,7 @@
   <div class="cosmic-window-body">
 <main class="main-view">
 
-          <div id="viewport" aria-label="JK 网络 3D 场景">
+          <div id="viewport" role="region" aria-label="JK 网络 3D 场景">
             <div id="gpu-message" hidden>
               <h2>当前环境无法显示 3D 场景</h2>
               <p id="gpu-detail"></p>
@@ -89,7 +89,7 @@
 </section>
   </div>
   <button id="cosmic-splitter" type="button" role="separator" aria-label="调整场景与模块工作区比例" aria-orientation="vertical" title="拖动调整左右比例 · 左右键调整"><span></span></button>
-  <div class="cosmic-desktop" aria-label="模块工作区" tabindex="-1">
+  <div class="cosmic-desktop" role="region" aria-label="模块工作区" tabindex="-1">
     <div class="cosmic-canvas">
 <section id="cosmic-controls" class="cosmic-window" data-cosmic-window="controls" aria-labelledby="cosmic-title-controls" hidden>
   <div class="cosmic-window-header">
@@ -102,7 +102,7 @@
   </div>
   <div class="cosmic-window-body">
 <section class="cosmic-control-section" aria-labelledby="cosmic-control-view-title">
-  <h3 id="cosmic-control-view-title">视图操作</h3>
+  <h2 id="cosmic-control-view-title">视图操作</h2>
   <div class="cosmic-control-actions">
 <button
                 id="node-labels"
@@ -120,10 +120,11 @@
               </button>
 <button id="camera-reset" class="button small">⌖ 重制视角</button>
 <button id="jks-boxes" class="button small" aria-pressed="true" title="显示或隐藏 JKS 边界框（颜色：橙色含事务登记，蓝色含 all，灰色其他）">JKS 边界</button>
+<button id="loops-toggle" class="button small" aria-pressed="false" title="高亮全部环上的触发线（§6.4：经 trigger 连接互相可达的节点）；退出节点一直带“出”标记，选中环上的节点时高亮它所在的环">显示环</button>
   </div>
 </section>
 <section class="cosmic-control-section" aria-labelledby="cosmic-control-layout-title">
-  <h3 id="cosmic-control-layout-title">网络布局</h3>
+  <h2 id="cosmic-control-layout-title">网络布局</h2>
 <div id="layout-buttons" role="group" aria-label="网络节点布局">
                 <button
                   class="layout-button"
@@ -177,7 +178,7 @@
 <span id="layout-status" role="status">5D 拓扑布局</span>
 </section>
 <section class="cosmic-control-section" aria-labelledby="cosmic-control-edges-title">
-  <h3 id="cosmic-control-edges-title">连接线显示</h3>
+  <h2 id="cosmic-control-edges-title">连接线显示</h2>
   <ul class="cosmic-edge-controls">
     <li class="cosmic-edge-control">
       <span class="cosmic-edge-label"><i data-network-edge-color="J" aria-hidden="true"></i><span>J 运算线</span></span>
@@ -202,7 +203,7 @@
   </ul>
 </section>
 <section class="cosmic-control-section" aria-labelledby="cosmic-control-help-title">
-  <h3 id="cosmic-control-help-title">鼠标操作</h3>
+  <h2 id="cosmic-control-help-title">鼠标操作</h2>
 <span
               class="camera-hint cosmic-control-hint"
               title="左键拖动：全向旋转；右键、中键或 Shift+左键拖动：平移；滚轮：围绕鼠标位置缩放；左键点击：选择/取消选择"
@@ -223,7 +224,7 @@
     </div>
   </div>
   <div class="cosmic-window-body">
-<dl class="cosmic-status-list" aria-label="运行显示状态">
+<dl class="cosmic-status-list">
   <div><dt>应用</dt><dd>JK / 展示</dd></div>
   <div><dt>工作区</dt><dd>LOCAL WORKSPACE <i class="dot" aria-hidden="true"></i></dd></div>
   <div><dt>渲染平台</dt><dd><span class="dot" aria-hidden="true"></span> <span id="render-status">场景初始化中</span></dd></div>
@@ -361,6 +362,7 @@
                       <div><dt>触发来源</dt><dd><pre id="node-trigger" class="inspector-code">—</pre></dd></div>
                       <div><dt>发布条件</dt><dd id="node-publish">—</dd></div>
                       <div><dt>JKS 前置登记</dt><dd id="node-registration">—</dd></div>
+                      <div><dt>所在的环（§6.4）</dt><dd><pre id="node-loop" class="inspector-code">—</pre></dd></div>
                       <div><dt>订阅者 · 投递顺序（§7.3）</dt><dd><pre id="node-subscribers" class="inspector-code">—</pre></dd></div>
                       <div><dt>排队中的节点任务</dt><dd id="node-pending">—</dd></div>
                     </dl>
@@ -429,7 +431,7 @@
                 <span id="events-queue-name">—</span>
                 <span>待处理事件 <b id="events-count">0</b></span>
               </div>
-              <div class="jkm-queue-list" tabindex="0" aria-label="事件 FIFO 列表">
+              <div class="jkm-queue-list" tabindex="0" role="region" aria-label="事件 FIFO 列表">
                 <div id="events-list"></div>
                 <p id="events-empty" class="jkm-queue-empty">事件 FIFO 为空</p>
               </div>
@@ -456,7 +458,7 @@
                 <span id="tasks-queue-name">—</span>
                 <span>待处理任务 <b id="tasks-count">0</b></span>
               </div>
-              <div class="jkm-queue-list" tabindex="0" aria-label="任务 FIFO 列表">
+              <div class="jkm-queue-list" tabindex="0" role="region" aria-label="任务 FIFO 列表">
                 <div id="tasks-list"></div>
                 <p id="tasks-empty" class="jkm-queue-empty">任务 FIFO 为空</p>
               </div>
@@ -529,7 +531,7 @@
   <div class="cosmic-window-body">
 <div class="playback">
             <div class="playback-main">
-              <button id="play" class="button primary" type="button" aria-pressed="true" title="点击在播放中与暂停中之间切换">▶ 播放中</button>
+              <button id="play" class="button primary" type="button" aria-pressed="false" title="点击在播放中与暂停中之间切换">Ⅱ 暂停中</button>
               <button id="step" class="button" title="按事件优先顺序完成一个处理单元">▷ 单步任务</button>
               <button id="reset" class="button">↺ 重载</button>
             </div>
@@ -545,13 +547,17 @@
               <input id="skip" type="checkbox" />
               跳过动画
             </label>
-            <label class="skip" title="勾选：每条输出读取全部 output 成员的 q（切片）；不勾选：动画和记录都与真实运行一样，只有到达的成员，没有读取">
+            <label class="skip" title="勾选：记录时读取全部 output 成员的 q（切片）；不勾选：动画和记录都与真实运行一样，只用事件到达时带来的 q，没有读取（每条输出与指定触发组都如此）">
               <input id="slice-record" type="checkbox" />
               切片记录
             </label>
             <label class="skip" title="勾选：输出节点的动画按“输出数据格式及列表”当前的记录方式取舍；不勾选：每个事件的每条输出都画">
               <input id="by-output-format" type="checkbox" />
               按输出格式
+            </label>
+            <label class="skip" title="按 JKRD7 §7.5 的可并行批执行：一步执行任务 FIFO 队首的一整批节点任务（执行记录不变）；改动后从当前位置起生效">
+              <input id="batch-mode" type="checkbox" />
+              批执行
             </label>
             <div class="timeline" role="group" aria-label="时间轴">
               <button id="step-back" class="button small" type="button" title="从初值重新执行到上一个处理单元">◁ 后退一步</button>
@@ -617,7 +623,7 @@
       <textarea id="script-json" class="v7-editor" spellcheck="false"></textarea>
       <p id="script-error" class="errors" role="alert"></p>
       <div class="import-actions"><button id="script-run" class="button primary">从初值执行</button></div>
-      <h3 class="gpu-run-title">GPU 后端</h3>
+      <h2 class="gpu-run-title">GPU 后端</h2>
       <p class="muted">在 WebGPU 上从初值执行整段脚本（每个实例一个调用），并与 CPU 后端的执行记录逐字节比较。</p>
       <div class="model-pool-toolbar">
         <div class="model-pool-picker">
@@ -628,6 +634,18 @@
         <button id="gpu-download" class="button" disabled>下载 GPU 执行记录</button>
       </div>
       <p id="gpu-result" class="muted" role="status">尚未在 GPU 上执行。</p>
+      <div id="gpu-view" class="cosmic-tabs" role="tablist" aria-label="页面显示的现场">
+        <button id="gpu-view-cpu" type="button" role="tab" data-value="cpu" aria-selected="true" tabindex="0">CPU 现场</button>
+        <button id="gpu-view-gpu" type="button" role="tab" data-value="gpu" aria-selected="false" tabindex="-1" disabled>GPU 结果</button>
+      </div>
+      <div role="tabpanel" aria-labelledby="gpu-view-cpu" tabindex="0">
+        <p class="muted">场景与各窗口显示交互执行（CPU 后端）的现场。GPU 执行之后可以切换到“GPU 结果”。</p>
+      </div>
+      <div role="tabpanel" aria-labelledby="gpu-view-gpu" hidden>
+        <p class="muted">场景、节点详情、两个 FIFO、执行记录与输出窗口显示所选 GPU 实例运行结束时的结果：q、到达记录、轮记录与 FIFO 取自 GPU 状态缓冲区读回的快照，写入次数与输出取自 GPU 的执行记录。只读：播放、单步、发送等操作会先切回 CPU 现场。</p>
+        <label for="gpu-view-instance">实例</label>
+        <input id="gpu-view-instance" class="v7-field" type="number" min="1" step="1" value="1" />
+      </div>
   </div>
   <button class="cosmic-resize" type="button" data-window-resize aria-label="调整运行脚本大小" title="拖动调整大小 · 方向键调整"><svg class="cosmic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#cosmic-icon-resize" /></svg></button>
 </section>
@@ -656,11 +674,11 @@
       </div>
       <div class="output-row"><span>最近一行</span><span id="output-number" class="source">等待通知</span><span id="output-character" class="output-value">—</span></div>
       <div role="tabpanel" aria-labelledby="output-render-mode-rgb" tabindex="0">
-        <canvas id="output-board" aria-label="输出位画板"></canvas>
+        <canvas id="output-board" role="img" aria-label="输出位画板"></canvas>
         <p class="muted">渲染“输出数据格式及列表”当前的行（随记录方式变化）。每行画一行的位，按 output 的组顺序，只记已标记节点时只画这些节点；绿色为 1，灰色为 0。</p>
       </div>
       <div role="tabpanel" aria-labelledby="output-render-mode-ascii" tabindex="0" hidden>
-        <pre id="output-ascii" class="output-ascii" aria-label="data 组转成的 ASCII"></pre>
+        <pre id="output-ascii" class="output-ascii"></pre>
         <p class="muted">渲染“输出数据格式及列表”当前的行（随记录方式变化）。每行的 data 组转成一个字符，8 位且可打印时显示字符，否则显示十六进制码；没有 data 成员的行不显示。</p>
       </div>
   </div>
@@ -684,7 +702,7 @@
         <p class="muted">本会话的每条输出各成一行。运行控制勾选“切片记录”时：output 中某个成员的通知投递时，按 output 的顺序读取全部成员的 q（与执行记录 §9.4 相同）。不勾选时与真实运行一样：只记到达的成员自己的 q，不读取其他成员。</p>
       </div>
       <div role="tabpanel" aria-labelledby="output-mode-trigger" hidden>
-        <p class="muted">由页面从同一批输出记录算出，不改变执行记录。每条输出记录给它的来源成员打上“事件到达”标记；触发组里任一成员的事件到达（并且该成员的 q 满足所选条件）时，记录一行（全部输出数据，或只记已标记节点的数据），然后清空全部标记；其他成员的到达只打标记，不触发。</p>
+        <p class="muted">由页面从同一批输出记录算出，不改变执行记录。每条输出记录给它的来源成员打上“事件到达”标记；触发组里任一成员的事件到达（并且该成员的 q 满足所选条件）时，记录一行（全部输出数据，或只记已标记节点的数据），然后清空全部标记；其他成员的到达只打标记，不触发。运行控制不勾选“切片记录”时与真实运行一样：已标记节点的数据是各自事件到达时的 q，“全部输出数据”只剩触发的成员。</p>
         <div class="output-list-toolbar">
           <label>触发组<select id="output-trigger-group"></select></label>
           <label>触发条件<select id="output-trigger-when">
@@ -718,6 +736,7 @@
         </table>
       </div>
       <p id="output-list-empty" class="muted">尚未输出</p>
+      <p id="output-list-limit" class="muted" hidden></p>
   </div>
   <button class="cosmic-resize" type="button" data-window-resize aria-label="调整输出数据格式及列表大小" title="拖动调整大小 · 方向键调整"><svg class="cosmic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#cosmic-icon-resize" /></svg></button>
 </section>
@@ -742,7 +761,7 @@
         <label>像素上限<input id="image-pixels" type="number" /></label>
       </div>
       <div class="image-input-body">
-        <div class="image-input-workspace"><div class="image-input-stage"><canvas id="image-preview" aria-label="输入图片预览"></canvas></div></div>
+        <div class="image-input-workspace"><div class="image-input-stage"><canvas id="image-preview" role="img" aria-label="输入图片预览"></canvas></div></div>
         <div class="image-input-results">
           <p class="muted">从左上角按行取样，生成可独立保存的运行脚本。</p>
           <p id="image-error" class="errors" role="alert"></p>
@@ -891,7 +910,7 @@
 <aside id="cosmic-rail" class="cosmic-rail" aria-label="JKM 桌面侧栏">
   <button id="cosmic-rail-resize" type="button" role="separator" aria-label="调整右侧栏宽度" aria-controls="cosmic-rail" aria-orientation="vertical" title="拖动调整右侧栏宽度 · 左右键调整 · Alt + Home 还原"><span></span></button>
   <nav id="cosmic-menu" class="cosmic-menu" aria-label="JKM 菜单栏">
-    <div class="cosmic-brand" aria-label="JKM 工作区">JKM</div>
+    <h1 class="cosmic-brand" title="JKM 工作区">JKM</h1>
     <div class="cosmic-model"><span id="cosmic-model-name">加载模型</span><small id="cosmic-model-md5"></small></div>
     <button type="button" data-cosmic-command="display-mode" aria-label="显示类型：单板，切换为双板" aria-pressed="false" title="显示类型：单板，切换为双板">
       <svg class="cosmic-icon" data-display-mode-icon="dual" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#cosmic-icon-display-dual" /></svg>
@@ -919,7 +938,7 @@
     <button type="button" data-cosmic-toggle="models" aria-label="显示或隐藏模型管理" aria-controls="models-dialog" title="模型管理" aria-pressed="false"><svg class="cosmic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#cosmic-icon-models" /></svg><span>模型</span></button>
     <button type="button" data-cosmic-toggle="script" aria-label="显示或隐藏运行脚本" aria-controls="script-dialog" title="运行脚本" aria-pressed="false"><svg class="cosmic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#cosmic-icon-script" /></svg><span>脚本</span></button>
     <button type="button" data-cosmic-toggle="render" aria-label="显示或隐藏输出渲染" aria-controls="output-dialog" title="输出渲染" aria-pressed="false"><svg class="cosmic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#cosmic-icon-render" /></svg><span>渲染</span></button>
-    <button type="button" data-cosmic-toggle="observe" aria-label="显示或隐藏输出数据格式及列表" aria-controls="observe-dialog" title="输出数据格式及列表" aria-pressed="false"><svg class="cosmic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#cosmic-icon-observe" /></svg><span>观察</span></button>
+    <button type="button" data-cosmic-toggle="observe" aria-label="显示或隐藏输出数据格式及列表" aria-controls="observe-dialog" title="输出数据格式及列表" aria-pressed="false"><svg class="cosmic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#cosmic-icon-observe" /></svg><span>列表</span></button>
     <button type="button" data-cosmic-toggle="image" aria-label="显示或隐藏输入数据提取" aria-controls="image-dialog" title="输入数据提取" aria-pressed="false"><svg class="cosmic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#cosmic-icon-image" /></svg><span>提取</span></button>
     <button type="button" data-cosmic-toggle="appearance" aria-label="显示或隐藏模块外观" aria-controls="cosmic-appearance" title="模块外观" aria-pressed="false"><svg class="cosmic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#cosmic-icon-appearance" /></svg><span>外观</span></button>
   </nav>
