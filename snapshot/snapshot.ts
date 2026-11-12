@@ -48,6 +48,7 @@ export function checkSnapshot(snap: unknown, model: Model): string[] {
       errors.push(`rounds 的键 ${ref} 不是 JKS 绝对路径`);
       continue;
     }
+    if (!Object.keys(kinds).length) errors.push(`rounds 中 ${ref} 没有记录：只列不为空的轮记录`);
     for (const [kind, prereqs] of Object.entries(kinds)) {
       const registered = model.regTypes.get(ref)!.get(kind) ?? [];
       const ok = (kind === "all" || kind === "transaction") && strList(prereqs, false)
@@ -65,20 +66,23 @@ export function checkSnapshot(snap: unknown, model: Model): string[] {
       errors.push(`threads.${name} 必须是 {events, tasks}`);
       continue;
     }
+    // 各项所在的 thread（JKRD7 §7.4）：事件看来源 JKI 所属的 JKS，节点任务看目标 JKI 所属的 JKS，事务任务看登记它的 JKS
+    const here = (jks: string) => model.jks.get(jks)?.thread === name;
+    const owner = (jki: string) => jki.slice(0, jki.lastIndexOf("."));
     for (const item of fifo.events as unknown[]) {
-      const ok = exactKeys(item, ["source"]) && model.isJkiPath(item.source);
+      const ok = exactKeys(item, ["source"]) && model.isJkiPath(item.source) && here(owner(item.source));
       if (!ok) errors.push(`threads.${name}.events 中的事件项不合法：${show(item)}`);
     }
     for (const item of fifo.tasks as unknown[]) {
       let ok = false;
       if (exactKeys(item, ["node"])) {
-        ok = model.isJkiPath(item.node) && hasEx(model.jki.get(item.node)!);
+        ok = model.isJkiPath(item.node) && hasEx(model.jki.get(item.node)!) && here(owner(item.node));
       } else if (exactKeys(item, ["tx", "prereqs"])) {
         // prereqs 是 JKRD7 §5.3 记下的本次前置：transaction 到齐的一轮列出该登记的全部前置，各一次；
         // transaction_any 只有发出通知的那一个前置
         const kinds = typeof item.tx === "string" ? model.regTypes.get(item.tx) : undefined;
         const p = item.prereqs;
-        if (kinds && strList(p, false)) {
+        if (kinds && strList(p, false) && here(item.tx as string)) {
           const round = kinds.get("transaction") ?? [];
           ok = (p.length === round.length && new Set(p).size === p.length && p.every((r) => round.includes(r)))
             || (p.length === 1 && (kinds.get("transaction_any") ?? []).includes(p[0]));

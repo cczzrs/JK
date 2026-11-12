@@ -1,6 +1,6 @@
 {
   "status": "passed",
-  "generated_at_utc": "2026-11-12T03:01:36+00:00",
+  "generated_at_utc": "2026-11-12T11:09:37+00:00",
   "semantics": "JKRD7 §4–§7 serial reference (CPU backend): one unit at a time, event-first, path-ordered delivery, JKS integration, transactions with their own FIFOs, nested transactions executed layer by layer, transaction limits; §7.5 batches; §8.1 output list drives the output records; §9.4 run scripts and records; snapshots (snapshot/Snapshot.md)",
   "scope": "single-thread models; CPU backend in TypeScript on Node; GPU backend is checked separately (reports/gpu-run.json)",
   "cases": [
@@ -132,16 +132,16 @@
     {
       "case": "快照（Snapshot.md）",
       "passed": true,
-      "detail": "M_TX 的中间状态与 Snapshot.md 第 2 节一致，从快照继续的记录与不中断运行相同；随机模型 150 次中途快照，不同的有 0 次"
+      "detail": "M_TX 的中间状态与 Snapshot.md 第 2 节一致，从快照继续的记录与不中断运行相同；运行脚本从这份未静止的快照继续时先运行到静止再注入，批执行模式记录相同；随机模型 150 次中途快照（串行与批执行模式各继续一次），不同的有 0 次"
     }
   ],
   "sha256": {
     "JKRD7.md": "48d7474dbf962e5f492298f5e7a7a949b9e3733d5676f3b43312482fe97bc633",
     "assets/ascii-bit-design/digits.jkm.json": "16d529c40a5224562705ac52dc953e745f5912475bdb1900821296a1617c8189",
-    "snapshot/Snapshot.md": "e2a9457162504459f3fdc4a6501837f65f27db94bde27545bbac3bcf072bb58f",
-    "snapshot/cpu.ts": "64b5c0312f6c1f5785136354fdfcb6461229fa9b631f0b8a1c4ee9330f6a638b",
-    "snapshot/gpu.ts": "f3f55622ec4aca17925c8190e4f80e4ef7c92b95c92f9c3ad49e21238d84f979",
-    "snapshot/snapshot.ts": "6355e2525202e9b4bf0206ca89cb5b40ea3bcaaf40815401f034aa08c95b5231",
+    "snapshot/Snapshot.md": "34615c808872bf35de32e540e984fa23ca174d62852710547a4bb59eba3aa417",
+    "snapshot/cpu.ts": "0f3601a5184e6d9a216aee5ff4c6e15dc39405b4ecb91e998a125f3bde9004fc",
+    "snapshot/gpu.ts": "4ed4987f0b32351bdc06d6ac36567be46b1356c3a33970bd4beffc5cded3d73f",
+    "snapshot/snapshot.ts": "7424c63f8cc80973df9a672fb23a98347fbf51d00fc5df5c167b50e9fef7c342",
     "src/cpu.ts": "ff4232d8923a40e9ded1f5f2f58079751a972172f3754c1f8fd004d811abc7e7",
     "src/doc.ts": "b35ec3bc87314457157bca33c296c1bebbe0d19c6ea3f46d6557bd30621dfc31",
     "src/executor.ts": "1bd746df062dfc8ecf1bdfe48e6f6916d842547be5a6d25ed37d197ea40b7eb0",
@@ -150,10 +150,10 @@
     "src/gpu/kernel.ts": "ca2795eb82ce52068fd4cb1f98aa19835ca80da18002bc2e05e43d93ca2dc3b0",
     "src/model.ts": "277319631bb97e646322a39a3bbc14a995d0623b61f6923bb79d321cd8127178",
     "src/record.ts": "565bf28df42aaa82bda79a420d16ff1ab7141c19dc4dd359991dc561118efce5",
-    "src/testing/cases.ts": "8f4f428b89a3bce4d7452865244f58cf16ae9e79976f7b66023d88c54371c3ee",
+    "src/testing/cases.ts": "6c3dae3a1f161de6ad98382ec8d682c79230041d6bf13fd5aa78bf1b880ada41",
     "src/testing/fixtures.ts": "a44f18158a5c96fc008088729c6c45efe3c4a936e946c64751a9c70cf79c9263",
     "src/testing/random.ts": "690b7384041ec9d52a2feb99bb8c988f36a2363abbe85d1ed6a00f9308b73fa4",
-    "src/testing/static.ts": "da9c053efcc99b47d64815da8bfa59df75b0ae9a0a12109b031ad57940b45a5a",
-    "tools/reference.ts": "d2cd35e03f7a050e9ced767ba341fac723d01bde68695913b41554d864322b98"
+    "src/testing/static.ts": "7db5331b215e1a2cfdcbae3f81f67b7c7aab20869643f9ea3b7ff9e482e8d90e",
+    "tools/reference.ts": "a99e045d0fe4965affe5fe00e2bc5139bbd9262d58da03e7a27d48a47bdac05b"
   }
 }

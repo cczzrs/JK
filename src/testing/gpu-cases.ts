@@ -5,7 +5,7 @@
 
 import { Model, type RunScript } from "../model.ts";
 import { type Snapshot, formatSnapshot } from "../../snapshot/snapshot.ts";
-import { loadSnapshot, takeSnapshot } from "../../snapshot/cpu.ts";
+import { resumeSnapshot, takeSnapshot } from "../../snapshot/cpu.ts";
 import { type GpuSnapshotInstance, runWithSnapshots } from "../../snapshot/gpu.ts";
 import { docBlock, docModels } from "../doc.ts";
 import { CpuExecutor, type CpuOptions, TxLimit } from "../cpu.ts";
@@ -18,10 +18,10 @@ import {
 } from "./fixtures.ts";
 import { Random } from "./random.ts";
 
-/** CPU 后端按 GPU 实例的方式运行：可选起始快照，然后逐批注入并运行到静止。 */
+/** CPU 后端按 GPU 实例的方式运行：可选起始快照（载入后先运行到静止），然后逐批注入并运行到静止。 */
 function cpuInstance(data: unknown, inst: GpuSnapshotInstance): CpuExecutor {
   const ref = new CpuExecutor(new Model(data, "cpu"));
-  if (inst.start) loadSnapshot(ref, inst.start);
+  if (inst.start) resumeSnapshot(ref, inst.start);
   for (const batch of inst.batches) {
     for (const item of batch) ref.inject(item);
     ref.run();
@@ -116,7 +116,7 @@ export async function runGpuCases(ctx: CaseContext, device: GPUDevice, log: (lin
   {
     const docSnap = docBlock<Snapshot>(ctx.snapshotDoc, "snapshot");
     const tx = models.get("M_TX")!;
-    let bad = (await compare(device, tx, [{ start: docSnap, batches: [[]] }, { start: docSnap, batches: [[], ["G1.Q10"]] }])).bad;
+    let bad = (await compare(device, tx, [{ start: docSnap, batches: [] }, { start: docSnap, batches: [["G1.Q10"]] }])).bad;
     const rng = new Random(17);
     let pending = 0;
     for (let i = 0; i < 150; i++) {
@@ -128,7 +128,7 @@ export async function runGpuCases(ctx: CaseContext, device: GPUDevice, log: (lin
       const snap = JSON.parse(JSON.stringify(takeSnapshot(cpu))) as Snapshot;
       const thread = Object.values(snap.threads)[0];
       if (thread && (thread.events.length || thread.tasks.length)) pending++;
-      bad += (await compare(device, data, [{ start: snap, batches: [[], ...batches.slice(1)] }])).bad;
+      bad += (await compare(device, data, [{ start: snap, batches: batches.slice(1) }])).bad;
     }
     check("GPU：从快照继续", bad === 0,
       `Snapshot.md 的 M_TX 快照与随机模型 150 次中途快照（其中 ${pending} 次带未处理的事件或任务）载入 GPU 后继续运行，与 CPU 不同的有 ${bad} 个`);

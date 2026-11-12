@@ -90,10 +90,13 @@ export function decodeSnapshot(gpu: GpuExecutor, st: Uint32Array, name = "S1"): 
   return { snapshot: name, jkm: c.name, version: VERSION, q, trigger_all: triggerAll, rounds, threads };
 }
 
-/** 执行一组实例：每个实例可以从快照开始；运行结束时为没有出错的实例生成快照。 */
+/**
+ * 执行一组实例：每个实例可以从快照开始；运行结束时为没有出错的实例生成快照。
+ * 从快照开始的实例先运行到静止，再注入第一批（JKRD7 §9.4）：在它的各批之前加一个空批，GPU 后端对空批只运行到静止。
+ */
 export async function runWithSnapshots(gpu: GpuExecutor, instances: readonly GpuSnapshotInstance[]): Promise<GpuSnapshotResult[]> {
   const results = await gpu.run(instances.map((inst) => ({
-    batches: inst.batches, start: inst.start && encodeSnapshot(gpu, inst.start),
+    batches: inst.start ? [[], ...inst.batches] : inst.batches, start: inst.start && encodeSnapshot(gpu, inst.start),
   })));
   return results.map((r) => ({ ...r, snapshot: r.state && decodeSnapshot(gpu, r.state) }));
 }

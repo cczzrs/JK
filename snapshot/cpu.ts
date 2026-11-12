@@ -41,3 +41,12 @@ export function loadSnapshot(ex: CpuExecutor, snap: Snapshot): void {
     ex.tasks.push("node" in t ? { kind: "node", node: t.node } : { kind: "tx", g: t.tx, prereqs: [...t.prereqs] });
   }
 }
+
+/**
+ * 载入快照并运行到静止，供运行脚本从快照继续时使用：
+ * 每一批都在模型静止时注入（JKRD7 §9.4），所以注入第一批之前先处理完快照中的事件与任务。
+ */
+export function resumeSnapshot(ex: CpuExecutor, snap: Snapshot): void {
+  loadSnapshot(ex, snap);
+  ex.run();
+}

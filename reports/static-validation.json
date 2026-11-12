@@ -1,6 +1,6 @@
 {
   "status": "passed",
-  "generated_at_utc": "2026-11-12T05:46:28+00:00",
+  "generated_at_utc": "2026-11-12T11:10:12+00:00",
   "scope": "JKRD7 §2/§3/§5/§6.4/§8 static rules, bit spelling in the JSON source text, snapshot checks (snapshot/Snapshot.md), document JSON, model asset, fixtures, display-page examples, links and index; no execution (see reports/reference-run.json and reports/gpu-run.json)",
   "checks": [
     {
@@ -440,6 +440,10 @@
       "passed": true
     },
     {
+      "check": "快照：两个 thread：各项在 §7.4 规定的 thread 下",
+      "passed": true
+    },
+    {
       "check": "快照：多出字段",
       "passed": true
     },
@@ -496,6 +500,10 @@
       "passed": true
     },
     {
+      "check": "快照：rounds 的 JKS 下没有记录",
+      "passed": true
+    },
+    {
       "check": "快照：threads 的键未声明",
       "passed": true
     },
@@ -505,6 +513,18 @@
     },
     {
       "check": "快照：事件项带接收者",
+      "passed": true
+    },
+    {
+      "check": "快照：事件不在来源所属 JKS 的 thread",
+      "passed": true
+    },
+    {
+      "check": "快照：节点任务不在目标所属 JKS 的 thread",
+      "passed": true
+    },
+    {
+      "check": "快照：事务任务不在登记它的 JKS 的 thread",
       "passed": true
     },
     {
@@ -560,14 +580,14 @@
     "docs/jkrd7-proposal-2026-11-05.md": "050f4b365a837e3b23f0167bbf6997e98601ce760bc98689128b5f8f3491e269",
     "docs/jkrd7-proposal-2026-11-06.md": "9fcbd3027b60425e3a803a49803c66b24986f6036073a7786c23a1ac175d4e03",
     "docs/modules/factory-pending.md": "e8139c930aa319f881d2ffcdeafeac86492a8ecfce65cda7fa020ba346718dc3",
-    "docs/web-show.md": "ff06a9309f0b92f59684752867b77c35303ab3fe34c7744bb54abed9f9566e50",
+    "docs/web-show.md": "03f37ede10e9d1cecc59680f5d7916a992e79c452f4cb18e6a5a5283761b9d40",
     "jk.config.json": "f5eebe0da0001c96bb8bdc422d808cdc6941270915ecb7a9847210d9c2539d74",
-    "snapshot/Snapshot.md": "430e2846df114e86f070c95a9d5f083e1a594f9cbba5a7852ac5779b738254e3",
-    "snapshot/snapshot.ts": "6355e2525202e9b4bf0206ca89cb5b40ea3bcaaf40815401f034aa08c95b5231",
+    "snapshot/Snapshot.md": "576bb9f9c34addbdf1c7389256d909751122f88ed4c92020b108c5585f9d8212",
+    "snapshot/snapshot.ts": "7424c63f8cc80973df9a672fb23a98347fbf51d00fc5df5c167b50e9fef7c342",
     "src/doc.ts": "b35ec3bc87314457157bca33c296c1bebbe0d19c6ea3f46d6557bd30621dfc31",
     "src/model.ts": "277319631bb97e646322a39a3bbc14a995d0623b61f6923bb79d321cd8127178",
     "src/testing/fixtures.ts": "a44f18158a5c96fc008088729c6c45efe3c4a936e946c64751a9c70cf79c9263",
-    "src/testing/static.ts": "da9c053efcc99b47d64815da8bfa59df75b0ae9a0a12109b031ad57940b45a5a",
+    "src/testing/static.ts": "7db5331b215e1a2cfdcbae3f81f67b7c7aab20869643f9ea3b7ff9e482e8d90e",
     "tools/validate.ts": "36446b90260b5106e3fc3484bf5695000cf5d8b6bb459b2450e89745e28eaf48",
     "ultra.md": "6a283b7a75b076b273f87bc81543034f8dad9a01e4a7ca3f9f0aa65ed76d92c9",
     "web/show/examples.json": "a7d145ca88ae81b4b34ccc43732ab3a2d799e0ea8e554e393ca7a10ec2f25b5c"

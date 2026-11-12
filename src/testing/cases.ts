@@ -2,7 +2,7 @@
 
 import { type Jki, type Jkm, type RunScript, Model } from "../model.ts";
 import type { Snapshot } from "../../snapshot/snapshot.ts";
-import { loadSnapshot, takeSnapshot } from "../../snapshot/cpu.ts";
+import { loadSnapshot, resumeSnapshot, takeSnapshot } from "../../snapshot/cpu.ts";
 import { DOC_MODELS, docBlock, docFragment, docModels } from "../doc.ts";
 import { CpuExecutor, TxLimit, Unsupported } from "../cpu.ts";
 import { formatRecords } from "../record.ts";
@@ -368,7 +368,17 @@ export function runCases(ctx: CaseContext): CaseResult[] {
     const resumed = engine();
     loadSnapshot(resumed, JSON.parse(JSON.stringify(snap)) as Snapshot);
     resumed.run();
-    const ok = deepEqual(snap, expected) && formatRecords(resumed.record()) === formatRecords(r.record().slice(cut));
+    let ok = deepEqual(snap, expected) && formatRecords(resumed.record()) === formatRecords(r.record().slice(cut));
+
+    // 运行脚本从未静止的快照继续：先运行到静止，再注入第一批（§9.4）；批执行模式相同
+    r.inject("G1.Q10");
+    r.run();
+    const tail = formatRecords(r.record().slice(cut));
+    const next: RunScript = { run: "resume", model: "M_TX", batches: [["G1.Q10"]] };
+    for (const batch of [false, true]) {
+      const again = runScriptCpu(next, data, { batch, before: (ex) => resumeSnapshot(ex, expected) });
+      ok &&= formatRecords(again.record()) === tail && !("inject" in again.record()[0]);
+    }
 
     const rng = new Random(9);
     let bad = 0;
@@ -381,18 +391,22 @@ export function runCases(ctx: CaseContext): CaseResult[] {
       const snapR = JSON.parse(JSON.stringify(takeSnapshot(full))) as Snapshot;
       const cutR = full.record().length;
       const rest = new CpuExecutor(new Model(dataR, "random"));
+      const restBatch = new CpuExecutor(new Model(dataR, "random"), { batch: true });
       loadSnapshot(rest, snapR);
-      for (const engineR of [full, rest]) {
+      loadSnapshot(restBatch, snapR);
+      for (const engineR of [full, rest, restBatch]) {
         engineR.run();
         for (const batch of batches.slice(1)) {
           for (const item of batch) engineR.inject(item);
           engineR.run();
         }
       }
-      if (formatRecords(rest.record()) !== formatRecords(full.record().slice(cutR))) bad++;
+      const want = formatRecords(full.record().slice(cutR));
+      if (formatRecords(rest.record()) !== want || formatRecords(restBatch.record()) !== want) bad++;
     }
     check("快照（Snapshot.md）", ok && bad === 0,
-      `M_TX 的中间状态与 Snapshot.md 第 2 节一致，从快照继续的记录与不中断运行相同；随机模型 150 次中途快照，不同的有 ${bad} 次`);
+      `M_TX 的中间状态与 Snapshot.md 第 2 节一致，从快照继续的记录与不中断运行相同；运行脚本从这份未静止的快照继续时先运行到静止再注入，`
+      + `批执行模式记录相同；随机模型 150 次中途快照（串行与批执行模式各继续一次），不同的有 ${bad} 次`);
   }
 
   return results;

@@ -252,6 +252,14 @@ function anyModel(): Jkm {
   return model;
 }
 
+/** 基准模型声明两个 thread，G2 改在 fast；G2.G1 仍在 work。 */
+function twoThreads(): Jkm {
+  const model = base();
+  model.threads = ["work", "fast"];
+  node(model, "G2").thread = "fast";
+  return model;
+}
+
 type SnapshotCase = { model: Jkm; snapshot: unknown };
 const snap = (fn: (s: Any) => void, model: () => Jkm = base) => (): SnapshotCase => {
   const snapshot = baseSnapshot() as unknown as Any;
@@ -265,6 +273,10 @@ const task = (item: unknown, model?: () => Jkm) => snap((s) => set(work(s), { ta
 export const SNAPSHOT_CASES: [string, () => SnapshotCase, string | null][] = [
   ["基准快照", snap(() => {}), null],
   ["transaction_any 的事务任务只含一个前置", task({ tx: "G2", prereqs: ["G2.Q2"] }, anyModel), null],
+  ["两个 thread：各项在 §7.4 规定的 thread 下", snap((s) => set(s, { threads: {
+    work: { events: [{ source: "G1.Q1" }], tasks: [] },
+    fast: { events: [{ source: "G2.Q1" }], tasks: [{ node: "G2.Q2" }, { tx: "G2", prereqs: ["G2.Q1"] }] },
+  } }), twoThreads), null],
   ["多出字段", snap((s) => set(s, { units: 3 })), "快照字段必须恰好"],
   ["snapshot 不是字符串", snap((s) => set(s, { snapshot: 7 })), "snapshot 必须是非空字符串"],
   ["jkm 不是对应的模型", snap((s) => set(s, { jkm: "OTHER" })), "jkm 必须是对应模型的 jkm"],
@@ -280,9 +292,13 @@ export const SNAPSHOT_CASES: [string, () => SnapshotCase, string | null][] = [
   ["rounds 不是对象", snap((s) => set(s, { rounds: "x" })), "rounds 必须是对象"],
   ["rounds 的键不是 JKS", snap((s) => set(s, { rounds: { "G2.Q1": { transaction: ["G2.Q1"] } } })), "不是 JKS 绝对路径"],
   ["rounds 列出已到齐的一轮", snap((s) => set(s, { rounds: { G2: { transaction: ["G2.Q1"] } } })), "只能列出未到齐的本轮前置"],
+  ["rounds 的 JKS 下没有记录", snap((s) => set(s, { rounds: { G2: {} } })), "只列不为空的轮记录"],
   ["threads 的键未声明", snap((s) => set(s, { threads: { fast: { events: [], tasks: [] } } })), "threads 的键必须是"],
   ["事件来源不是 JKI", snap((s) => set(work(s), { events: [{ source: "G2" }] })), "事件项不合法"],
   ["事件项带接收者", snap((s) => set(work(s), { events: [{ source: "G1.Q1", to: "G2.Q1" }] })), "事件项不合法"],
+  ["事件不在来源所属 JKS 的 thread", snap((s) => set(work(s), { events: [{ source: "G2.Q1" }], tasks: [] }), twoThreads), "事件项不合法"],
+  ["节点任务不在目标所属 JKS 的 thread", task({ node: "G2.Q2" }, twoThreads), "任务项不合法"],
+  ["事务任务不在登记它的 JKS 的 thread", task({ tx: "G2", prereqs: ["G2.Q1"] }, twoThreads), "任务项不合法"],
   ["节点任务的目标是空 EX", task({ node: "G2.Q1" }), "任务项不合法"],
   ["事务任务的目标没有事务登记", task({ tx: "G1", prereqs: ["G1.Q1"] }), "任务项不合法"],
   ["事务任务没有前置", task({ tx: "G2", prereqs: [] }), "任务项不合法"],

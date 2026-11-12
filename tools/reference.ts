@@ -11,7 +11,7 @@
 import { basename, extname } from "node:path";
 import type { Jkm, RunScript } from "../src/model.ts";
 import { type Snapshot, formatSnapshot } from "../snapshot/snapshot.ts";
-import { loadSnapshot, takeSnapshot } from "../snapshot/cpu.ts";
+import { resumeSnapshot, takeSnapshot } from "../snapshot/cpu.ts";
 import { runScriptCpu } from "../src/executor.ts";
 import { formatRecords } from "../src/record.ts";
 import { runCases } from "../src/testing/cases.ts";
@@ -31,7 +31,7 @@ function main(): number {
       batches: args.inject.length ? [args.inject] : [],
     };
     const start = args.start ? readJson<Snapshot>(args.start) : undefined;
-    const ref = runScriptCpu(script, readJson(script.model), { batch: args.batch, before: start && ((ex) => loadSnapshot(ex, start)) });
+    const ref = runScriptCpu(script, readJson(script.model), { batch: args.batch, before: start && ((ex) => resumeSnapshot(ex, start)) });
     process.stdout.write(formatRecords(ref.record()));
     if (args.save) writeText(args.save, formatSnapshot(takeSnapshot(ref, script.run)));
     return 0;

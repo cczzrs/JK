@@ -1,6 +1,6 @@
 {
   "status": "passed",
-  "generated_at_utc": "2026-11-12T03:01:21+00:00",
+  "generated_at_utc": "2026-11-12T11:09:43+00:00",
   "semantics": "GPU backend (WebGPU, one invocation per instance, serial micro-steps of JKRD7 §7) compared byte for byte with the CPU backend in the same page: records, end-of-run snapshots, snapshot resume, capacity errors",
   "scope": "single-thread models; this machine's Chrome and GPU only; throughput figures are indicative, not a benchmark",
   "adapter": {
@@ -49,10 +49,10 @@
   ],
   "throughput": {
     "instances": 16384,
-    "gpuMs": 189.40000009536743,
-    "kernelMs": 83.70000004768372,
-    "decodeMs": 82,
-    "cpuMs": 1081,
+    "gpuMs": 204.79999995231628,
+    "kernelMs": 48,
+    "decodeMs": 132.29999995231628,
+    "cpuMs": 1059.7999999523163,
     "dispatches": 1,
     "same": true,
     "bytesPerInstance": 5608
@@ -60,9 +60,9 @@
   "sha256": {
     "JKRD7.md": "48d7474dbf962e5f492298f5e7a7a949b9e3733d5676f3b43312482fe97bc633",
     "assets/ascii-bit-design/digits.jkm.json": "16d529c40a5224562705ac52dc953e745f5912475bdb1900821296a1617c8189",
-    "snapshot/cpu.ts": "64b5c0312f6c1f5785136354fdfcb6461229fa9b631f0b8a1c4ee9330f6a638b",
-    "snapshot/gpu.ts": "f3f55622ec4aca17925c8190e4f80e4ef7c92b95c92f9c3ad49e21238d84f979",
-    "snapshot/snapshot.ts": "6355e2525202e9b4bf0206ca89cb5b40ea3bcaaf40815401f034aa08c95b5231",
+    "snapshot/cpu.ts": "0f3601a5184e6d9a216aee5ff4c6e15dc39405b4ecb91e998a125f3bde9004fc",
+    "snapshot/gpu.ts": "4ed4987f0b32351bdc06d6ac36567be46b1356c3a33970bd4beffc5cded3d73f",
+    "snapshot/snapshot.ts": "7424c63f8cc80973df9a672fb23a98347fbf51d00fc5df5c167b50e9fef7c342",
     "src/cpu.ts": "ff4232d8923a40e9ded1f5f2f58079751a972172f3754c1f8fd004d811abc7e7",
     "src/doc.ts": "b35ec3bc87314457157bca33c296c1bebbe0d19c6ea3f46d6557bd30621dfc31",
     "src/executor.ts": "1bd746df062dfc8ecf1bdfe48e6f6916d842547be5a6d25ed37d197ea40b7eb0",
@@ -71,11 +71,11 @@
     "src/gpu/kernel.ts": "ca2795eb82ce52068fd4cb1f98aa19835ca80da18002bc2e05e43d93ca2dc3b0",
     "src/model.ts": "277319631bb97e646322a39a3bbc14a995d0623b61f6923bb79d321cd8127178",
     "src/record.ts": "565bf28df42aaa82bda79a420d16ff1ab7141c19dc4dd359991dc561118efce5",
-    "src/testing/cases.ts": "8f4f428b89a3bce4d7452865244f58cf16ae9e79976f7b66023d88c54371c3ee",
+    "src/testing/cases.ts": "6c3dae3a1f161de6ad98382ec8d682c79230041d6bf13fd5aa78bf1b880ada41",
     "src/testing/fixtures.ts": "a44f18158a5c96fc008088729c6c45efe3c4a936e946c64751a9c70cf79c9263",
-    "src/testing/gpu-cases.ts": "02d2db301fec93695158deb5030e827c7ba3eaa19101bf41ee9509eaa6bc0f57",
+    "src/testing/gpu-cases.ts": "47c44a88c51d56ba4a58e9c664e0f9fb4e814c3cf8eaf83710bef75a1fab7ad8",
     "src/testing/random.ts": "690b7384041ec9d52a2feb99bb8c988f36a2363abbe85d1ed6a00f9308b73fa4",
-    "src/testing/static.ts": "da9c053efcc99b47d64815da8bfa59df75b0ae9a0a12109b031ad57940b45a5a",
+    "src/testing/static.ts": "7db5331b215e1a2cfdcbae3f81f67b7c7aab20869643f9ea3b7ff9e482e8d90e",
     "tools/gpu.ts": "83b9f4b3ac3309805558d8657da7fbc69ddc0da3158233af29b3d14f533e526e",
     "web/gpu.ts": "21fb98c83621fb692b4e3f2a540718b5be0f77baba4104e864722c34522bdcc6"
   }
