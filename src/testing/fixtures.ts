@@ -29,7 +29,7 @@ export function syncInput(data: Jkm): Jkm {
 
 /** 一个 JKM；input 按根登记生成，output 默认为空，需要时用 withOutput 设定（§8.1）。 */
 export function jkm(name: string, ...roots: Jks[]): Jkm {
-  return syncInput({ jkm: name, version: "7.0.0", threads: ["work"], input: {}, output: {}, roots });
+  return syncInput({ jkm: name, version: "7.0.0", threads: ["main"], input: {}, output: {}, roots });
 }
 
 /** output 设为一组 data（没有成员时为 {}）。 */
@@ -39,7 +39,7 @@ export function withOutput(data: Jkm, ...paths: string[]): Jkm {
 }
 
 export function jks(id: string, members: (Jki | Jks)[], trigger: Jks["trigger"]): Jks {
-  return { id, thread: "work", trigger, members };
+  return { id, thread: "main", trigger, members };
 }
 
 /** 每次触发都翻转自身的节点。 */

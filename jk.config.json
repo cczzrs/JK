@@ -28,7 +28,8 @@
     "webgpu": "WebGPU.md",
     "web_show": "docs/web-show.md",
     "ultra": "ultra.md",
-    "snapshot": "snapshot/Snapshot.md"
+    "snapshot": "snapshot/Snapshot.md",
+    "run_thread": "RunThread.md"
   },
   "assets": {
     "ascii_digits": "assets/ascii-bit-design/digits.jkm.json",

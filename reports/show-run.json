@@ -1,6 +1,6 @@
 {
   "status": "passed",
-  "generated_at_utc": "2026-11-12T11:09:49+00:00",
+  "generated_at_utc": "2026-11-13T07:33:55+00:00",
   "semantics": "display page (web/show) driven through its own controls: run scripts with and without animation, input batches sent between units and stepped one unit at a time (step counts from the executor's trace), timeline jump/back/forward by re-execution, Canvas 2D fallback, image-to-input, a transaction stopped at the step limit, an old-format model rejected, all layouts, JKS details, GPU backend instances; the page's exported records are compared byte for byte with the CPU backend (src/executor.ts), and the displayed units, FIFO sizes, outputs, last history row, per-node q in the inspector and q/count labels in the 3D scene with the CPU backend's state; the output list window (row count and last row per record mode: every output, slice or real run, and each output group as trigger group), the output render window (kara clears, render-all restores the row count; ASCII text for the done group of the ASCII model) and which output-node animations the scene keeps (by output format, slice record)",
   "scope": "single-thread models from JKRD7 §9.4/§10 and the ASCII attachment; this machine's Chrome and GPU only; snapshot export/restore and the shared model pool are not part of the page yet",
   "render": "WebGPU",
@@ -9,7 +9,7 @@
     {
       "case": "十选一 ASCII：JKRD7 §9.4 运行脚本，GPU 64 个实例对拍",
       "passed": true,
-      "detail": "96 条记录、6 个处理单元、28 个 q（节点详情与场景）与 CPU 后端一致；64 个实例的执行记录与 CPU 后端逐字节相同 · 每个实例 96 行 · GPU 2.9 ms（2 次调度）· CPU 单实例 2.0 ms（Worker） · apple · metal-3"
+      "detail": "96 条记录、6 个处理单元、28 个 q（节点详情与场景）与 CPU 后端一致；64 个实例的执行记录与 CPU 后端逐字节相同 · 每个实例 96 行 · GPU 5.8 ms（2 次调度）· CPU 单实例 2.2 ms（Worker） · apple · metal-3"
     },
     {
       "case": "十选一 ASCII：批执行（§7.5）运行 §9.4 脚本，执行记录与串行相同",
@@ -19,32 +19,32 @@
     {
       "case": "M_FLOW：运行脚本 6 批，GPU 2 个实例对拍",
       "passed": true,
-      "detail": "39 条记录、29 个处理单元、6 个 q（节点详情与场景）与 CPU 后端一致；2 个实例的执行记录与 CPU 后端逐字节相同 · 每个实例 39 行 · GPU 1.8 ms（6 次调度）· CPU 单实例 0.3 ms（Worker） · apple · metal-3"
+      "detail": "39 条记录、29 个处理单元、6 个 q（节点详情与场景）与 CPU 后端一致；2 个实例的执行记录与 CPU 后端逐字节相同 · 每个实例 39 行 · GPU 2.1 ms（6 次调度）· CPU 单实例 0.4 ms（Worker） · apple · metal-3"
     },
     {
       "case": "M_PATH：运行脚本 2 批，GPU 2 个实例对拍",
       "passed": true,
-      "detail": "12 条记录、10 个处理单元、3 个 q（节点详情与场景）与 CPU 后端一致；2 个实例的执行记录与 CPU 后端逐字节相同 · 每个实例 12 行 · GPU 4.1 ms（2 次调度）· CPU 单实例 0.2 ms（Worker） · apple · metal-3"
+      "detail": "12 条记录、10 个处理单元、3 个 q（节点详情与场景）与 CPU 后端一致；2 个实例的执行记录与 CPU 后端逐字节相同 · 每个实例 12 行 · GPU 2.1 ms（2 次调度）· CPU 单实例 0.2 ms（Worker） · apple · metal-3"
     },
     {
       "case": "M_SYNC：运行脚本 4 批，GPU 2 个实例对拍",
       "passed": true,
-      "detail": "13 条记录、9 个处理单元、4 个 q（节点详情与场景）与 CPU 后端一致；2 个实例的执行记录与 CPU 后端逐字节相同 · 每个实例 13 行 · GPU 7.4 ms（4 次调度）· CPU 单实例 0.2 ms（Worker） · apple · metal-3"
+      "detail": "13 条记录、9 个处理单元、4 个 q（节点详情与场景）与 CPU 后端一致；2 个实例的执行记录与 CPU 后端逐字节相同 · 每个实例 13 行 · GPU 14.3 ms（4 次调度）· CPU 单实例 0.3 ms（Worker） · apple · metal-3"
     },
     {
       "case": "M_TX：运行脚本 2 批，GPU 2 个实例对拍",
       "passed": true,
-      "detail": "16 条记录、6 个处理单元、4 个 q（节点详情与场景）与 CPU 后端一致；2 个实例的执行记录与 CPU 后端逐字节相同 · 每个实例 16 行 · GPU 4.2 ms（2 次调度）· CPU 单实例 0.3 ms（Worker） · apple · metal-3"
+      "detail": "16 条记录、6 个处理单元、4 个 q（节点详情与场景）与 CPU 后端一致；2 个实例的执行记录与 CPU 后端逐字节相同 · 每个实例 16 行 · GPU 10.7 ms（2 次调度）· CPU 单实例 0.1 ms（Worker） · apple · metal-3"
     },
     {
       "case": "M_NEST：运行脚本 2 批，GPU 2 个实例对拍",
       "passed": true,
-      "detail": "24 条记录、6 个处理单元、7 个 q（节点详情与场景）与 CPU 后端一致；2 个实例的执行记录与 CPU 后端逐字节相同 · 每个实例 24 行 · GPU 1.6 ms（2 次调度）· CPU 单实例 0.2 ms（Worker） · apple · metal-3"
+      "detail": "24 条记录、6 个处理单元、7 个 q（节点详情与场景）与 CPU 后端一致；2 个实例的执行记录与 CPU 后端逐字节相同 · 每个实例 24 行 · GPU 6.1 ms（2 次调度）· CPU 单实例 0.3 ms（Worker） · apple · metal-3"
     },
     {
       "case": "M_REG：运行脚本 4 批，GPU 2 个实例对拍",
       "passed": true,
-      "detail": "30 条记录、10 个处理单元、5 个 q（节点详情与场景）与 CPU 后端一致；2 个实例的执行记录与 CPU 后端逐字节相同 · 每个实例 30 行 · GPU 15.2 ms（4 次调度）· CPU 单实例 0.1 ms（Worker） · apple · metal-3"
+      "detail": "30 条记录、10 个处理单元、5 个 q（节点详情与场景）与 CPU 后端一致；2 个实例的执行记录与 CPU 后端逐字节相同 · 每个实例 30 行 · GPU 2.0 ms（4 次调度）· CPU 单实例 0.2 ms（Worker） · apple · metal-3"
     },
     {
       "case": "M_FLOW：关闭跳过动画，逐单元播放",
@@ -98,8 +98,8 @@
     }
   ],
   "sha256": {
-    "JKRD7.md": "48d7474dbf962e5f492298f5e7a7a949b9e3733d5676f3b43312482fe97bc633",
-    "assets/ascii-bit-design/digits.jkm.json": "16d529c40a5224562705ac52dc953e745f5912475bdb1900821296a1617c8189",
+    "JKRD7.md": "5f06d303c875c2824f919d039c25df04e367d322ce498ce5e7adc114e90fbcb5",
+    "assets/ascii-bit-design/digits.jkm.json": "7d75616eecd73587410927cb84fe6e90abeb0db575b76ac748ba26d1d3954ba8",
     "snapshot/cpu.ts": "0f3601a5184e6d9a216aee5ff4c6e15dc39405b4ecb91e998a125f3bde9004fc",
     "snapshot/gpu.ts": "4ed4987f0b32351bdc06d6ac36567be46b1356c3a33970bd4beffc5cded3d73f",
     "snapshot/snapshot.ts": "7424c63f8cc80973df9a672fb23a98347fbf51d00fc5df5c167b50e9fef7c342",
@@ -110,11 +110,11 @@
     "src/gpu/compile.ts": "d7f10ef1c97cc420a9fc8c6bba5f2a8527e69ac89d4f6eff87d1e5ea55c82d09",
     "src/gpu/kernel.ts": "ca2795eb82ce52068fd4cb1f98aa19835ca80da18002bc2e05e43d93ca2dc3b0",
     "src/model.ts": "277319631bb97e646322a39a3bbc14a995d0623b61f6923bb79d321cd8127178",
-    "src/record.ts": "565bf28df42aaa82bda79a420d16ff1ab7141c19dc4dd359991dc561118efce5",
+    "src/record.ts": "b17ad5fc466117eda41def3a9afcd47014d217e21c11b5326190e37184e6ba5c",
     "src/testing/cases.ts": "6c3dae3a1f161de6ad98382ec8d682c79230041d6bf13fd5aa78bf1b880ada41",
-    "src/testing/fixtures.ts": "a44f18158a5c96fc008088729c6c45efe3c4a936e946c64751a9c70cf79c9263",
+    "src/testing/fixtures.ts": "7fe9e805b2ec0fd61aa7bf1051720b741cf82d485b8f03620a1597e3c5f13927",
     "src/testing/random.ts": "690b7384041ec9d52a2feb99bb8c988f36a2363abbe85d1ed6a00f9308b73fa4",
-    "src/testing/static.ts": "7db5331b215e1a2cfdcbae3f81f67b7c7aab20869643f9ea3b7ff9e482e8d90e",
+    "src/testing/static.ts": "89dfd573104166dd457cfed11a14ea60151f87b1a7d160f74c5af707cefb8a1d",
     "tools/chrome.ts": "819465329f3bfc6fb3ba5a66c5acdcd631dba33ebe2b06953c74ca2dab351804",
     "tools/server.ts": "6695e6b25402433e16edecc1b5b6a0d19b849006e8387029b9ea6651c19d70ac",
     "tools/show.ts": "b458854abef852933c488fd9beac2842f6160b1897dbeefdfcfff601f44190da",
@@ -122,7 +122,7 @@
     "web/show/config.ts": "6996e23690b25d98b00d743123c0fcb22e8bafd3824f47b18d2c1a75cfabf34e",
     "web/show/cosmic.css": "800d52c5c315ae2cc4d52c369d1851193d9baae262440a7b65214281b48e007e",
     "web/show/cpu-worker.ts": "ca3eac442b6f46c25da6bc30556f1cb872378743ecb7f18226041e814cb87b8c",
-    "web/show/examples.json": "a7d145ca88ae81b4b34ccc43732ab3a2d799e0ea8e554e393ca7a10ec2f25b5c",
+    "web/show/examples.json": "b086318446470c5c752d10413580dba4bd6e3cd8daa815c76aae284450113e13",
     "web/show/gpu-device.ts": "530fd992848d88f83030d60aec1fa711371ae4a0e901b78484f398d14eb1e7c1",
     "web/show/gpu-run.ts": "dce9cd0ec78dcfafe932ae82b45b2809b20edc51b4b88169a5cdf4a374ace2b6",
     "web/show/index.html": "114a283c3b14af5cc24d7a6b6a4048400e051464594dc3caf78629669d8fc78e",

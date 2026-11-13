@@ -130,7 +130,7 @@ reports/                 四份核对报告
 | --- | --- | --- |
 | [src/model.ts](src/model.ts) | JSON 原文解析（bit 只接受写成 0、1）、JKI 字段检查、JKM 加载（含输入登记 input 与根登记的核对、分组的输出列表 output）、引用解析、派生索引（成员、前置、带事务登记的 JKS、订阅者）、登记分层、环的退出节点（out 登记）、纯通知环、运行脚本检查 | §2、§3、§5、§6.4、§8、§9.4 |
 | [src/doc.ts](src/doc.ts) | 取出 JKRD7 正文中的 JSON 块（模型、JKI 片段、运行脚本），也用于取出 Snapshot.md 中的快照示例；第 10 节的模型名单；按第 10 节的排版输出 JKM。不含规则 | 第 10 节 |
-| [src/record.ts](src/record.ts) | 执行记录的四种项与固定文本格式 | §9.4 |
+| [src/record.ts](src/record.ts) | 执行记录的四种项与固定文本格式（多 thread 的 `read` 行尚未实现） | §9.4 |
 | [src/cpu.ts](src/cpu.ts) | 串行执行：触发、计算、发布、整合、事务与嵌套事务、事务上限、投递顺序；按 JKM.output 写输出记录；可并行批；到达记录与轮记录的排序输出（`arrivals`）；可选的执行细节回调 `trace`（展示用，不进入记录，不改变执行） | §4—§7、§8.1、§9.1、§9.2 |
 | [src/executor.ts](src/executor.ts) | 按运行脚本运行 CPU 后端（GPU 后端的入口是 `GpuExecutor.runScript`） | §9.4 |
 | [src/gpu/](src/gpu/backend.ts) | GPU 后端 | WebGPU.md |

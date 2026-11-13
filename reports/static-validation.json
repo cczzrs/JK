@@ -1,6 +1,6 @@
 {
   "status": "passed",
-  "generated_at_utc": "2026-11-12T11:10:12+00:00",
+  "generated_at_utc": "2026-11-13T07:33:39+00:00",
   "scope": "JKRD7 §2/§3/§5/§6.4/§8 static rules, bit spelling in the JSON source text, snapshot checks (snapshot/Snapshot.md), document JSON, model asset, fixtures, display-page examples, links and index; no execution (see reports/reference-run.json and reports/gpu-run.json)",
   "checks": [
     {
@@ -566,30 +566,31 @@
   ],
   "errors": [],
   "sha256": {
-    "AGENTS.md": "cb3e4c15368dc3be0f4a4c277582faf7a4c3656af5993ada8b24a674c66fe990",
-    "JKRD7.md": "48d7474dbf962e5f492298f5e7a7a949b9e3733d5676f3b43312482fe97bc633",
-    "README.md": "b771d720068bf44f7804b0237ff0a680d9719f824bd77d678a66128108852119",
-    "TypeScript.md": "c63012281c93c4fc08bdf75dffc9b559a3a21ff43f9d7793515ad8610cc49a6c",
-    "WebGPU.md": "15d0812a9a6d78258800494b4f9a5930d3b410bd8fbd82ff6a55ec43ebdd1493",
-    "assets/ascii-bit-design/digits.jkm.json": "16d529c40a5224562705ac52dc953e745f5912475bdb1900821296a1617c8189",
+    "AGENTS.md": "e1eff90290a6e691a93a56bb2078afa36524cab6edc007953522072c4e6e1c2a",
+    "JKRD7.md": "5f06d303c875c2824f919d039c25df04e367d322ce498ce5e7adc114e90fbcb5",
+    "README.md": "2f1f5daf086d6d13e96825aa940d2c9ffe13701c0d067c3ae8efb4006c601f7e",
+    "RunThread.md": "92c2e30de5b0531fa5cb42ff8bbf430bea2f0a0293f9bcbdfb5d1f60336e0408",
+    "TypeScript.md": "2d1cb3007c7a688845567079f89cb71edebfd84de0fa689c0096b06a3d426cb7",
+    "WebGPU.md": "11c2e53abaffc5419e70864fd93ec48d8abf461a5a4fe303e784cfd2d4927e16",
+    "assets/ascii-bit-design/digits.jkm.json": "7d75616eecd73587410927cb84fe6e90abeb0db575b76ac748ba26d1d3954ba8",
     "assets/jks-factory-v7-design/JKI.FACTORY.json": "410729692fba6f0e70c69ec78436c27923c4e6de6fb0ed244ce378eeacda19d8",
     "assets/jks-factory-v7-design/RAM.FACTORY.json": "9ec8a03b18c4552d3db4ec42fddbfdfe39f3fd6e29a5d06675ba727f61c42f8f",
     "assets/jks-factory-v7-design/design-contract.json": "1e2f03cf60e4c4f233aaa9f361827debd2b17997653fce593effac4649d67c54",
     "assets/jks-factory-v7-design/generation-example.json": "f1b5561b14982b07b1ce41edb0285a1402e2b1f0f6eacba35199e60214b6c648",
-    "docs/jkrd7-maintenance.md": "6179c7969e295b4ab777e664f2e6773c7afbb9ce04333dcb7aa4cd693d1c7cc3",
+    "docs/jkrd7-maintenance.md": "3f87b4dce11892baf13ebafe8b620fd5821bca60933d9c68b289614e795a1fe1",
     "docs/jkrd7-proposal-2026-11-05.md": "050f4b365a837e3b23f0167bbf6997e98601ce760bc98689128b5f8f3491e269",
     "docs/jkrd7-proposal-2026-11-06.md": "9fcbd3027b60425e3a803a49803c66b24986f6036073a7786c23a1ac175d4e03",
     "docs/modules/factory-pending.md": "e8139c930aa319f881d2ffcdeafeac86492a8ecfce65cda7fa020ba346718dc3",
-    "docs/web-show.md": "03f37ede10e9d1cecc59680f5d7916a992e79c452f4cb18e6a5a5283761b9d40",
-    "jk.config.json": "f5eebe0da0001c96bb8bdc422d808cdc6941270915ecb7a9847210d9c2539d74",
-    "snapshot/Snapshot.md": "576bb9f9c34addbdf1c7389256d909751122f88ed4c92020b108c5585f9d8212",
+    "docs/web-show.md": "75c55baa65699f0005a3e4c2f116998deb0c88ed6b03acaa97300a95bf1506fa",
+    "jk.config.json": "79172e7bab2cf044e89a434dbcb196208f2e404edee4b1627beed64377f470fa",
+    "snapshot/Snapshot.md": "4bf00ae88d4780475a598c418321bfbf144e065f9f6871e68e5f6d3ff51e27c6",
     "snapshot/snapshot.ts": "7424c63f8cc80973df9a672fb23a98347fbf51d00fc5df5c167b50e9fef7c342",
     "src/doc.ts": "b35ec3bc87314457157bca33c296c1bebbe0d19c6ea3f46d6557bd30621dfc31",
     "src/model.ts": "277319631bb97e646322a39a3bbc14a995d0623b61f6923bb79d321cd8127178",
-    "src/testing/fixtures.ts": "a44f18158a5c96fc008088729c6c45efe3c4a936e946c64751a9c70cf79c9263",
-    "src/testing/static.ts": "7db5331b215e1a2cfdcbae3f81f67b7c7aab20869643f9ea3b7ff9e482e8d90e",
+    "src/testing/fixtures.ts": "7fe9e805b2ec0fd61aa7bf1051720b741cf82d485b8f03620a1597e3c5f13927",
+    "src/testing/static.ts": "89dfd573104166dd457cfed11a14ea60151f87b1a7d160f74c5af707cefb8a1d",
     "tools/validate.ts": "36446b90260b5106e3fc3484bf5695000cf5d8b6bb459b2450e89745e28eaf48",
     "ultra.md": "6a283b7a75b076b273f87bc81543034f8dad9a01e4a7ca3f9f0aa65ed76d92c9",
-    "web/show/examples.json": "a7d145ca88ae81b4b34ccc43732ab3a2d799e0ea8e554e393ca7a10ec2f25b5c"
+    "web/show/examples.json": "b086318446470c5c752d10413580dba4bd6e3cd8daa815c76aae284450113e13"
   }
 }

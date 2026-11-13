@@ -70,7 +70,7 @@ export const NEGATIVE: [string, () => unknown, string][] = [
   ["roots 为空", mutate((m) => void m.roots.splice(0)), "roots 必须是非空数组"],
   ["JKI id 带前导零", mutate((m) => set(node(m, "G2", "Q2"), { id: "Q02" })), "id 必须是 Q＋不带前导零的正整数"],
   ["JKS id 带前导零", mutate((m) => set(node(m, "G2", "G1"), { id: "G01" })), "JKS id 必须是 G＋不带前导零的正整数"],
-  ["threads 含空串", mutate((m) => set(m as unknown as Any, { threads: ["work", ""] })), "threads 必须是非空、无重复的数组"],
+  ["threads 含空串", mutate((m) => set(m as unknown as Any, { threads: ["main", ""] })), "threads 必须是非空、无重复的数组"],
   ["trigger 含空串", mutate((m) => set(node(m, "G2", "Q2"), { trigger: { any: ["Q1", ""] } })), "trigger.any 必须是非空字符串组成的数组"],
   ["sources.s 含空串", mutate((m) => set(sources(m, "G2", "Q2"), { s: [""] })), "sources.s 必须是非空字符串组成的数组"],
   ["pro.tag 含空串", mutate((m) => set(node(m, "G2", "Q2"), { pro: { tag: [""] } })), "pro.tag 必须是非空字符串组成的数组"],
@@ -97,7 +97,7 @@ export const NEGATIVE: [string, () => unknown, string][] = [
   ["output 组间重复", mutate((m) => set(m as unknown as Any, { output: { data: ["G2.Q2"], done: ["G2.Q2"] } })), "output 的成员在全部组中不得重复"],
   ["output 落到 JKS", mutate((m) => set(m as unknown as Any, { output: { data: ["G2"] } })), "不是 JKI 绝对路径"],
   ["output 写短 ID", mutate((m) => set(m as unknown as Any, { output: { data: ["Q2"] } })), "不是 JKI 绝对路径"],
-  ["threads 重复", mutate((m) => set(m as unknown as Any, { threads: ["work", "work"] })), "threads 必须是非空、无重复的数组"],
+  ["threads 重复", mutate((m) => set(m as unknown as Any, { threads: ["main", "main"] })), "threads 必须是非空、无重复的数组"],
   ["members 写成 ID", mutate((m) => void members(m, "G2").push("Q9")), "成员必须是完整对象"],
   ["同层 id 重复", mutate((m) => void members(m, "G2").push({ id: "Q2", q: 0, trigger: { any: ["Q1"] } })), "同层成员 id 重复"],
   ["根 id 重复", mutate((m) => void m.roots.push(jks("G1", [{ id: "Q1", q: 1, trigger: { any: [] } }], { any: ["Q1"] }))), "根 id 重复"],
@@ -241,7 +241,7 @@ export function baseSnapshot(): Snapshot {
     q: { "G1.Q1": 1, "G1.Q2": 1, "G2.Q1": 0, "G2.Q2": 0, "G2.Q3": 0, "G2.G1.Q1": 0 },
     trigger_all: { "G2.Q3": [0, null] },
     rounds: {},
-    threads: { work: { events: [{ source: "G1.Q1" }], tasks: [{ node: "G2.Q2" }, { tx: "G2", prereqs: ["G2.Q1"] }] } },
+    threads: { main: { events: [{ source: "G1.Q1" }], tasks: [{ node: "G2.Q2" }, { tx: "G2", prereqs: ["G2.Q1"] }] } },
   };
 }
 
@@ -252,10 +252,10 @@ function anyModel(): Jkm {
   return model;
 }
 
-/** 基准模型声明两个 thread，G2 改在 fast；G2.G1 仍在 work。 */
+/** 基准模型声明两个 thread，G2 改在 fast；G2.G1 仍在 main。 */
 function twoThreads(): Jkm {
   const model = base();
-  model.threads = ["work", "fast"];
+  model.threads = ["main", "fast"];
   node(model, "G2").thread = "fast";
   return model;
 }
@@ -266,15 +266,15 @@ const snap = (fn: (s: Any) => void, model: () => Jkm = base) => (): SnapshotCase
   fn(snapshot);
   return { model: model(), snapshot };
 };
-const work = (s: Any) => (s.threads as Any).work as Any;
-const task = (item: unknown, model?: () => Jkm) => snap((s) => set(work(s), { tasks: [item] }), model);
+const main = (s: Any) => (s.threads as Any).main as Any;
+const task = (item: unknown, model?: () => Jkm) => snap((s) => set(main(s), { tasks: [item] }), model);
 
 /** [名称, 模型与快照, 预期错误片段；null 表示应当通过] */
 export const SNAPSHOT_CASES: [string, () => SnapshotCase, string | null][] = [
   ["基准快照", snap(() => {}), null],
   ["transaction_any 的事务任务只含一个前置", task({ tx: "G2", prereqs: ["G2.Q2"] }, anyModel), null],
   ["两个 thread：各项在 §7.4 规定的 thread 下", snap((s) => set(s, { threads: {
-    work: { events: [{ source: "G1.Q1" }], tasks: [] },
+    main: { events: [{ source: "G1.Q1" }], tasks: [] },
     fast: { events: [{ source: "G2.Q1" }], tasks: [{ node: "G2.Q2" }, { tx: "G2", prereqs: ["G2.Q1"] }] },
   } }), twoThreads), null],
   ["多出字段", snap((s) => set(s, { units: 3 })), "快照字段必须恰好"],
@@ -294,9 +294,9 @@ export const SNAPSHOT_CASES: [string, () => SnapshotCase, string | null][] = [
   ["rounds 列出已到齐的一轮", snap((s) => set(s, { rounds: { G2: { transaction: ["G2.Q1"] } } })), "只能列出未到齐的本轮前置"],
   ["rounds 的 JKS 下没有记录", snap((s) => set(s, { rounds: { G2: {} } })), "只列不为空的轮记录"],
   ["threads 的键未声明", snap((s) => set(s, { threads: { fast: { events: [], tasks: [] } } })), "threads 的键必须是"],
-  ["事件来源不是 JKI", snap((s) => set(work(s), { events: [{ source: "G2" }] })), "事件项不合法"],
-  ["事件项带接收者", snap((s) => set(work(s), { events: [{ source: "G1.Q1", to: "G2.Q1" }] })), "事件项不合法"],
-  ["事件不在来源所属 JKS 的 thread", snap((s) => set(work(s), { events: [{ source: "G2.Q1" }], tasks: [] }), twoThreads), "事件项不合法"],
+  ["事件来源不是 JKI", snap((s) => set(main(s), { events: [{ source: "G2" }] })), "事件项不合法"],
+  ["事件项带接收者", snap((s) => set(main(s), { events: [{ source: "G1.Q1", to: "G2.Q1" }] })), "事件项不合法"],
+  ["事件不在来源所属 JKS 的 thread", snap((s) => set(main(s), { events: [{ source: "G2.Q1" }], tasks: [] }), twoThreads), "事件项不合法"],
   ["节点任务不在目标所属 JKS 的 thread", task({ node: "G2.Q2" }, twoThreads), "任务项不合法"],
   ["事务任务不在登记它的 JKS 的 thread", task({ tx: "G2", prereqs: ["G2.Q1"] }, twoThreads), "任务项不合法"],
   ["节点任务的目标是空 EX", task({ node: "G2.Q1" }), "任务项不合法"],

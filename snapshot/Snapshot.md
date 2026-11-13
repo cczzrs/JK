@@ -36,7 +36,7 @@
   "trigger_all": {},
   "rounds": {},
   "threads": {
-    "work": {
+    "main": {
       "events": [],
       "tasks": [{"tx": "G2", "prereqs": ["G2.Q103"]}]
     }
@@ -192,7 +192,7 @@ node tools/gpu.ts --script <运行脚本> [--start <快照>] [--save <快照>]
 | — | 快照的保存时机、存储位置与故障恢复流程（JKRD7 §9.3 第 2 项） | 完全未定 | Claude（快照模块）；随第 6.4 节的快照窗口一起定 |
 | R5 | JKRD7 §9.4 的批能否为空 | JKRD7 没有说批必须非空，静态检查拒绝空批 `[]`。R2 定下之后，快照不再需要空批：从快照继续时由 `resumeSnapshot`、`runWithSnapshots` 先运行到静止。GPU 接口内部仍用空批表示“不注入，只运行到静止” | **须用户决定**（JKRD7 §9.4 的规则） |
 | — | `threads` 是否必须列出 JKM.threads 声明的每个 thread | 现在只要求键是已声明的名称；`threads` 写 `{}` 也接受，载入时当作空 FIFO | **须用户决定**：随多 thread（JKRD7 §9.3 第 1 项） |
-| — | 多 thread | 格式允许多个 thread，检查按 JKRD7 §7.4 核对各项所在的 thread；两个后端只执行单 thread 模型 | **须用户决定**：随 JKRD7 §9.3 第 1 项 |
+| — | 多 thread | 格式允许多个 thread，检查按 JKRD7 §7.4 核对各项所在的 thread；两个后端只执行单 thread 模型 | 用户 2026-11-12 交给快照模块决定（RunThread.md T6）：多个 thread 并行时快照在什么时刻取。用户的倾向是每个 thread 各自在两个处理单元之间取，合成一份。要等 thread 模块实现后才能做 |
 
 ### 6.2 检查放行的情况（2026-11-11 探针）
 

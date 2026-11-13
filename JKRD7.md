@@ -1,7 +1,7 @@
 # JKRD7（JK 规则与设计 7.0.0）
 
 - **版本**：7.0.0
-- **状态**：用户已批准。2026-11-05 按已批准的补充项 P1—P9 重排全文；2026-11-06 写入第二轮补充项 P10—P17；2026-11-09 写入环的退出节点（out 登记）与 JKM 的输出列表（output）；2026-11-10 写入 JKM 的输入登记（input），output 改为分组；2026-11-11 在 §9.5 写明事务任务的本次前置，第 11 节补入展示页验收，以及 bit 原文写法与快照的静态案例；同日把运行现场快照（原 §9.5）移到 [snapshot/Snapshot.md](snapshot/Snapshot.md)，快照模块不属于本文的主要路线。
+- **状态**：用户已批准。2026-11-05 按已批准的补充项 P1—P9 重排全文；2026-11-06 写入第二轮补充项 P10—P17；2026-11-09 写入环的退出节点（out 登记）与 JKM 的输出列表（output）；2026-11-10 写入 JKM 的输入登记（input），output 改为分组；2026-11-11 在 §9.5 写明事务任务的本次前置，第 11 节补入展示页验收，以及 bit 原文写法与快照的静态案例；同日把运行现场快照（原 §9.5）移到 [snapshot/Snapshot.md](snapshot/Snapshot.md)，快照模块不属于本文的主要路线。2026-11-12 写入 thread 模块的决定：thread 名默认 main，thread 模块的设计规则与声明移到 [RunThread.md](RunThread.md)，多个 thread 时执行记录与输出按 thread 分开。
 - **范围**：JKI 节点，JKS 结构与事务，串行执行模型，JKM 模型封装，模块边界。
 - 本文件是唯一规则入口。只维护 7.0.0，不兼容、不迁移此前版本。各次修改的依据与前后差异见[维护记录](docs/jkrd7-maintenance.md)。
 - 设计获批、静态检查或参考解释器通过，都不等于生产执行器、恢复或硬件行为已经验证。验证范围见第 11 节。
@@ -29,7 +29,7 @@
 - JKI 定义节点行为。
 - JKS 组合节点并决定何时形成事务。组合靠登记和实际连接实现，不清空成员的 trigger，不改写成员的计算，也不丢弃成员的通知。
 - 第 7 节的执行模型确定处理顺序。
-- thread 的存储与实现以及其他模块的职责见第 9 节。
+- thread 模块见 [RunThread.md](RunThread.md)，其他模块的职责见第 9 节。
 
 ## 2. JSON 约定
 
@@ -176,7 +176,7 @@ JKI 只有 any 和 all 两种触发模式。需要其他控制方式时，由 JK
 | 字段 | 必填 | 取值 | 含义 |
 | --- | --- | --- | --- |
 | `id` | 是 | G＋不带前导零的正整数（`G[1-9][0-9]*`），如 `G1` | 在所属 JKS 内唯一（根 JKS 在 JKM 内唯一），按递增编号分配，与 JKI 的 Q 编号各自计数 |
-| `thread` | 是 | JKM.threads 中声明的名称 | 对应一对事件 FIFO 与任务 FIFO（§7.4） |
+| `thread` | 是 | JKM.threads 中声明的名称，默认 `main` | 对应一对事件 FIFO 与任务 FIFO（§7.4）。thread 模块见 [RunThread.md](RunThread.md) |
 | `trigger` | 是 | 对象，至少有一个登记 | 前置登记（§5.2） |
 | `pro` | 否 | 对象，空时省略 | 组合扩展容器；已批准的字段只有 tag |
 | `pro.tag` | 否 | 字符串数组，空时省略 | 名称或用途，如 ASCII.bit.DIGITS。不影响身份、寻址、登记、整合、事务或执行顺序 |
@@ -364,11 +364,11 @@ T 对受整合订阅者的作用：
   - 事务任务进入登记它的 JKS 的 thread。
 - 事务执行期间，产生的事件、形成的节点任务和嵌套事务任务不进入 thread，而进入当前事务的事务事件 FIFO 与事务任务 FIFO（§6.2、§6.3）。
 - FIFO 项一律使用绝对路径：节点任务记目标 JKI，事件记来源 JKI，事务任务记目标 JKS 及本次前置。事件不携带 q 或 result。
-- 多个 thread 之间的调度，以及 thread 的存储、容量和故障处理，由 thread 模块规定。只用一个 thread 时，本节完全确定执行顺序。
+- 本节确定一个 thread 内部的执行顺序。thread 的声明、启动、thread 之间的引用与多个 thread 的并行，由 thread 模块规定，见 [RunThread.md](RunThread.md)；FIFO 的存储、容量和故障处理归 FIFO.factory 模块（§9.2）。
 
 ### 7.5 并行实现
 
-任何并行实现（包括 GPU 后端），对同一运行脚本（§9.4）必须产生与本节串行参考完全相同的执行记录。
+任何并行实现（包括 GPU 后端），对同一运行脚本（§9.4）必须产生与本节串行参考完全相同的执行记录。这一条对单 thread 模型成立。有多个 thread 时执行记录按 thread 分开，thread 之间读取或触发的先后不作保证，只核对每个 thread 的记录自身合法：记录中另记下跨 thread 读到的值（`read` 行），按四项检查核对（[RunThread.md](RunThread.md) 第 5 节）。
 
 以下并行方式不改变结果，可以直接采用。
 
@@ -412,13 +412,13 @@ T 对受整合订阅者的作用：
 {
   "jkm": "M1",
   "version": "7.0.0",
-  "threads": ["work"],
+  "threads": ["main"],
   "input": {"G1.any": ["Q1"]},
   "output": {"data": ["G1.Q1"]},
   "roots": [
     {
       "id": "G1",
-      "thread": "work",
+      "thread": "main",
       "trigger": {"any": ["Q1"]},
       "members": [
         {"id": "Q1", "q": 1, "trigger": {"any": []}}
@@ -432,7 +432,7 @@ T 对受整合订阅者的作用：
 | --- | --- | --- |
 | `jkm` | 非空字符串 | 模型 id，不进入绝对路径 |
 | `version` | `"7.0.0"` | 格式版本 |
-| `threads` | 非空、无重复的字符串数组 | 声明全部 thread 名。暂时允许声明多个；每个 JKS.thread 必须是其中之一 |
+| `threads` | 非空、无重复的字符串数组 | 声明全部 thread 名，默认写 `["main"]`（主线程）。每个 JKS.thread 必须是其中之一。名称不限，`main` 是默认名；没有 `main` 的是分支模型，单独运行时仍先启动默认的 main 线程。thread 之间可以有引用，其他 thread 按需启动，见 [RunThread.md](RunThread.md) 第 4 节 |
 | `input` | 对象：键为“根 JKS id.登记类型”，值为前置 ID 数组；没有输入入口时写 `{}` | 输入登记：根 JKS.trigger 中含有输入入口（§3.2）的每个登记，原样照抄，例如 `{"G1.transaction_any": ["Q1", "Q2"]}`。它是根 JKS.trigger 的重复声明，不代替登记：含输入入口的根登记必须全部列出，值与根 JKS.trigger 中的这个登记逐项相同；不含输入入口的根登记不列 |
 | `output` | 对象：键为组名（非空字符串），值为非空的 JKI 绝对路径数组；成员在全部组中无重复；没有输出节点时写 `{}` | 输出列表：模型的全部输出节点与对外交互节点，分组、按顺序排列。组名由模型自定，例如十选一的 data（数据位）与 done（完成节点）。输出接入模块订阅其中每个成员的通知，并按组的书写顺序、组内顺序读取它们的 q（§9.1、§9.4） |
 | `roots` | 非空的根 JKS 数组 | 完整的根 JKS 对象，根 id 互不相同 |
@@ -456,7 +456,7 @@ T 对受整合订阅者的作用：
 - 输入入口所在的根登记列在 JKM.input 中（§8.1）。
 - 输入接入模块在处理单元之间，以某个输入入口（§3.2）为来源，向其 JKS.thread 的事件 FIFO 追加一条通知，等同于该入口发出一次通知。它不写 q。比对用的输入按运行脚本的批注入（§9.4）。
 - 输入值用独热入口表达：每个取值一个入口，值由结构内的成员保存。例如一个 bit 用“置 0”“置 1”两个入口。
-- 输出接入模块订阅 JKM.output 中每个成员的通知（§8.1）。其中任何一个成员的通知投递时，它按 output 的组顺序与组内顺序读取全部 output 成员的 q。事务内的通知在事务中投递时就到达它（§6.2）。比对用的输出记录见 §9.4。
+- 输出接入模块订阅 JKM.output 中每个成员的通知（§8.1）。其中任何一个成员的通知投递时，它按 output 的组顺序与组内顺序读取与该成员同一 thread 的 output 成员的 q；只有一个 thread 时就是全部 output 成员（[RunThread.md](RunThread.md) 第 6 节）。事务内的通知在事务中投递时就到达它（§6.2）。比对用的输出记录见 §9.4。
 
 ### 9.2 运行现场与其他模块
 
@@ -470,7 +470,9 @@ T 对受整合订阅者的作用：
 
 | 模块 | 职责 |
 | --- | --- |
-| thread | FIFO 的存储与容量，多个 thread 之间的调度，故障处理 |
+| thread | 线程调度：默认一个主线程 main；每个 thread 执行自己的一对 FIFO，thread 之间可以有引用，其他 thread 按需启动，多个 thread 并行计算。见 [RunThread.md](RunThread.md) |
+| FIFO.factory | FIFO 的存储、容量与故障处理；thread 所用硬件资源的分配。延后处理 |
+| 输入批 | 运行脚本或输入批在多个 thread 下的时序。延后处理，见 RunThread.md 第 8 节 |
 | 生命周期 | 节点与结构的创建、改接、删除与引用保护；判定不处理的任务（§6.5） |
 | 运行现场与恢复 | 运行现场的持久化与恢复格式。不属于本文的主要路线，见 [snapshot/Snapshot.md](snapshot/Snapshot.md) |
 | 工厂 | 待适配，见附录 |
@@ -480,9 +482,11 @@ T 对受整合订阅者的作用：
 
 以下选择尚未确定，不从旧版本、旧附件或代码推断：
 
-1. 多个 thread 之间的调度。参考解释器只执行单 thread 模型。
+1. thread 模块尚未确定的选择，见 [RunThread.md](RunThread.md) 第 8 节。两个后端目前只执行单 thread 模型，RunThread.md 的多 thread 规则尚未实现。
 2. 运行现场的保存时机、存储位置与故障恢复流程。属于快照模块，见 [snapshot/Snapshot.md](snapshot/Snapshot.md) 第 6 节。
 3. 工厂模块按本版语义的重新设计（附录）。
+4. FIFO.factory 模块：FIFO 的存储、容量与故障处理；thread 所用硬件资源的分配。
+5. 运行脚本或输入批在多个 thread 下的全部问题，放在一起处理。§9.4 的“在模型静止时注入”目前只对单 thread 模型有定义。
 
 ### 9.4 运行脚本与执行记录
 
@@ -504,7 +508,7 @@ T 对受整合订阅者的作用：
 
 执行方式：从模型的初始状态开始；对每一批，在模型静止时把该批输入按顺序追加到事件 FIFO，运行到静止，再注入下一批。重叠的请求放在同一批。上例中 G1.Q24 的三条输出记录的 values.data 依次是 0x30、0x31、0x39（§10.7）。
 
-执行记录是一条全局有序的记录，按串行顺序排列，每行一个 JSON 对象，只有四种：
+执行记录按 thread 分开：每个 thread 一条有序的记录，按该 thread 处理的先后排列；不同 thread 的记录不合并，彼此不规定先后。多个 thread 时写在一个文件里，按 JKM.threads 的声明顺序分段，每段前加一行 `{"thread": "<名称>"}`（[RunThread.md](RunThread.md) 第 5 节）。只有一个 thread 时就是一条记录，不加这一行。每行一个 JSON 对象，单 thread 模型只有四种：
 
 ```jsonl
 {"inject": "G1.Q1"}
@@ -516,7 +520,9 @@ T 对受整合订阅者的作用：
 - **inject**：一条输入追加到事件 FIFO 时记录。
 - **notify**：一次发布，在产生时记录；事务内产生的通知也在产生时记录。
 - **q**：节点任务写入 q 时记录，值不变也记录。
-- **output**：output 中某个成员的通知投递给输出模块时记录；`output` 为该成员；`values` 与 output 同组、同顺序，列出全部 output 成员此时的 q。事务内的通知在事务中投递时记录。
+- **output**：output 中某个成员的通知投递给输出模块时记录；`output` 为该成员；`values` 与 output 同组、同顺序，列出与该成员同一 thread 的 output 成员此时的 q，没有这样的成员的组省略（只有一个 thread 时就是全部 output 成员）。事务内的通知在事务中投递时记录。
+
+多 thread 模型另有第五种 `read` 行：节点任务读取别的 thread 的来源时，记下读到的值，例如 `{"read": "G1.Q2", "by": "G2.Q2", "value": 1}`。它的写法与多 thread 记录的四项检查见 [RunThread.md](RunThread.md) 第 5 节。单 thread 模型的记录里没有这一行。
 
 处理单元编号、事务开始与结束等属于实现细节，不进入记录。
 
@@ -532,13 +538,13 @@ G1 提供四个输入入口，初值都是 1。Q5 不设 seed，Q6 设 seed=0；
 {
   "jkm": "M_FLOW",
   "version": "7.0.0",
-  "threads": ["work"],
+  "threads": ["main"],
   "input": {"G1.any": ["Q1", "Q2", "Q3", "Q4"]},
   "output": {"data": ["G2.Q5", "G2.Q6"]},
   "roots": [
     {
       "id": "G1",
-      "thread": "work",
+      "thread": "main",
       "trigger": {"any": ["Q1", "Q2", "Q3", "Q4"]},
       "members": [
         {"id": "Q1", "q": 1, "trigger": {"any": []}},
@@ -549,7 +555,7 @@ G1 提供四个输入入口，初值都是 1。Q5 不设 seed，Q6 设 seed=0；
     },
     {
       "id": "G2",
-      "thread": "work",
+      "thread": "main",
       "trigger": {"any": ["Q5", "Q6"]},
       "members": [
         {"id": "Q5", "q": 0, "trigger": {"any": ["G1.Q1", "G1.Q3"]}, "sources": {"s": ["G1.Q2", "G1.Q3", "G1.Q4"], "ex": ["J", "K", "J"]}},
@@ -604,19 +610,19 @@ G1.Q1 与 G1.G2.Q1 编号相同，但路径不同，是两个节点。连接为 
 {
   "jkm": "M_PATH",
   "version": "7.0.0",
-  "threads": ["work"],
+  "threads": ["main"],
   "input": {"G1.any": ["Q1"]},
   "output": {"data": ["G1.Q2"]},
   "roots": [
     {
       "id": "G1",
-      "thread": "work",
+      "thread": "main",
       "trigger": {"any": ["Q1"]},
       "members": [
         {"id": "Q1", "q": 1, "trigger": {"any": []}, "pro": {"tag": ["pre"]}},
         {
           "id": "G2",
-          "thread": "work",
+          "thread": "main",
           "trigger": {"any": ["Q1"]},
           "members": [
             {"id": "Q1", "q": 0, "trigger": {"any": ["G1.Q1"]}, "sources": {"seed": 0, "s": ["G1.Q1"], "ex": ["K"]}}
@@ -637,13 +643,13 @@ G1.Q1 与 G1.G2.Q1 编号相同，但路径不同，是两个节点。连接为 
 {
   "jkm": "M_SYNC",
   "version": "7.0.0",
-  "threads": ["work"],
+  "threads": ["main"],
   "input": {"G1.all": ["Q1", "Q2"]},
   "output": {"data": ["G1.Q3", "G1.Q4"]},
   "roots": [
     {
       "id": "G1",
-      "thread": "work",
+      "thread": "main",
       "trigger": {"all": ["Q1", "Q2"]},
       "members": [
         {"id": "Q1", "q": 1, "trigger": {"any": []}},
@@ -671,13 +677,13 @@ G1.Q10 是外部输入。G2 的前置成员 Q103 接入它，并登记为 transa
 {
   "jkm": "M_TX",
   "version": "7.0.0",
-  "threads": ["work"],
+  "threads": ["main"],
   "input": {"G1.any": ["Q10"]},
   "output": {"data": ["G2.Q101", "G2.Q102"]},
   "roots": [
     {
       "id": "G1",
-      "thread": "work",
+      "thread": "main",
       "trigger": {"any": ["Q10"]},
       "members": [
         {"id": "Q10", "q": 1, "trigger": {"any": []}}
@@ -685,7 +691,7 @@ G1.Q10 是外部输入。G2 的前置成员 Q103 接入它，并登记为 transa
     },
     {
       "id": "G2",
-      "thread": "work",
+      "thread": "main",
       "trigger": {"transaction": ["Q103"]},
       "members": [
         {"id": "Q102", "q": 0, "trigger": {"any": ["Q101"]}, "sources": {"seed": 0, "s": ["Q101"], "ex": ["K"]}},
@@ -719,13 +725,13 @@ G2 的前置成员 Q202 接入 G1.Q10，并登记为 transaction。G2 的子结�
 {
   "jkm": "M_NEST",
   "version": "7.0.0",
-  "threads": ["work"],
+  "threads": ["main"],
   "input": {"G1.any": ["Q10"]},
   "output": {"data": ["G2.Q201"]},
   "roots": [
     {
       "id": "G1",
-      "thread": "work",
+      "thread": "main",
       "trigger": {"any": ["Q10"]},
       "members": [
         {"id": "Q10", "q": 1, "trigger": {"any": []}}
@@ -733,13 +739,13 @@ G2 的前置成员 Q202 接入 G1.Q10，并登记为 transaction。G2 的子结�
     },
     {
       "id": "G2",
-      "thread": "work",
+      "thread": "main",
       "trigger": {"transaction": ["Q202"]},
       "members": [
         {"id": "Q202", "q": 0, "trigger": {"any": ["G1.Q10"]}},
         {
           "id": "G1",
-          "thread": "work",
+          "thread": "main",
           "trigger": {"transaction": ["Q103"]},
           "members": [
             {"id": "Q102", "q": 0, "trigger": {"any": ["Q101"]}, "sources": {"seed": 0, "s": ["Q101"], "ex": ["K"]}},
@@ -749,7 +755,7 @@ G2 的前置成员 Q202 接入 G1.Q10，并登记为 transaction。G2 的子结�
         },
         {
           "id": "G2",
-          "thread": "work",
+          "thread": "main",
           "trigger": {"any": ["Q1"]},
           "members": [
             {"id": "Q1", "q": 0, "trigger": {"any": ["G2.G1.Q102"]}, "sources": {"seed": 0, "s": ["G2.G1.Q102"], "ex": ["K"]}}
@@ -796,13 +802,13 @@ G2 的前置成员 Q202 接入 G1.Q10，并登记为 transaction。G2 的子结�
 {
   "jkm": "M_REG",
   "version": "7.0.0",
-  "threads": ["work"],
+  "threads": ["main"],
   "input": {"G1.transaction_any": ["Q1", "Q2"]},
   "output": {"data": ["G1.Q5"]},
   "roots": [
     {
       "id": "G1",
-      "thread": "work",
+      "thread": "main",
       "trigger": {"transaction_any": ["Q1", "Q2"]},
       "pro": {"tag": ["register"]},
       "members": [
@@ -888,9 +894,9 @@ node tools/gpu.ts --script <运行脚本>
 
 ### 11.3 验证边界
 
-- 两个后端都只实现单 thread 的语义（§9.3）。
+- 两个后端都只实现单 thread 的语义（§9.3）。RunThread.md 的按需启动、多 thread 并行、按 thread 分开的记录与输出都尚未实现。
 - GPU 后端只在本机 Chrome（Apple GPU，Metal）上对拍过；其他浏览器、其他厂商的 GPU 与 Linux 尚未验证。
-- 工具不验证恢复流程、多 thread 调度或硬件故障行为。
+- 工具不验证恢复流程、多 thread 并行或硬件故障行为。
 - 附录中的工厂附件只做 JSON 语法检查。
 
 ## 附录：工厂模块

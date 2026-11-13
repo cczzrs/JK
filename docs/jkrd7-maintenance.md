@@ -1,5 +1,153 @@
 # JKRD7 维护记录
 
+## 2026-11-12：thread 模块 T12、T13 的决定；多 thread 记录新增 read 行
+
+依据：用户指令“T12:A。”“选 C。更新代码或文档。”（T13 的方案 C：在三项检查之上，新增一种记录行，记下每次跨 thread 读取到的值。）
+
+行为变化：单 thread 模型的执行记录不变，仍只有四种行。代码只改了两处注释；多 thread 仍未实现（RunThread.md T1：实现范围待设计结束后再定），所以 `read` 行与四项检查目前只是规则。
+
+### JKRD7
+
+| 位置 | 修改前（下一条修改后的文字） | 修改后 |
+| --- | --- | --- |
+| §7.5 首句之后 | “……只核对每个 thread 的记录自身合法（RunThread.md 第 5 节）。” | “……只核对每个 thread 的记录自身合法：记录中另记下跨 thread 读到的值（`read` 行），按四项检查核对（RunThread.md 第 5 节）。” |
+| §9.4 执行记录 | “每行一个 JSON 对象，只有四种：” | “每行一个 JSON 对象，单 thread 模型只有四种：” |
+| §9.4 四种行的说明之后 | — | 新增一段：多 thread 模型另有第五种 `read` 行及其例子，写法与四项检查见 RunThread.md 第 5 节；单 thread 模型的记录里没有这一行 |
+
+### README
+
+| 位置 | 修改前（下一条修改后的文字） | 修改后 |
+| --- | --- | --- |
+| 延后处理区·thread 模块 | “待定：T1（实现范围）、T12（……）、T13（多 thread 记录的合法性检查项）。” | “待定：T1（实现范围）、T12（分支模型怎样并入别的模型，用户决定现在不定）。” |
+
+### 其他文件
+
+| 文件 | 修改前 | 修改后 |
+| --- | --- | --- |
+| RunThread.md | 第 5 节只举一例检查；T12、T13 待定；第 5 节示例中 `q` 行在 `notify` 行之前（写反） | 第 5 节写入 `read` 行、四项检查、例外与两种时机的完整示例；T13 列入已定，T12 记为现在不定；示例行序按 JKRD7 §4.3 改正；“通知在 q 写入之后才发出”改为“节点任务结束、q 写入之后才投递” |
+| src/record.ts、TypeScript.md | “四种记录项” | 注明是单 thread 模型的四种，多 thread 的 `read` 行尚未实现 |
+
+## 2026-11-12：thread 模块 T7—T11 的决定
+
+依据：用户指令“T7:A,T8:A,T9:A。T10:没有main说明是分支模型，单独运行时先启动默认 main 线程。T11：B，新线程是硬件资源决定的，是运行时不会中断切换跳转到其他线程的硬件资源运行线程。”各选项的内容记在 [RunThread.md](../RunThread.md) 第 4、5、8、10 节。
+
+行为变化：单 thread 模型不变，代码没有改动。新写入的规则都只对多 thread 模型起作用，尚未实现。
+
+### JKRD7
+
+| 位置 | 修改前（下一条修改后的文字） | 修改后 |
+| --- | --- | --- |
+| §7.5 首句之后 | “有多个 thread 时执行记录按 thread 分开（RunThread.md 第 5 节）；引用跨 thread 时怎样核对尚未确定（RunThread.md 第 8 节 T7）。” | “这一条对单 thread 模型成立。有多个 thread 时执行记录按 thread 分开，thread 之间读取或触发的先后不作保证，只核对每个 thread 的记录自身合法（RunThread.md 第 5 节）。” |
+| §8.1 `threads` | “名称不限，`main` 是默认名。” | 句后加“没有 `main` 的是分支模型，单独运行时仍先启动默认的 main 线程。” |
+| §9.2 模块表、§9.3 第 4 项·FIFO.factory | “FIFO 的存储、容量与故障处理” | 加“thread 所用硬件资源的分配” |
+
+### README
+
+| 位置 | 修改前（下一条修改后的文字） | 修改后 |
+| --- | --- | --- |
+| 延后处理区·thread 模块 | “待定：T1、T7—T11”；FIFO.factory“（FIFO 的存储、容量与故障处理）” | “待定：T1（实现范围）、T12（分支模型怎样并入别的模型）、T13（多 thread 记录的合法性检查项）”；FIFO.factory 加“thread 所用硬件资源的分配” |
+
+### 其他文件
+
+| 文件 | 修改前 | 修改后 |
+| --- | --- | --- |
+| RunThread.md | T7—T11 待定 | 第 1、2、4、5 节写入：主线程总是先启动、分支模型、硬件资源决定能否启动、事务由执行它的 thread 执行、处理单元原子、先后不作保证与两级核对；T7—T11 列入已定；新增待定 T12、T13 |
+
+## 2026-11-12：thread 之间可以有引用；T2—T6 的决定
+
+依据：
+
+- 用户指令：“每个线程执行独立的 FIFO 任务。该线程执行时或执行后会触发事件通知到别的模块的节点，可能会使其它模块产生新的任务或线程，这是设计结构所呈现的正常情况。线程也不指定包含哪些节点，只是执行某个触发起点的任务。所以 thread 之间可以有引用。T2：必须声明，并且至少有一个。例：["work"]、["main"]、["main", "fast"] 合法。T3：B。T4：A，T5：A。T6：应该选B，但是选C吧。”
+- 这取代了下一条中的 1A、2A（引用不得跨 thread、不满足时静态检查报错）。
+
+行为变化：
+
+- 单 thread 模型不变。代码没有改动。
+- 规则（多 thread，**尚未实现**）：引用可以跨 thread；其他 thread 在其 FIFO 第一次有项时启动、空了收回；output 记录省略没有同 thread 成员的组；多条执行记录写在一个文件里分段。
+- 新增待定 T7—T11（RunThread.md 第 8 节）：跨 thread 引用时记录怎样核对、两个 thread 同时触及同一份状态、事务推进到别的 thread 的 JKI、没有 `main` 时谁是主线程、“不满足该要求则无法启动新线程”指什么。
+
+### JKRD7
+
+| 位置 | 修改前（下一条修改后的文字） | 修改后 |
+| --- | --- | --- |
+| §7.4 末条 | “thread 的声明、使用多个 thread 的条件与多个 thread 的并行，由 thread 模块规定” | “thread 的声明、启动、thread 之间的引用与多个 thread 的并行，由 thread 模块规定” |
+| §7.5 首句之后 | “有多个 thread 时按 thread 核对：每个 thread 的执行记录与该 thread 的串行参考完全相同（RunThread.md 第 5 节）。” | “有多个 thread 时执行记录按 thread 分开（RunThread.md 第 5 节）；引用跨 thread 时怎样核对尚未确定（RunThread.md 第 8 节 T7）。” |
+| §8.1 `threads` | “声明多个 thread 的条件见 RunThread.md 第 4 节” | “名称不限，`main` 是默认名。thread 之间可以有引用，其他 thread 按需启动，见 RunThread.md 第 4 节” |
+| §9.2 模块表·thread | “结构满足独立条件时用多个 thread 并行计算” | “每个 thread 执行自己的一对 FIFO，thread 之间可以有引用，其他 thread 按需启动，多个 thread 并行计算” |
+| §9.4 执行记录 | “按该 thread 的串行顺序排列；不同 thread 的记录不合并，彼此不规定先后（RunThread.md 第 5 节）。只有一个 thread 时就是一条记录。” | “按该 thread 处理的先后排列；不同 thread 的记录不合并，彼此不规定先后。多个 thread 时写在一个文件里，按 JKM.threads 的声明顺序分段，每段前加一行 `{"thread": "<名称>"}`（RunThread.md 第 5 节）。只有一个 thread 时就是一条记录，不加这一行。” |
+| §9.4 output 行 | “列出与该成员同一 thread 的 output 成员此时的 q（……）” | 加“没有这样的成员的组省略” |
+| §11.3 | “RunThread.md 的独立条件检查、多 thread 并行……都尚未实现” | “RunThread.md 的按需启动、多 thread 并行……都尚未实现” |
+
+### README
+
+| 位置 | 修改前（下一条修改后的文字） | 修改后 |
+| --- | --- | --- |
+| 阅读入口·thread 模块 | “多个 thread 的独立条件” | “thread 之间的引用与按需启动” |
+| 延后处理区·thread 模块 | “引用不跨 thread 时可以用多个 thread 并行计算”；“静态检查还不检查引用是否跨 thread”；“待定：T1—T6” | “每个 thread 执行自己的一对 FIFO，thread 之间可以有引用，其他 thread 按需启动；多个 thread 并行计算”；删去静态检查一句；“待定：T1、T7—T11。多个 thread 并行时的快照（T6）交给快照模块” |
+
+### 其他文件
+
+| 文件 | 修改前 | 修改后 |
+| --- | --- | --- |
+| RunThread.md | 第 4 节为独立条件；T2—T6 待定 | 第 1、2、4—7 节改写：引用可以跨 thread、按需启动、记录的归属与分段交付、output 省略没有同 thread 成员的组；T2—T6 列入已定；新增待定 T7—T11；第 10 节记入用户原话 |
+| snapshot/Snapshot.md 第 6 节·多 thread | “须用户决定：随 JKRD7 §9.3 第 1 项” | 用户交给快照模块决定（T6），并记下用户的倾向 |
+
+## 2026-11-12：thread 模块的决定；thread 名默认 main；规则移到 RunThread.md
+
+依据：
+
+- 用户指令：“thread 默认为 ‘main’ 主线程。该线程管理和调度一切运行中所有用到的线程。与现有规则冲突、需要改的地方都更新更改。1A 2A；3B，多 thread 是并行计算的；4B；5，运行脚本或输入批模块相关问题都放到一起并延后处理；6A，默认 ‘work’ 改为 ‘main’；7. FIFO 容量与故障处理归 FIFO.factory 管，该模块延后处理；8，待设计结束后再定。把所有关于 thread 模块的设计规则或声明等，都放到 RunThread.md 文件中。”（`RunThread.md` 由用户新建，原为空文件。）
+- 各选项的内容与用户此前对 thread 模块的定义，原文记在 [RunThread.md](../RunThread.md) 第 10 节。
+
+行为变化：
+
+- 单 thread 模型的执行记录、输出与两个后端的执行语义不变。变化只有 thread 的名称：全部示例由 `work` 改为 `main`（名称不进入执行记录）。
+- 规则新增（都只对多 thread 模型起作用，**尚未实现**）：引用不得跨 thread（独立条件）；多个 thread 并行计算；执行记录按 thread 分开；输出只读同 thread 的 output 成员。
+- 静态检查目前不检查独立条件；两个后端仍拒绝多 thread 模型。实现范围待设计结束后再定（RunThread.md T1）。
+
+### JKRD7
+
+| 位置 | 修改前 | 修改后 |
+| --- | --- | --- |
+| 开头·状态 | 到“快照模块不属于本文的主要路线。” | 句末加“2026-11-12 写入 thread 模块的决定：thread 名默认 main，thread 模块的设计规则与声明移到 RunThread.md，多个 thread 时执行记录与输出按 thread 分开。” |
+| §1 末条 | “thread 的存储与实现以及其他模块的职责见第 9 节。” | “thread 模块见 RunThread.md，其他模块的职责见第 9 节。” |
+| §5.1 `thread` | 取值“JKM.threads 中声明的名称”；含义“对应一对事件 FIFO 与任务 FIFO（§7.4）” | 取值加“默认 `main`”；含义加“thread 模块见 RunThread.md” |
+| §7.4 末条 | “多个 thread 之间的调度，以及 thread 的存储、容量和故障处理，由 thread 模块规定。只用一个 thread 时，本节完全确定执行顺序。” | “本节确定一个 thread 内部的执行顺序。thread 的声明、使用多个 thread 的条件与多个 thread 的并行，由 thread 模块规定，见 RunThread.md；FIFO 的存储、容量和故障处理归 FIFO.factory 模块（§9.2）。” |
+| §7.5 首句 | “……必须产生与本节串行参考完全相同的执行记录。” | 句后加“有多个 thread 时按 thread 核对：每个 thread 的执行记录与该 thread 的串行参考完全相同（RunThread.md 第 5 节）。” |
+| §8.1 `threads` | “声明全部 thread 名。暂时允许声明多个；每个 JKS.thread 必须是其中之一” | “声明全部 thread 名，默认写 `["main"]`（主线程）。每个 JKS.thread 必须是其中之一。声明多个 thread 的条件见 RunThread.md 第 4 节” |
+| §9.1 输出 | “……读取全部 output 成员的 q。” | “……读取与该成员同一 thread 的 output 成员的 q；只有一个 thread 时就是全部 output 成员（RunThread.md 第 6 节）。” |
+| §9.2 模块表 | thread 一行：“FIFO 的存储与容量，多个 thread 之间的调度，故障处理” | thread：“线程调度：默认一个主线程 main；结构满足独立条件时用多个 thread 并行计算。见 RunThread.md”；新增 FIFO.factory（FIFO 的存储、容量与故障处理，延后）与输入批（多个 thread 下的时序，延后）两行 |
+| §9.3 第 1 项 | “多个 thread 之间的调度。参考解释器只执行单 thread 模型。” | “thread 模块尚未确定的选择，见 RunThread.md 第 8 节。两个后端目前只执行单 thread 模型，RunThread.md 的多 thread 规则尚未实现。” |
+| §9.3 | 三项 | 新增第 4 项（FIFO.factory 模块）、第 5 项（运行脚本或输入批在多个 thread 下的全部问题；§9.4 的“在模型静止时注入”目前只对单 thread 模型有定义） |
+| §9.4 执行记录 | “执行记录是一条全局有序的记录，按串行顺序排列，每行一个 JSON 对象，只有四种：” | “执行记录按 thread 分开：每个 thread 一条有序的记录，按该 thread 的串行顺序排列；不同 thread 的记录不合并，彼此不规定先后（RunThread.md 第 5 节）。只有一个 thread 时就是一条记录。每行一个 JSON 对象，只有四种：” |
+| §9.4 output 行 | “`values` 与 output 同组、同顺序，列出全部 output 成员此时的 q。” | “……列出与该成员同一 thread 的 output 成员此时的 q（只有一个 thread 时就是全部 output 成员）。” |
+| §11.3 | “两个后端都只实现单 thread 的语义（§9.3）。”；“……多 thread 调度或硬件故障行为。” | 第一句后加“RunThread.md 的独立条件检查、多 thread 并行、按 thread 分开的记录与输出都尚未实现。”；“多 thread 调度”改为“多 thread 并行” |
+| §8.1、§10 的全部 JSON | `"threads": ["work"]`、`"thread": "work"`（共 20 处） | `"threads": ["main"]`、`"thread": "main"` |
+
+### README
+
+| 位置 | 修改前 | 修改后 |
+| --- | --- | --- |
+| 概要 | “两个后端都只执行单 thread 模型。” | 句后加“thread 名默认 `main`，thread 模块的规则在 RunThread.md，其中多 thread 的部分尚未实现。” |
+| 阅读入口 | — | 新增“thread 模块”一行，指向 RunThread.md |
+| 核对·边界 | “多 thread 调度尚未验证” | “多 thread 并行尚未验证” |
+| 待处理事项·延后处理区的说明 | “多 thread 调度” | “thread 模块的实现与相关模块” |
+| 待处理事项·检查结果 | “静态检查 135/135” | “静态检查 140/140”（快照案例由 25 个增到 30 个，不是本次改动；此处只更正数字） |
+| 延后处理区·多个 thread 之间的调度 | 一条：JKRD7 §9.3 第 1 项，用户 2026-11-09 决定延后 | 改名“thread 模块”：规则概要；实现现状与“待设计结束后再定”；待定 T1—T6；FIFO.factory 与输入批两项延后 |
+
+### 其他文件
+
+| 文件 | 修改前 | 修改后 |
+| --- | --- | --- |
+| RunThread.md | 空文件（用户新建） | thread 模块的职责、声明、JKS.thread.FIFO、独立条件、并行与执行记录、输出、与其他并行方式的关系、延后与待定（T1—T6）、实现状态、沿革 |
+| assets/ascii-bit-design/digits.jkm.json、snapshot/Snapshot.md 的示例、src/testing/fixtures.ts、src/testing/static.ts | thread 名 `work` | `main` |
+| web/show/examples.json | 由旧示例生成 | 用 `node tools/examples.ts` 重新生成 |
+| AGENTS.md | — | 新增一条：thread 模块的规则在 RunThread.md，thread 名默认 main，多 thread 部分尚未实现；“多 thread 调度”改为“多 thread 并行” |
+| WebGPU.md、docs/web-show.md、jk.config.json | 多 thread 一处写“调度未定” | 指向 RunThread.md 并注明尚未实现；索引加入 RunThread.md |
+| reports/ | 修改前的报告 | 重新生成 |
+
+未改：待适配的工厂附件（其中的 `work` 保留）、提案稿、本记录中以前的条目、`tools/show.ts` 里用来核对“旧格式被拒绝”的旧模型。
+
 ## 2026-11-11：README 更新展示页的待处理项与验收数字
 
 依据：用户指令“更新 README”（针对“展示页的待处理清单和验收数字已过时”）。只改 README，行为不变。

@@ -2,13 +2,13 @@
   "ASCII_DIGITS": {
     "jkm": "ASCII_DIGITS",
     "version": "7.0.0",
-    "threads": ["work"],
+    "threads": ["main"],
     "input": {"G1.transaction_any": ["Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8", "Q9", "Q10"]},
     "output": {"data": ["G1.Q11", "G1.Q12", "G1.Q13", "G1.Q14", "G1.Q25", "G1.Q26", "G1.Q27", "G1.Q28"], "done": ["G1.Q24"]},
     "roots": [
       {
         "id": "G1",
-        "thread": "work",
+        "thread": "main",
         "trigger": {"transaction_any": ["Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8", "Q9", "Q10"]},
         "pro": {"tag": ["ASCII.bit.DIGITS"]},
         "members": [
@@ -47,13 +47,13 @@
   "M_FLOW": {
     "jkm": "M_FLOW",
     "version": "7.0.0",
-    "threads": ["work"],
+    "threads": ["main"],
     "input": {"G1.any": ["Q1", "Q2", "Q3", "Q4"]},
     "output": {"data": ["G2.Q5", "G2.Q6"]},
     "roots": [
       {
         "id": "G1",
-        "thread": "work",
+        "thread": "main",
         "trigger": {"any": ["Q1", "Q2", "Q3", "Q4"]},
         "members": [
           {"id": "Q1", "q": 1, "trigger": {"any": []}},
@@ -64,7 +64,7 @@
       },
       {
         "id": "G2",
-        "thread": "work",
+        "thread": "main",
         "trigger": {"any": ["Q5", "Q6"]},
         "members": [
           {"id": "Q5", "q": 0, "trigger": {"any": ["G1.Q1", "G1.Q3"]}, "sources": {"s": ["G1.Q2", "G1.Q3", "G1.Q4"], "ex": ["J", "K", "J"]}},
@@ -76,19 +76,19 @@
   "M_PATH": {
     "jkm": "M_PATH",
     "version": "7.0.0",
-    "threads": ["work"],
+    "threads": ["main"],
     "input": {"G1.any": ["Q1"]},
     "output": {"data": ["G1.Q2"]},
     "roots": [
       {
         "id": "G1",
-        "thread": "work",
+        "thread": "main",
         "trigger": {"any": ["Q1"]},
         "members": [
           {"id": "Q1", "q": 1, "trigger": {"any": []}, "pro": {"tag": ["pre"]}},
           {
             "id": "G2",
-            "thread": "work",
+            "thread": "main",
             "trigger": {"any": ["Q1"]},
             "members": [
               {"id": "Q1", "q": 0, "trigger": {"any": ["G1.Q1"]}, "sources": {"seed": 0, "s": ["G1.Q1"], "ex": ["K"]}}
@@ -102,13 +102,13 @@
   "M_SYNC": {
     "jkm": "M_SYNC",
     "version": "7.0.0",
-    "threads": ["work"],
+    "threads": ["main"],
     "input": {"G1.all": ["Q1", "Q2"]},
     "output": {"data": ["G1.Q3", "G1.Q4"]},
     "roots": [
       {
         "id": "G1",
-        "thread": "work",
+        "thread": "main",
         "trigger": {"all": ["Q1", "Q2"]},
         "members": [
           {"id": "Q1", "q": 1, "trigger": {"any": []}},
@@ -122,13 +122,13 @@
   "M_TX": {
     "jkm": "M_TX",
     "version": "7.0.0",
-    "threads": ["work"],
+    "threads": ["main"],
     "input": {"G1.any": ["Q10"]},
     "output": {"data": ["G2.Q101", "G2.Q102"]},
     "roots": [
       {
         "id": "G1",
-        "thread": "work",
+        "thread": "main",
         "trigger": {"any": ["Q10"]},
         "members": [
           {"id": "Q10", "q": 1, "trigger": {"any": []}}
@@ -136,7 +136,7 @@
       },
       {
         "id": "G2",
-        "thread": "work",
+        "thread": "main",
         "trigger": {"transaction": ["Q103"]},
         "members": [
           {"id": "Q102", "q": 0, "trigger": {"any": ["Q101"]}, "sources": {"seed": 0, "s": ["Q101"], "ex": ["K"]}},
@@ -149,13 +149,13 @@
   "M_NEST": {
     "jkm": "M_NEST",
     "version": "7.0.0",
-    "threads": ["work"],
+    "threads": ["main"],
     "input": {"G1.any": ["Q10"]},
     "output": {"data": ["G2.Q201"]},
     "roots": [
       {
         "id": "G1",
-        "thread": "work",
+        "thread": "main",
         "trigger": {"any": ["Q10"]},
         "members": [
           {"id": "Q10", "q": 1, "trigger": {"any": []}}
@@ -163,13 +163,13 @@
       },
       {
         "id": "G2",
-        "thread": "work",
+        "thread": "main",
         "trigger": {"transaction": ["Q202"]},
         "members": [
           {"id": "Q202", "q": 0, "trigger": {"any": ["G1.Q10"]}},
           {
             "id": "G1",
-            "thread": "work",
+            "thread": "main",
             "trigger": {"transaction": ["Q103"]},
             "members": [
               {"id": "Q102", "q": 0, "trigger": {"any": ["Q101"]}, "sources": {"seed": 0, "s": ["Q101"], "ex": ["K"]}},
@@ -179,7 +179,7 @@
           },
           {
             "id": "G2",
-            "thread": "work",
+            "thread": "main",
             "trigger": {"any": ["Q1"]},
             "members": [
               {"id": "Q1", "q": 0, "trigger": {"any": ["G2.G1.Q102"]}, "sources": {"seed": 0, "s": ["G2.G1.Q102"], "ex": ["K"]}}
@@ -193,13 +193,13 @@
   "M_REG": {
     "jkm": "M_REG",
     "version": "7.0.0",
-    "threads": ["work"],
+    "threads": ["main"],
     "input": {"G1.transaction_any": ["Q1", "Q2"]},
     "output": {"data": ["G1.Q5"]},
     "roots": [
       {
         "id": "G1",
-        "thread": "work",
+        "thread": "main",
         "trigger": {"transaction_any": ["Q1", "Q2"]},
         "pro": {"tag": ["register"]},
         "members": [
